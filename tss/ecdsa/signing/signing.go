@@ -98,7 +98,7 @@ func (s *Signing) Run(
 	parties := common.PartiesFromPeers(s.Peers)
 	s.PopulatePartyStore(parties)
 	pCtx := tss.NewPeerContext(parties)
-	tssParams, err := tss.NewParameters(tss.S256(), pCtx, s.PartyStore[s.Host.ID().Pretty()], len(parties), s.key.Threshold)
+	tssParams, err := tss.NewParameters(tss.S256(), pCtx, s.PartyStore[s.Host.ID().String()], len(parties), s.key.Threshold)
 	if err != nil {
 		return err
 	}

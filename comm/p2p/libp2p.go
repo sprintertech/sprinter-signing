@@ -33,7 +33,7 @@ type Libp2pCommunication struct {
 }
 
 func NewCommunication(h host.Host, protocolID protocol.ID) Libp2pCommunication {
-	logger := log.With().Str("Module", "communication").Str("Peer", h.ID().Pretty()).Logger()
+	logger := log.With().Str("Module", "communication").Str("Peer", h.ID().String()).Logger()
 	c := Libp2pCommunication{
 		SessionSubscriptionManager: NewSessionSubscriptionManager(),
 		h:                          h,
@@ -195,7 +195,7 @@ func (c Libp2pCommunication) sendMessage(
 		return err
 	}
 	c.logger.Trace().Str(
-		"To", to.Pretty()).Str(
+		"To", to.String()).Str(
 		"MsgType", msgType.String()).Str(
 		"SessionID", sessionID).Msg(
 		"message sent",
@@ -210,7 +210,7 @@ func (c Libp2pCommunication) resolveDNS(peerID peer.ID) error {
 		return err
 	}
 	if len(pi.Addrs) == 0 {
-		return fmt.Errorf("peer %s has no defined addresses", peerID.Pretty())
+		return fmt.Errorf("peer %s has no defined addresses", peerID.String())
 	}
 
 	addr, err := resolver.Resolve(context.Background(), pi.Addrs[0])

@@ -24,7 +24,7 @@ func SortPeersForSession(peers []peer.ID, sessionID string) SortablePeerSlice {
 
 func IsParticipant(peer peer.ID, peers peer.IDSlice) bool {
 	for _, p := range peers {
-		if p.Pretty() == peer.Pretty() {
+		if p.String() == peer.String() {
 			return true
 		}
 	}

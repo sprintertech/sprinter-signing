@@ -156,7 +156,7 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_SendReceiveMessag
 		privateKeys = append(privateKeys, privKeyForHost)
 		peerID, _ := peer.IDFromPrivateKey(privKeyForHost)
 		addrInfoForHost, _ := peer.AddrInfoFromString(fmt.Sprintf(
-			"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+portOffset+i, peerID.Pretty(),
+			"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+portOffset+i, peerID.String(),
 		))
 		topology.Peers = append(topology.Peers, addrInfoForHost)
 	}

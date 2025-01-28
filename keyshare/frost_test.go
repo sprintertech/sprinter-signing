@@ -57,7 +57,7 @@ func (s *FrostKeyshareStoreTestSuite) Test_StoreAndRetrieveShare() {
 	peers := []peer.ID{peer1, peer2}
 
 	keyshare := keyshare.NewFrostKeyshare(&frost.TaprootConfig{
-		ID:                 party.ID(peer1.Pretty()),
+		ID:                 party.ID(peer1.String()),
 		Threshold:          1,
 		PrivateShare:       privateShare,
 		VerificationShares: verificationShares,

@@ -195,7 +195,7 @@ func InitializeHostsAndCommunications(numberOfActors int, protocolID protocol.ID
 		privateKeys = append(privateKeys, privKeyForHost)
 		peerID, _ := peer.IDFromPrivateKey(privKeyForHost)
 		addrInfoForHost, _ := peer.AddrInfoFromString(fmt.Sprintf(
-			"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+i, peerID.Pretty(),
+			"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+i, peerID.String(),
 		))
 		topology.Peers = append(topology.Peers, addrInfoForHost)
 	}
@@ -213,7 +213,7 @@ func InitializeHostsAndCommunications(numberOfActors int, protocolID protocol.ID
 		for j := 0; j < numberOfActors; j++ {
 			if i != j {
 				adrInfoForHost, _ := peer.AddrInfoFromString(fmt.Sprintf(
-					"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+j, testHosts[j].ID().Pretty(),
+					"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+j, testHosts[j].ID().String(),
 				))
 				testHosts[i].Peerstore().AddAddr(adrInfoForHost.ID, adrInfoForHost.Addrs[0], peerstore.PermanentAddrTTL)
 				peersAdrInfos[i] = append(peersAdrInfos[i], adrInfoForHost)

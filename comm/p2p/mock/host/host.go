@@ -212,7 +212,7 @@ func (mr *MockHostMockRecorder) SetStreamHandler(arg0, arg1 interface{}) *gomock
 }
 
 // SetStreamHandlerMatch mocks base method.
-func (m *MockHost) SetStreamHandlerMatch(arg0 protocol.ID, arg1 func(string) bool, arg2 network.StreamHandler) {
+func (m *MockHost) SetStreamHandlerMatch(arg0 protocol.ID, arg1 func(protocol.ID) bool, arg2 network.StreamHandler) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetStreamHandlerMatch", arg0, arg1, arg2)
 }

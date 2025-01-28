@@ -59,7 +59,7 @@ func NewResharing(
 				PublicKey:          nil,
 				PrivateShare:       &curve.Secp256k1Scalar{},
 				VerificationShares: make(map[party.ID]*curve.Secp256k1Point),
-				ID:                 party.ID(host.ID().Pretty()),
+				ID:                 party.ID(host.ID().String()),
 			},
 		}
 	}

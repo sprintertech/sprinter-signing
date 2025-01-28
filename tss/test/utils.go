@@ -91,10 +91,10 @@ func SetupCommunication(commMap map[peer.ID]*TestCommunication) {
 	for self, comm := range commMap {
 		peerComms := make(map[string]Receiver)
 		for p, otherComm := range commMap {
-			if self.Pretty() == p.Pretty() {
+			if self.String() == p.String() {
 				continue
 			}
-			peerComms[p.Pretty()] = otherComm
+			peerComms[p.String()] = otherComm
 		}
 		comm.PeerCommunications = peerComms
 	}

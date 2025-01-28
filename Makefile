@@ -31,6 +31,8 @@ genmocks:
 	mockgen -source=./comm/communication.go -destination=./comm/mock/communication.go
 	mockgen -source=./chains/evm/calls/events/listener.go -destination=./chains/evm/calls/events/mock/listener.go
 	mockgen -source=./topology/topology.go -destination=./topology/mock/topology.go
+	mockgen -destination=./comm/p2p/mock/host/host.go github.com/libp2p/go-libp2p/core/host Host
+
 
 
 e2e-test:

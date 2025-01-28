@@ -27,9 +27,9 @@ func (sps SortablePeerSlice) Swap(i, j int) {
 }
 
 func (sps SortablePeerSlice) Less(i, j int) bool {
-	crypto.Keccak256(append([]byte(sps[i].ID.Pretty()), []byte(sps[i].SessionID)...))
-	iHash := crypto.Keccak256(append([]byte(sps[i].ID.Pretty()), []byte(sps[i].SessionID)...))
-	jHash := crypto.Keccak256(append([]byte(sps[j].ID.Pretty()), []byte(sps[j].SessionID)...))
+	crypto.Keccak256(append([]byte(sps[i].ID.String()), []byte(sps[i].SessionID)...))
+	iHash := crypto.Keccak256(append([]byte(sps[i].ID.String()), []byte(sps[i].SessionID)...))
+	jHash := crypto.Keccak256(append([]byte(sps[j].ID.String()), []byte(sps[j].SessionID)...))
 	return binary.BigEndian.Uint64(iHash) > binary.BigEndian.Uint64(jHash)
 }
 

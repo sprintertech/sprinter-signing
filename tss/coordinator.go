@@ -99,7 +99,7 @@ func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, re
 	coordinatorElector := c.electorFactory.CoordinatorElector(sessionID, elector.Static)
 	coordinator, _ := coordinatorElector.Coordinator(ctx, tssProcesses[0].ValidCoordinators())
 
-	log.Info().Str("SessionID", sessionID).Msgf("Starting process with coordinator %s", coordinator.Pretty())
+	log.Info().Str("SessionID", sessionID).Msgf("Starting process with coordinator %s", coordinator.String())
 
 	p.Go(func(ctx context.Context) error {
 		err := c.start(ctx, tssProcesses, coordinator, resultChn, []peer.ID{})
@@ -191,7 +191,7 @@ func (c *Coordinator) watchExecution(ctx context.Context, tssProcess TssProcess,
 		case msg := <-failChn:
 			{
 				// ignore messages that are not from coordinator
-				if msg.From.Pretty() != coordinator.Pretty() {
+				if msg.From.String() != coordinator.String() {
 					continue
 				}
 
@@ -203,7 +203,7 @@ func (c *Coordinator) watchExecution(ctx context.Context, tssProcess TssProcess,
 
 // start initiates listeners for coordinator and participants with static calculated coordinator
 func (c *Coordinator) start(ctx context.Context, tssProcesses []TssProcess, coordinator peer.ID, resultChn chan interface{}, excludedPeers []peer.ID) error {
-	if coordinator.Pretty() == c.host.ID().Pretty() {
+	if coordinator.String() == c.host.ID().String() {
 		return c.initiate(ctx, tssProcesses, resultChn, excludedPeers)
 	} else {
 		return c.waitForStart(ctx, tssProcesses, resultChn, coordinator, c.CoordinatorTimeout)
@@ -314,7 +314,7 @@ func (c *Coordinator) waitForStart(
 		case wMsg := <-msgChan:
 			{
 				if coordinator != "" && wMsg.From != coordinator {
-					log.Warn().Msgf("Received initate message from a peer %s that is not the coordinator %s", wMsg.From.Pretty(), coordinator.Pretty())
+					log.Warn().Msgf("Received initate message from a peer %s that is not the coordinator %s", wMsg.From.String(), coordinator.String())
 					continue
 				}
 
@@ -332,7 +332,7 @@ func (c *Coordinator) waitForStart(
 				// having startMsg.From as "" is special case when peer is not selected in subset
 				// but should wait for start message if existing singing process fails
 				if coordinator != "" && startMsg.From != coordinator {
-					log.Warn().Msgf("Received start message from a peer %s that is not the coordinator %s", startMsg.From.Pretty(), coordinator.Pretty())
+					log.Warn().Msgf("Received start message from a peer %s that is not the coordinator %s", startMsg.From.String(), coordinator.String())
 					continue
 				}
 

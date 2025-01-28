@@ -73,7 +73,7 @@ func (k *Keygen) Run(
 	k.PopulatePartyStore(parties)
 
 	pCtx := tss.NewPeerContext(parties)
-	tssParams, err := tss.NewParameters(tss.S256(), pCtx, k.PartyStore[k.Host.ID().Pretty()], len(parties), k.threshold)
+	tssParams, err := tss.NewParameters(tss.S256(), pCtx, k.PartyStore[k.Host.ID().String()], len(parties), k.threshold)
 	if err != nil {
 		return err
 	}

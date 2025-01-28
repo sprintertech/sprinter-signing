@@ -66,7 +66,7 @@ func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm
 
 				ok, err := b.Party.UpdateFromBytes(
 					msg.MsgBytes,
-					b.PartyStore[wMsg.From.Pretty()],
+					b.PartyStore[wMsg.From.String()],
 					msg.IsBroadcast,
 					new(big.Int).SetBytes([]byte(b.SID)))
 				if !ok {

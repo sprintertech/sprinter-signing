@@ -39,11 +39,11 @@ func (tc *TestCommunication) Broadcast(
 
 	time.Sleep(100 * time.Millisecond)
 	for _, peer := range peers {
-		if tc.PeerCommunications[peer.Pretty()] == nil {
+		if tc.PeerCommunications[peer.String()] == nil {
 			continue
 		}
 
-		go tc.PeerCommunications[peer.Pretty()].ReceiveMessage(&wMsg, msgType, sessionID)
+		go tc.PeerCommunications[peer.String()].ReceiveMessage(&wMsg, msgType, sessionID)
 	}
 
 	return nil

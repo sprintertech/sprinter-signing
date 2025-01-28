@@ -41,7 +41,7 @@ func (sm *StreamManager) ReleaseStreams(sessionID string) {
 	for peer, stream := range streams {
 		err := stream.Close()
 		if err != nil {
-			log.Err(err).Msgf("Cannot close stream to peer %s", peer.Pretty())
+			log.Err(err).Msgf("Cannot close stream to peer %s", peer.String())
 		}
 	}
 

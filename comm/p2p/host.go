@@ -37,7 +37,7 @@ func NewHost(privKey crypto.PrivKey, networkTopology *topology.NetworkTopology, 
 		return nil, fmt.Errorf("unable to create libp2p host: %v", err)
 	}
 
-	log.Info().Str("peerID", h.ID().Pretty()).Msgf(
+	log.Info().Str("peerID", h.ID().String()).Msgf(
 		"new libp2p host created with address: %s", h.Addrs()[0].String(),
 	)
 

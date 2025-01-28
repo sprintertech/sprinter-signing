@@ -99,7 +99,7 @@ func (r *Resharing) Run(
 		tss.S256(),
 		oldCtx,
 		newCtx,
-		r.PartyStore[r.Host.ID().Pretty()],
+		r.PartyStore[r.Host.ID().String()],
 		len(oldParties),
 		startParams.OldThreshold,
 		len(newParties),
@@ -154,7 +154,7 @@ func (r *Resharing) ValidCoordinators() []peer.ID {
 	validCoordinators := make(peer.IDSlice, 0)
 	for _, peer := range peers {
 		for _, subsetPeer := range r.key.Peers {
-			if subsetPeer.Pretty() == peer.Pretty() {
+			if subsetPeer.String() == peer.String() {
 				validCoordinators = append(validCoordinators, peer)
 				break
 			}
