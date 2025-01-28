@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/elector"
-	"github.com/ChainSafe/sygma-relayer/keyshare"
-	"github.com/ChainSafe/sygma-relayer/tss"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/keygen"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/signing"
-	tsstest "github.com/ChainSafe/sygma-relayer/tss/test"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/elector"
+	"github.com/sprintertech/sprinter-signing/keyshare"
+	"github.com/sprintertech/sprinter-signing/tss"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/keygen"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
+	tsstest "github.com/sprintertech/sprinter-signing/tss/test"
 	"github.com/stretchr/testify/suite"
 )
 

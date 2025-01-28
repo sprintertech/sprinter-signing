@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/ChainSafe/sygma-relayer/cli"
+import "github.com/sprintertech/sprinter-signing/cli"
 
 func main() {
 	cli.Execute()

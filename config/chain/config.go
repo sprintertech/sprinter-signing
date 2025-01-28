@@ -6,8 +6,8 @@ package chain
 import (
 	"fmt"
 
-	"github.com/ChainSafe/sygma-relayer/config"
 	"github.com/spf13/viper"
+	"github.com/sprintertech/sprinter-signing/config"
 )
 
 type GeneralChainConfig struct {

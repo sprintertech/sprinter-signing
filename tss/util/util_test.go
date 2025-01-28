@@ -6,8 +6,8 @@ package util_test
 import (
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/tss/util"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/tss/util"
 	"github.com/stretchr/testify/suite"
 )
 

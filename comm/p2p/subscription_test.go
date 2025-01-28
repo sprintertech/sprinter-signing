@@ -4,10 +4,10 @@
 package p2p_test
 
 import (
-	"github.com/ChainSafe/sygma-relayer/comm/p2p"
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
 	"testing"
 
-	comm "github.com/ChainSafe/sygma-relayer/comm"
+	comm "github.com/sprintertech/sprinter-signing/comm"
 	"github.com/stretchr/testify/suite"
 )
 

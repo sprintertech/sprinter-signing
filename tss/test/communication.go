@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/comm"
 )
 
 type Receiver interface {

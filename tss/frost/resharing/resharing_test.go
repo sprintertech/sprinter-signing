@@ -8,17 +8,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/elector"
-	"github.com/ChainSafe/sygma-relayer/keyshare"
-	"github.com/ChainSafe/sygma-relayer/tss"
-	"github.com/ChainSafe/sygma-relayer/tss/frost/resharing"
-	tsstest "github.com/ChainSafe/sygma-relayer/tss/test"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/elector"
+	"github.com/sprintertech/sprinter-signing/keyshare"
+	"github.com/sprintertech/sprinter-signing/tss"
+	"github.com/sprintertech/sprinter-signing/tss/frost/resharing"
+	tsstest "github.com/sprintertech/sprinter-signing/tss/test"
 	"github.com/stretchr/testify/suite"
 )
 

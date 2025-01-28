@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	comm "github.com/ChainSafe/sygma-relayer/comm"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -18,6 +17,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
+	comm "github.com/sprintertech/sprinter-signing/comm"
 )
 
 const (

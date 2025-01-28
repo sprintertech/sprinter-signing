@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/config"
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
+	"github.com/sprintertech/sprinter-signing/config"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
 	"github.com/stretchr/testify/suite"
 )
 

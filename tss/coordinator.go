@@ -9,15 +9,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/elector"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/common"
-	"github.com/ChainSafe/sygma-relayer/tss/message"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/elector"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 	"golang.org/x/exp/slices"
 )
 

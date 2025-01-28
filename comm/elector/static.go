@@ -6,8 +6,8 @@ package elector
 import (
 	"context"
 
-	"github.com/ChainSafe/sygma-relayer/tss/util"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/tss/util"
 )
 
 type staticCoordinatorElector struct {

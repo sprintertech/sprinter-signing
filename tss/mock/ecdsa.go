@@ -7,8 +7,8 @@ package mock_tss
 import (
 	reflect "reflect"
 
-	keyshare "github.com/ChainSafe/sygma-relayer/keyshare"
 	gomock "github.com/golang/mock/gomock"
+	keyshare "github.com/sprintertech/sprinter-signing/keyshare"
 )
 
 // MockECDSAKeyshareStorer is a mock of ECDSAKeyshareStorer interface.

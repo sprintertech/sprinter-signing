@@ -8,22 +8,22 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	errors "github.com/ChainSafe/sygma-relayer/tss"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
+	errors "github.com/sprintertech/sprinter-signing/tss"
 	"github.com/taurusgroup/multi-party-sig/pkg/math/curve"
 	"github.com/taurusgroup/multi-party-sig/pkg/protocol"
 	"github.com/taurusgroup/multi-party-sig/pkg/taproot"
 	"github.com/taurusgroup/multi-party-sig/protocols/frost"
 	"golang.org/x/exp/slices"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/keyshare"
-	"github.com/ChainSafe/sygma-relayer/tss/frost/common"
-	"github.com/ChainSafe/sygma-relayer/tss/util"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/keyshare"
+	"github.com/sprintertech/sprinter-signing/tss/frost/common"
+	"github.com/sprintertech/sprinter-signing/tss/util"
 )
 
 type Signature struct {

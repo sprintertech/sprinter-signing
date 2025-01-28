@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/keyshare"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/stretchr/testify/suite"
 )
 

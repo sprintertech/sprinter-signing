@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
-	"github.com/ChainSafe/sygma-relayer/topology"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
+	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/stretchr/testify/suite"
 
-	mock_topology "github.com/ChainSafe/sygma-relayer/topology/mock"
+	mock_topology "github.com/sprintertech/sprinter-signing/topology/mock"
 )
 
 type TopologyTestSuite struct {

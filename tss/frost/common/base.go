@@ -9,11 +9,11 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
+	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/taurusgroup/multi-party-sig/pkg/protocol"
 )
 

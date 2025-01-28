@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/comm/elector"
-	"github.com/ChainSafe/sygma-relayer/comm/p2p"
-	"github.com/ChainSafe/sygma-relayer/topology"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/sprintertech/sprinter-signing/comm/elector"
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
+	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/stretchr/testify/suite"
 )
 
