@@ -30,6 +30,7 @@ func NewHost(privKey crypto.PrivKey, networkTopology *topology.NetworkTopology, 
 		libp2p.DisableRelay(),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.ConnectionGater(cg),
+		libp2p.DisableIdentifyAddressDiscovery(),
 	}
 
 	h, err := libp2p.New(opts...)
