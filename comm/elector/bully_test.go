@@ -329,7 +329,8 @@ func (s *BullyTestSuite) TestBully_GetCoordinator_OneDelay() {
 			}
 			for i := 0; i < numberOfResults; i++ {
 				c := <-resultChan
-				s.Equal(finalCoordinator, c)
+
+				s.Equal(finalCoordinator.String(), c.String())
 
 			}
 		})
