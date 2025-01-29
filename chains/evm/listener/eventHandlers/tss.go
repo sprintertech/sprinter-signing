@@ -21,7 +21,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/keygen"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/resharing"
-	frostResharing "github.com/sprintertech/sprinter-signing/tss/frost/resharing"
 )
 
 type EventListener interface {
@@ -109,7 +108,6 @@ type RefreshEventHandler struct {
 	communication    comm.Communication
 	connectionGate   *p2p.ConnectionGate
 	ecdsaStorer      resharing.SaveDataStorer
-	frostStorer      frostResharing.FrostKeyshareStorer
 }
 
 func NewRefreshEventHandler(
@@ -122,7 +120,6 @@ func NewRefreshEventHandler(
 	communication comm.Communication,
 	connectionGate *p2p.ConnectionGate,
 	ecdsaStorer resharing.SaveDataStorer,
-	frostStorer frostResharing.FrostKeyshareStorer,
 	bridgeAddress common.Address,
 ) *RefreshEventHandler {
 	return &RefreshEventHandler{
@@ -134,7 +131,6 @@ func NewRefreshEventHandler(
 		host:             host,
 		communication:    communication,
 		ecdsaStorer:      ecdsaStorer,
-		frostStorer:      frostStorer,
 		connectionGate:   connectionGate,
 		bridgeAddress:    bridgeAddress,
 	}
