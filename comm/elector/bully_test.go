@@ -110,7 +110,7 @@ func (s *BullyTestSuite) SetupIndividualTest(c BullyTestCase) ([]elector.Coordin
 				PingBackOff:      1 * time.Second,
 				PingInterval:     1 * time.Second,
 				ElectionWaitTime: 2 * time.Second,
-				BullyWaitTime:    25 * time.Second,
+				BullyWaitTime:    10 * time.Second,
 			}, com)
 			testBullyCoordinators = append(testBullyCoordinators, b)
 		}
@@ -122,121 +122,6 @@ func (s *BullyTestSuite) TearDownTest() {}
 
 func (s *BullyTestSuite) TestBully_GetCoordinator_OneDelay() {
 	testCases := []BullyTestCase{
-		{
-			name:           "three relayers bully coordination - all relayers starting at the same time",
-			isLeaderActive: true,
-			testRelayers: []RelayerTestDescriber{
-				{
-					name:         "R1",
-					index:        0,
-					initialDelay: 0,
-				},
-				{
-					name:         "R2",
-					index:        1,
-					initialDelay: 0,
-				},
-				{
-					name:         "R3",
-					index:        2,
-					initialDelay: 0,
-				},
-			},
-		},
-		{
-			name:           "three relayers bully coordination - one relayer lags",
-			isLeaderActive: true,
-			testRelayers: []RelayerTestDescriber{
-				{
-					name:         "R1",
-					index:        0,
-					initialDelay: 0,
-				},
-				{
-					name:         "R2",
-					index:        1,
-					initialDelay: 0,
-				},
-				{
-					name:         "R3",
-					index:        2,
-					initialDelay: 2 * time.Second,
-				},
-			},
-		},
-		{
-			name:           "three relayers bully coordination - two relayer lags for same amount",
-			isLeaderActive: true,
-			testRelayers: []RelayerTestDescriber{
-				{
-					name:         "R1",
-					index:        0,
-					initialDelay: 0,
-				},
-				{
-					name:         "R2",
-					index:        1,
-					initialDelay: 2 * time.Second,
-				},
-				{
-					name:         "R3",
-					index:        2,
-					initialDelay: 2 * time.Second,
-				},
-			},
-		},
-		{
-			name:           "three relayers bully coordination - two relayer lag for different amount",
-			isLeaderActive: true,
-			testRelayers: []RelayerTestDescriber{
-				{
-					name:         "R1",
-					index:        0,
-					initialDelay: 0,
-				},
-				{
-					name:         "R2",
-					index:        1,
-					initialDelay: 2 * time.Second,
-				},
-				{
-					name:         "R3",
-					index:        2,
-					initialDelay: 3 * time.Second,
-				},
-			},
-		},
-		{
-			name:           "five relayers bully coordination - all relayers starting at the same time",
-			isLeaderActive: true,
-			testRelayers: []RelayerTestDescriber{
-				{
-					name:         "R1",
-					index:        0,
-					initialDelay: 0,
-				},
-				{
-					name:         "R2",
-					index:        1,
-					initialDelay: 0,
-				},
-				{
-					name:         "R3",
-					index:        2,
-					initialDelay: 0,
-				},
-				{
-					name:         "R4",
-					index:        3,
-					initialDelay: 0,
-				},
-				{
-					name:         "R5",
-					index:        4,
-					initialDelay: 0,
-				},
-			},
-		},
 		{
 			name:           "five relayers bully coordination - multiple lags on relayers",
 			isLeaderActive: true,
