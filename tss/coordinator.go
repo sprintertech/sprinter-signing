@@ -5,6 +5,7 @@ package tss
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -132,40 +133,37 @@ func (c *Coordinator) handleError(ctx context.Context, err error, tssProcesses [
 		return c.watchExecution(ctx, tssProcesses[0], peer.ID(""))
 	})
 	sessionID := tssProcesses[0].SessionID()
-	switch err := err.(type) {
-	case *CoordinatorError:
-		{
-			log.Warn().Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
 
-			excludedPeers := []peer.ID{err.Peer}
-			rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
-		}
-	case *comm.CommunicationError:
-		{
-			log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
-			rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, []peer.ID{}) })
-		}
-	case *tss.Error:
-		{
-			log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
-			excludedPeers, err := common.PeersFromParties(err.Culprits())
-			if err != nil {
-				return err
-			}
-			rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
-		}
-	case *SubsetError:
-		{
-			// wait for start message if existing singing process fails
-			rp.Go(func(ctx context.Context) error {
-				return c.waitForStart(ctx, tssProcesses, resultChn, peer.ID(""), c.TssTimeout)
-			})
-		}
-	default:
-		{
+	var coordinatorError *CoordinatorError
+	var commError *comm.CommunicationError
+	var subsetError *SubsetError
+	var tssError *tss.Error
+	if errors.As(err, &coordinatorError) {
+		coordinatorError = err.(*CoordinatorError)
+		log.Warn().Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
+
+		excludedPeers := []peer.ID{coordinatorError.Peer}
+		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
+	} else if errors.Is(err, commError) {
+		log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
+		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, []peer.ID{}) })
+	} else if errors.Is(err, &tss.Error{}) {
+		tssError = err.(*tss.Error)
+		log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
+		excludedPeers, err := common.PeersFromParties(tssError.Culprits())
+		if err != nil {
 			return err
 		}
+		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
+	} else if errors.As(err, &subsetError) {
+		// wait for start message if existing singing process fails
+		rp.Go(func(ctx context.Context) error {
+			return c.waitForStart(ctx, tssProcesses, resultChn, peer.ID(""), c.TssTimeout)
+		})
+	} else {
+		return err
 	}
+
 	return rp.Wait()
 }
 
