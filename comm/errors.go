@@ -15,5 +15,5 @@ type CommunicationError struct {
 }
 
 func (ce *CommunicationError) Error() string {
-	return fmt.Sprintf("failed communicating with peer %s because of: %s", ce.Peer.Pretty(), ce.Err.Error())
+	return fmt.Sprintf("failed communicating with peer %s because of: %s", ce.Peer.String(), ce.Err.Error())
 }

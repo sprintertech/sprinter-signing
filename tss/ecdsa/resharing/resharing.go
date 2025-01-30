@@ -9,10 +9,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/keyshare"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/common"
-	"github.com/ChainSafe/sygma-relayer/tss/util"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/ecdsa/resharing"
 	"github.com/binance-chain/tss-lib/tss"
@@ -20,6 +16,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/keyshare"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
+	"github.com/sprintertech/sprinter-signing/tss/util"
 	"golang.org/x/exp/slices"
 )
 
@@ -99,7 +99,7 @@ func (r *Resharing) Run(
 		tss.S256(),
 		oldCtx,
 		newCtx,
-		r.PartyStore[r.Host.ID().Pretty()],
+		r.PartyStore[r.Host.ID().String()],
 		len(oldParties),
 		startParams.OldThreshold,
 		len(newParties),
@@ -154,7 +154,7 @@ func (r *Resharing) ValidCoordinators() []peer.ID {
 	validCoordinators := make(peer.IDSlice, 0)
 	for _, peer := range peers {
 		for _, subsetPeer := range r.key.Peers {
-			if subsetPeer.Pretty() == peer.Pretty() {
+			if subsetPeer.String() == peer.String() {
 				validCoordinators = append(validCoordinators, peer)
 				break
 			}

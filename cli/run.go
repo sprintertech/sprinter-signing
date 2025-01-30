@@ -4,8 +4,8 @@
 package cli
 
 import (
-	"github.com/ChainSafe/sygma-relayer/app"
 	"github.com/spf13/cobra"
+	"github.com/sprintertech/sprinter-signing/app"
 )
 
 var (

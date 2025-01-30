@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/store"
+	"github.com/sprintertech/sprinter-signing/store"
 	"github.com/stretchr/testify/suite"
 	mock_store "github.com/sygmaprotocol/sygma-core/mock"
 	"github.com/syndtr/goleveldb/leveldb"

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/topology"
+	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/stretchr/testify/suite"
 )
 

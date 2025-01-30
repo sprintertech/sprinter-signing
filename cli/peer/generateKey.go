@@ -46,7 +46,7 @@ func generateKey(cmd *cobra.Command, args []string) error {
 LibP2P peer identity: %s \n
 LibP2P private key: %s
 `,
-		peerID.Pretty(),
+		peerID.String(),
 		encPriv,
 	)
 	return nil

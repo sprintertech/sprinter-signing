@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ChainSafe/sygma-relayer/topology"
+	"github.com/sprintertech/sprinter-signing/topology"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -30,6 +30,7 @@ func NewHost(privKey crypto.PrivKey, networkTopology *topology.NetworkTopology, 
 		libp2p.DisableRelay(),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.ConnectionGater(cg),
+		libp2p.DisableIdentifyAddressDiscovery(),
 	}
 
 	h, err := libp2p.New(opts...)
@@ -37,7 +38,7 @@ func NewHost(privKey crypto.PrivKey, networkTopology *topology.NetworkTopology, 
 		return nil, fmt.Errorf("unable to create libp2p host: %v", err)
 	}
 
-	log.Info().Str("peerID", h.ID().Pretty()).Msgf(
+	log.Info().Str("peerID", h.ID().String()).Msgf(
 		"new libp2p host created with address: %s", h.Addrs()[0].String(),
 	)
 

@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
 )
 
 type NetworkTopology struct {

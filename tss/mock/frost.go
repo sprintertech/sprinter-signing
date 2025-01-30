@@ -7,7 +7,7 @@ package mock_tss
 import (
 	reflect "reflect"
 
-	keyshare "github.com/ChainSafe/sygma-relayer/keyshare"
+	keyshare "github.com/sprintertech/sprinter-signing/keyshare"
 	gomock "github.com/golang/mock/gomock"
 )
 

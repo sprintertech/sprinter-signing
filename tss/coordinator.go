@@ -5,19 +5,20 @@ package tss
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/elector"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/common"
-	"github.com/ChainSafe/sygma-relayer/tss/message"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/elector"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 	"golang.org/x/exp/slices"
 )
 
@@ -99,7 +100,7 @@ func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, re
 	coordinatorElector := c.electorFactory.CoordinatorElector(sessionID, elector.Static)
 	coordinator, _ := coordinatorElector.Coordinator(ctx, tssProcesses[0].ValidCoordinators())
 
-	log.Info().Str("SessionID", sessionID).Msgf("Starting process with coordinator %s", coordinator.Pretty())
+	log.Info().Str("SessionID", sessionID).Msgf("Starting process with coordinator %s", coordinator.String())
 
 	p.Go(func(ctx context.Context) error {
 		err := c.start(ctx, tssProcesses, coordinator, resultChn, []peer.ID{})
@@ -132,40 +133,37 @@ func (c *Coordinator) handleError(ctx context.Context, err error, tssProcesses [
 		return c.watchExecution(ctx, tssProcesses[0], peer.ID(""))
 	})
 	sessionID := tssProcesses[0].SessionID()
-	switch err := err.(type) {
-	case *CoordinatorError:
-		{
-			log.Warn().Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
 
-			excludedPeers := []peer.ID{err.Peer}
-			rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
-		}
-	case *comm.CommunicationError:
-		{
-			log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
-			rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, []peer.ID{}) })
-		}
-	case *tss.Error:
-		{
-			log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
-			excludedPeers, err := common.PeersFromParties(err.Culprits())
-			if err != nil {
-				return err
-			}
-			rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
-		}
-	case *SubsetError:
-		{
-			// wait for start message if existing singing process fails
-			rp.Go(func(ctx context.Context) error {
-				return c.waitForStart(ctx, tssProcesses, resultChn, peer.ID(""), c.TssTimeout)
-			})
-		}
-	default:
-		{
+	var coordinatorError *CoordinatorError
+	var commError *comm.CommunicationError
+	var subsetError *SubsetError
+	var tssError *tss.Error
+	if errors.As(err, &coordinatorError) {
+		coordinatorError = err.(*CoordinatorError)
+		log.Warn().Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
+
+		excludedPeers := []peer.ID{coordinatorError.Peer}
+		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
+	} else if errors.Is(err, commError) {
+		log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
+		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, []peer.ID{}) })
+	} else if errors.Is(err, &tss.Error{}) {
+		tssError = err.(*tss.Error)
+		log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
+		excludedPeers, err := common.PeersFromParties(tssError.Culprits())
+		if err != nil {
 			return err
 		}
+		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
+	} else if errors.As(err, &subsetError) {
+		// wait for start message if existing singing process fails
+		rp.Go(func(ctx context.Context) error {
+			return c.waitForStart(ctx, tssProcesses, resultChn, peer.ID(""), c.TssTimeout)
+		})
+	} else {
+		return err
 	}
+
 	return rp.Wait()
 }
 
@@ -191,7 +189,7 @@ func (c *Coordinator) watchExecution(ctx context.Context, tssProcess TssProcess,
 		case msg := <-failChn:
 			{
 				// ignore messages that are not from coordinator
-				if msg.From.Pretty() != coordinator.Pretty() {
+				if msg.From.String() != coordinator.String() {
 					continue
 				}
 
@@ -203,7 +201,7 @@ func (c *Coordinator) watchExecution(ctx context.Context, tssProcess TssProcess,
 
 // start initiates listeners for coordinator and participants with static calculated coordinator
 func (c *Coordinator) start(ctx context.Context, tssProcesses []TssProcess, coordinator peer.ID, resultChn chan interface{}, excludedPeers []peer.ID) error {
-	if coordinator.Pretty() == c.host.ID().Pretty() {
+	if coordinator.String() == c.host.ID().String() {
 		return c.initiate(ctx, tssProcesses, resultChn, excludedPeers)
 	} else {
 		return c.waitForStart(ctx, tssProcesses, resultChn, coordinator, c.CoordinatorTimeout)
@@ -314,7 +312,7 @@ func (c *Coordinator) waitForStart(
 		case wMsg := <-msgChan:
 			{
 				if coordinator != "" && wMsg.From != coordinator {
-					log.Warn().Msgf("Received initate message from a peer %s that is not the coordinator %s", wMsg.From.Pretty(), coordinator.Pretty())
+					log.Warn().Msgf("Received initate message from a peer %s that is not the coordinator %s", wMsg.From.String(), coordinator.String())
 					continue
 				}
 
@@ -332,7 +330,7 @@ func (c *Coordinator) waitForStart(
 				// having startMsg.From as "" is special case when peer is not selected in subset
 				// but should wait for start message if existing singing process fails
 				if coordinator != "" && startMsg.From != coordinator {
-					log.Warn().Msgf("Received start message from a peer %s that is not the coordinator %s", startMsg.From.Pretty(), coordinator.Pretty())
+					log.Warn().Msgf("Received start message from a peer %s that is not the coordinator %s", startMsg.From.String(), coordinator.String())
 					continue
 				}
 

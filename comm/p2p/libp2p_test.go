@@ -8,17 +8,17 @@ import (
 	"fmt"
 	"testing"
 
-	comm "github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/p2p"
-	mock_host "github.com/ChainSafe/sygma-relayer/comm/p2p/mock/host"
-	mock_network "github.com/ChainSafe/sygma-relayer/comm/p2p/mock/stream"
-	"github.com/ChainSafe/sygma-relayer/topology"
-	"github.com/ChainSafe/sygma-relayer/tss/message"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	comm "github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
+	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
+	mock_network "github.com/sprintertech/sprinter-signing/comm/p2p/mock/stream"
+	"github.com/sprintertech/sprinter-signing/topology"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -156,7 +156,7 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_SendReceiveMessag
 		privateKeys = append(privateKeys, privKeyForHost)
 		peerID, _ := peer.IDFromPrivateKey(privKeyForHost)
 		addrInfoForHost, _ := peer.AddrInfoFromString(fmt.Sprintf(
-			"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+portOffset+i, peerID.Pretty(),
+			"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+portOffset+i, peerID.String(),
 		))
 		topology.Peers = append(topology.Peers, addrInfoForHost)
 	}

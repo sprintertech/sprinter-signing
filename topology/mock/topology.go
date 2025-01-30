@@ -8,8 +8,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
-	topology "github.com/ChainSafe/sygma-relayer/topology"
 	gomock "github.com/golang/mock/gomock"
+	topology "github.com/sprintertech/sprinter-signing/topology"
 )
 
 // MockFetcher is a mock of Fetcher interface.

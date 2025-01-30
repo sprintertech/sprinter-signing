@@ -6,11 +6,11 @@ package jobs
 import (
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/p2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
 )
 
 type RelayerStatusMeter interface {

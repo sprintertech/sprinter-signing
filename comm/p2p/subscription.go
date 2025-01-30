@@ -6,7 +6,7 @@ package p2p
 import (
 	"sync"
 
-	comm "github.com/ChainSafe/sygma-relayer/comm"
+	comm "github.com/sprintertech/sprinter-signing/comm"
 )
 
 // SessionSubscriptionManager manages channel subscriptions by comm.SessionID

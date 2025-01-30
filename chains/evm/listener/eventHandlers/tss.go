@@ -11,17 +11,22 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/comm/p2p"
-	"github.com/ChainSafe/sygma-relayer/topology"
-	"github.com/ChainSafe/sygma-relayer/tss"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/keygen"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/resharing"
-	frostKeygen "github.com/ChainSafe/sygma-relayer/tss/frost/keygen"
-	frostResharing "github.com/ChainSafe/sygma-relayer/tss/frost/resharing"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
+	"github.com/sprintertech/sprinter-signing/topology"
+	"github.com/sprintertech/sprinter-signing/tss"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/keygen"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/resharing"
 )
+
+type EventListener interface {
+	FetchKeygenEvents(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]types.Log, error)
+	FetchRefreshEvents(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]*events.Refresh, error)
+}
 
 type KeygenEventHandler struct {
 	log           zerolog.Logger
@@ -92,71 +97,6 @@ func (eh *KeygenEventHandler) sessionID(block *big.Int) string {
 	return fmt.Sprintf("keygen-%s", block.String())
 }
 
-type FrostKeygenEventHandler struct {
-	log             zerolog.Logger
-	eventListener   EventListener
-	coordinator     *tss.Coordinator
-	host            host.Host
-	communication   comm.Communication
-	storer          frostKeygen.FrostKeyshareStorer
-	contractAddress common.Address
-	threshold       int
-}
-
-func NewFrostKeygenEventHandler(
-	logC zerolog.Context,
-	eventListener EventListener,
-	coordinator *tss.Coordinator,
-	host host.Host,
-	communication comm.Communication,
-	storer frostKeygen.FrostKeyshareStorer,
-	contractAddress common.Address,
-	threshold int,
-) *FrostKeygenEventHandler {
-	return &FrostKeygenEventHandler{
-		log:             logC.Logger(),
-		eventListener:   eventListener,
-		coordinator:     coordinator,
-		host:            host,
-		communication:   communication,
-		storer:          storer,
-		contractAddress: contractAddress,
-		threshold:       threshold,
-	}
-}
-
-func (eh *FrostKeygenEventHandler) HandleEvents(
-	startBlock *big.Int,
-	endBlock *big.Int,
-) error {
-	keygenEvents, err := eh.eventListener.FetchFrostKeygenEvents(
-		context.Background(), eh.contractAddress, startBlock, endBlock,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to fetch keygen events because of: %+v", err)
-	}
-
-	if len(keygenEvents) == 0 {
-		return nil
-	}
-
-	eh.log.Info().Msgf(
-		"Resolved FROST keygen message in block range: %s-%s", startBlock.String(), endBlock.String(),
-	)
-
-	keygenBlockNumber := big.NewInt(0).SetUint64(keygenEvents[0].BlockNumber)
-	keygen := frostKeygen.NewKeygen(eh.sessionID(keygenBlockNumber), eh.threshold, eh.host, eh.communication, eh.storer)
-	err = eh.coordinator.Execute(context.Background(), []tss.TssProcess{keygen}, make(chan interface{}, 1))
-	if err != nil {
-		log.Err(err).Msgf("Failed executing keygen")
-	}
-	return nil
-}
-
-func (eh *FrostKeygenEventHandler) sessionID(block *big.Int) string {
-	return fmt.Sprintf("frost-keygen-%s", block.String())
-}
-
 type RefreshEventHandler struct {
 	log              zerolog.Logger
 	topologyProvider topology.NetworkTopologyProvider
@@ -168,7 +108,6 @@ type RefreshEventHandler struct {
 	communication    comm.Communication
 	connectionGate   *p2p.ConnectionGate
 	ecdsaStorer      resharing.SaveDataStorer
-	frostStorer      frostResharing.FrostKeyshareStorer
 }
 
 func NewRefreshEventHandler(
@@ -181,7 +120,6 @@ func NewRefreshEventHandler(
 	communication comm.Communication,
 	connectionGate *p2p.ConnectionGate,
 	ecdsaStorer resharing.SaveDataStorer,
-	frostStorer frostResharing.FrostKeyshareStorer,
 	bridgeAddress common.Address,
 ) *RefreshEventHandler {
 	return &RefreshEventHandler{
@@ -193,7 +131,6 @@ func NewRefreshEventHandler(
 		host:             host,
 		communication:    communication,
 		ecdsaStorer:      ecdsaStorer,
-		frostStorer:      frostStorer,
 		connectionGate:   connectionGate,
 		bridgeAddress:    bridgeAddress,
 	}

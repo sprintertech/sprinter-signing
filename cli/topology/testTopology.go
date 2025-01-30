@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
-	"github.com/ChainSafe/sygma-relayer/topology"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
+	"github.com/sprintertech/sprinter-signing/topology"
 )
 
 var (

@@ -8,11 +8,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/ChainSafe/sygma-relayer/cli/keygen"
-	"github.com/ChainSafe/sygma-relayer/cli/peer"
-	"github.com/ChainSafe/sygma-relayer/cli/topology"
-	"github.com/ChainSafe/sygma-relayer/cli/utils"
-	"github.com/ChainSafe/sygma-relayer/config"
+	"github.com/sprintertech/sprinter-signing/cli/keygen"
+	"github.com/sprintertech/sprinter-signing/cli/peer"
+	"github.com/sprintertech/sprinter-signing/cli/topology"
+	"github.com/sprintertech/sprinter-signing/cli/utils"
+	"github.com/sprintertech/sprinter-signing/config"
 )
 
 var (

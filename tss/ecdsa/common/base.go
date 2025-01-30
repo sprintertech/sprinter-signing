@@ -9,12 +9,12 @@ import (
 	"math/big"
 	"runtime/debug"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/tss/message"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 )
 
 type Party interface {
@@ -66,7 +66,7 @@ func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm
 
 				ok, err := b.Party.UpdateFromBytes(
 					msg.MsgBytes,
-					b.PartyStore[wMsg.From.Pretty()],
+					b.PartyStore[wMsg.From.String()],
 					msg.IsBroadcast,
 					new(big.Int).SetBytes([]byte(b.SID)))
 				if !ok {

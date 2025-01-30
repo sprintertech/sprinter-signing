@@ -11,7 +11,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/ChainSafe/sygma-relayer/topology"
+	"github.com/sprintertech/sprinter-signing/topology"
 
 	"github.com/spf13/cobra"
 )

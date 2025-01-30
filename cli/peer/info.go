@@ -48,7 +48,7 @@ func peerInfo(cmd *cobra.Command, args []string) error {
 	fmt.Printf(`
 LibP2P peer identity: %s
 `,
-		peerID.Pretty(),
+		peerID.String(),
 	)
 	return nil
 }

@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
-	"github.com/ChainSafe/sygma-relayer/topology"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
+	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/stretchr/testify/suite"
 
-	mock_topology "github.com/ChainSafe/sygma-relayer/topology/mock"
+	mock_topology "github.com/sprintertech/sprinter-signing/topology/mock"
 )
 
 type TopologyTestSuite struct {
@@ -43,9 +43,9 @@ func (s *TopologyTestSuite) Test_ProcessRawTopology_ValidTopology() {
 	})
 	s.Nil(err)
 	s.Equal(2, topology.Threshold)
-	s.Equal("QmeTuMtdpPB7zKDgmobEwSvxodrf5aFVSmBXX3SQJVjJaT", topology.Peers[0].ID.Pretty())
-	s.Equal("QmYAYuLUPNwYEBYJaKHcE7NKjUhiUV8txx2xDXHvcYa1xK", topology.Peers[1].ID.Pretty())
-	s.Equal("QmcvEg7jGvuxdsUFRUiE4VdrL2P1Yeju5L83BsJvvXz7zX", topology.Peers[2].ID.Pretty())
+	s.Equal("QmeTuMtdpPB7zKDgmobEwSvxodrf5aFVSmBXX3SQJVjJaT", topology.Peers[0].ID.String())
+	s.Equal("QmYAYuLUPNwYEBYJaKHcE7NKjUhiUV8txx2xDXHvcYa1xK", topology.Peers[1].ID.String())
+	s.Equal("QmcvEg7jGvuxdsUFRUiE4VdrL2P1Yeju5L83BsJvvXz7zX", topology.Peers[2].ID.String())
 }
 
 func (s *TopologyTestSuite) Test_ProcessRawTopology_InvalidPeerAddress() {

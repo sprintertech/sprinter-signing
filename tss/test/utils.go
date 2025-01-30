@@ -8,17 +8,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
 	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
 	"github.com/stretchr/testify/suite"
 
-	mock_comm "github.com/ChainSafe/sygma-relayer/comm/mock"
-	mock_tss "github.com/ChainSafe/sygma-relayer/tss/mock"
+	mock_comm "github.com/sprintertech/sprinter-signing/comm/mock"
+	mock_tss "github.com/sprintertech/sprinter-signing/tss/mock"
 )
 
 type CoordinatorTestSuite struct {
@@ -91,10 +91,10 @@ func SetupCommunication(commMap map[peer.ID]*TestCommunication) {
 	for self, comm := range commMap {
 		peerComms := make(map[string]Receiver)
 		for p, otherComm := range commMap {
-			if self.Pretty() == p.Pretty() {
+			if self.String() == p.String() {
 				continue
 			}
-			peerComms[p.Pretty()] = otherComm
+			peerComms[p.String()] = otherComm
 		}
 		comm.PeerCommunications = peerComms
 	}

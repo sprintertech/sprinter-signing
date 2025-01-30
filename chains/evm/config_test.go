@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/chains/evm"
-	"github.com/ChainSafe/sygma-relayer/config/chain"
+	"github.com/sprintertech/sprinter-signing/chains/evm"
+	"github.com/sprintertech/sprinter-signing/config/chain"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -52,7 +52,7 @@ func (s *NewEVMConfigTestSuite) Test_InvalidBlockConfirmation() {
 		"endpoint":           "ws://domain.com",
 		"name":               "evm1",
 		"from":               "address",
-		"bridge":             "bridgeAddress",
+		"admin":              "bridgeAddress",
 		"blockConfirmations": -1,
 	})
 
@@ -67,6 +67,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		"name":        "evm1",
 		"from":        "address",
 		"bridge":      "bridgeAddress",
+		"admin":       "adminAddress",
 		"frostKeygen": "frostKeygen",
 	}
 
@@ -81,17 +82,10 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 			Endpoint: "ws://domain.com",
 			Id:       id,
 		},
-		Bridge:                "bridgeAddress",
-		FrostKeygen:           "frostKeygen",
-		GasLimit:              big.NewInt(15000000),
-		TransferGas:           250000,
-		MaxGasPrice:           big.NewInt(500000000000),
-		GasMultiplier:         big.NewFloat(1),
-		GasIncreasePercentage: big.NewInt(15),
-		StartBlock:            big.NewInt(0),
-		BlockConfirmations:    big.NewInt(10),
-		BlockInterval:         big.NewInt(5),
-		BlockRetryInterval:    time.Duration(5) * time.Second,
+		BlockConfirmations: big.NewInt(10),
+		BlockInterval:      big.NewInt(5),
+		BlockRetryInterval: time.Duration(5) * time.Second,
+		Admin:              "adminAddress",
 	})
 }
 
@@ -102,6 +96,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"name":        "evm1",
 		"from":        "address",
 		"bridge":      "bridgeAddress",
+		"admin":       "adminAddress",
 		"retry":       "retryAddress",
 		"frostKeygen": "frostKeygen",
 		"handlers": []evm.HandlerConfig{
@@ -136,27 +131,9 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 			Endpoint: "ws://domain.com",
 			Id:       id,
 		},
-		Bridge:      "bridgeAddress",
-		Retry:       "retryAddress",
-		FrostKeygen: "frostKeygen",
-		Handlers: []evm.HandlerConfig{
-			{
-				Type:    "erc20",
-				Address: "address1",
-			},
-			{
-				Type:    "erc721",
-				Address: "address2",
-			},
-		},
-		GasLimit:              big.NewInt(1000),
-		TransferGas:           300000,
-		MaxGasPrice:           big.NewInt(1000),
-		GasMultiplier:         big.NewFloat(1000),
-		GasIncreasePercentage: big.NewInt(20),
-		StartBlock:            big.NewInt(1000),
-		BlockConfirmations:    big.NewInt(10),
-		BlockInterval:         big.NewInt(2),
-		BlockRetryInterval:    time.Duration(10) * time.Second,
+		BlockConfirmations: big.NewInt(10),
+		BlockInterval:      big.NewInt(2),
+		BlockRetryInterval: time.Duration(10) * time.Second,
+		Admin:              "adminAddress",
 	})
 }

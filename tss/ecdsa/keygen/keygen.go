@@ -8,9 +8,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/keyshare"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -18,6 +15,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/keyshare"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
 )
 
 type ECDSAKeyshareStorer interface {
@@ -73,7 +73,7 @@ func (k *Keygen) Run(
 	k.PopulatePartyStore(parties)
 
 	pCtx := tss.NewPeerContext(parties)
-	tssParams, err := tss.NewParameters(tss.S256(), pCtx, k.PartyStore[k.Host.ID().Pretty()], len(parties), k.threshold)
+	tssParams, err := tss.NewParameters(tss.S256(), pCtx, k.PartyStore[k.Host.ID().String()], len(parties), k.threshold)
 	if err != nil {
 		return err
 	}

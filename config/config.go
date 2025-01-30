@@ -9,9 +9,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
 	"github.com/creasty/defaults"
 	"github.com/imdario/mergo"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

@@ -6,7 +6,7 @@ package message_test
 import (
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/tss/message"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/stretchr/testify/suite"
 )
 

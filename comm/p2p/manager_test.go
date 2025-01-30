@@ -6,11 +6,11 @@ package p2p_test
 import (
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/comm/p2p"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
 
-	mock_network "github.com/ChainSafe/sygma-relayer/comm/p2p/mock/stream"
 	"github.com/golang/mock/gomock"
+	mock_network "github.com/sprintertech/sprinter-signing/comm/p2p/mock/stream"
 	"github.com/stretchr/testify/suite"
 )
 

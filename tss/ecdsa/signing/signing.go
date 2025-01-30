@@ -20,11 +20,11 @@ import (
 	"github.com/sourcegraph/conc/pool"
 	"golang.org/x/exp/slices"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
-	"github.com/ChainSafe/sygma-relayer/keyshare"
-	errors "github.com/ChainSafe/sygma-relayer/tss"
-	"github.com/ChainSafe/sygma-relayer/tss/ecdsa/common"
-	"github.com/ChainSafe/sygma-relayer/tss/util"
+	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/keyshare"
+	errors "github.com/sprintertech/sprinter-signing/tss"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
+	"github.com/sprintertech/sprinter-signing/tss/util"
 )
 
 type SaveDataFetcher interface {
@@ -98,7 +98,7 @@ func (s *Signing) Run(
 	parties := common.PartiesFromPeers(s.Peers)
 	s.PopulatePartyStore(parties)
 	pCtx := tss.NewPeerContext(parties)
-	tssParams, err := tss.NewParameters(tss.S256(), pCtx, s.PartyStore[s.Host.ID().Pretty()], len(parties), s.key.Threshold)
+	tssParams, err := tss.NewParameters(tss.S256(), pCtx, s.PartyStore[s.Host.ID().String()], len(parties), s.key.Threshold)
 	if err != nil {
 		return err
 	}

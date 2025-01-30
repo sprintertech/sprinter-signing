@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ChainSafe/sygma-relayer/keyshare"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/stretchr/testify/suite"
 	"github.com/taurusgroup/multi-party-sig/pkg/math/curve"
 	"github.com/taurusgroup/multi-party-sig/pkg/party"
@@ -57,7 +57,7 @@ func (s *FrostKeyshareStoreTestSuite) Test_StoreAndRetrieveShare() {
 	peers := []peer.ID{peer1, peer2}
 
 	keyshare := keyshare.NewFrostKeyshare(&frost.TaprootConfig{
-		ID:                 party.ID(peer1.Pretty()),
+		ID:                 party.ID(peer1.String()),
 		Threshold:          1,
 		PrivateShare:       privateShare,
 		VerificationShares: verificationShares,

@@ -7,9 +7,9 @@ package mock_comm
 import (
 	reflect "reflect"
 
-	comm "github.com/ChainSafe/sygma-relayer/comm"
 	gomock "github.com/golang/mock/gomock"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	comm "github.com/sprintertech/sprinter-signing/comm"
 )
 
 // MockCommunication is a mock of Communication interface.

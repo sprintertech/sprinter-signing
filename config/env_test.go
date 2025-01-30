@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/ChainSafe/sygma-relayer/config/relayer"
+	"github.com/sprintertech/sprinter-signing/config/relayer"
 )
 
 type LoadFromEnvTestSuite struct {

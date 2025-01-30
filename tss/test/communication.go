@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ChainSafe/sygma-relayer/comm"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/sprintertech/sprinter-signing/comm"
 )
 
 type Receiver interface {
@@ -39,11 +39,11 @@ func (tc *TestCommunication) Broadcast(
 
 	time.Sleep(100 * time.Millisecond)
 	for _, peer := range peers {
-		if tc.PeerCommunications[peer.Pretty()] == nil {
+		if tc.PeerCommunications[peer.String()] == nil {
 			continue
 		}
 
-		go tc.PeerCommunications[peer.Pretty()].ReceiveMessage(&wMsg, msgType, sessionID)
+		go tc.PeerCommunications[peer.String()].ReceiveMessage(&wMsg, msgType, sessionID)
 	}
 
 	return nil
