@@ -24,18 +24,15 @@ type ChainClient interface {
 }
 
 type Listener struct {
-	client   ChainClient
-	abi      abi.ABI
-	retryAbi abi.ABI
+	client ChainClient
+	abi    abi.ABI
 }
 
 func NewListener(client ChainClient) *Listener {
-	retryAbi, _ := abi.JSON(strings.NewReader(consts.RetryABI))
 	abi, _ := abi.JSON(strings.NewReader(consts.BridgeABI))
 	return &Listener{
-		client:   client,
-		abi:      abi,
-		retryAbi: retryAbi,
+		client: client,
+		abi:    abi,
 	}
 }
 
