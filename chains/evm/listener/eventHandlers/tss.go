@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/comm/p2p"
@@ -86,7 +87,7 @@ func (eh *KeygenEventHandler) HandleEvents(
 
 	keygenBlockNumber := big.NewInt(0).SetUint64(keygenEvents[0].BlockNumber)
 	keygen := keygen.NewKeygen(eh.sessionID(keygenBlockNumber), eh.threshold, eh.host, eh.communication, eh.storer)
-	err = eh.coordinator.Execute(context.Background(), []tss.TssProcess{keygen}, make(chan interface{}, 1))
+	err = eh.coordinator.Execute(context.Background(), []tss.TssProcess{keygen}, make(chan interface{}, 1), peer.ID(""))
 	if err != nil {
 		log.Err(err).Msgf("Failed executing keygen")
 	}
@@ -178,7 +179,7 @@ func (eh *RefreshEventHandler) HandleEvents(
 	resharing := resharing.NewResharing(
 		eh.sessionID(startBlock), topology.Threshold, eh.host, eh.communication, eh.ecdsaStorer,
 	)
-	err = eh.coordinator.Execute(context.Background(), []tss.TssProcess{resharing}, make(chan interface{}, 1))
+	err = eh.coordinator.Execute(context.Background(), []tss.TssProcess{resharing}, make(chan interface{}, 1), peer.ID(""))
 	if err != nil {
 		log.Err(err).Msgf("Failed executing ecdsa key refresh")
 		return nil
