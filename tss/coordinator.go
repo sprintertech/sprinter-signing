@@ -72,7 +72,7 @@ func NewCoordinator(
 // Execute calculates process leader and coordinates party readiness and start the tss processes.
 // Array of processes can be passed if all the processes have to have the same peer subset and
 // the result of all of them is needed. The processes should have an unique session ID for each one.
-func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, resultChn chan interface{}) error {
+func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, resultChn chan interface{}, coordinator peer.ID) error {
 	sessionID := tssProcesses[0].SessionID()
 	value, ok := c.pendingProcesses[sessionID]
 	if ok && value {
@@ -98,7 +98,9 @@ func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, re
 	}()
 
 	coordinatorElector := c.electorFactory.CoordinatorElector(sessionID, elector.Static)
-	coordinator, _ := coordinatorElector.Coordinator(ctx, tssProcesses[0].ValidCoordinators())
+	if coordinator.String() == "" {
+		coordinator, _ = coordinatorElector.Coordinator(ctx, tssProcesses[0].ValidCoordinators())
+	}
 
 	log.Info().Str("SessionID", sessionID).Msgf("Starting process with coordinator %s", coordinator.String())
 
