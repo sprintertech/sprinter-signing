@@ -14,6 +14,7 @@ import (
 	tssCommon "github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/tss"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
@@ -31,6 +32,11 @@ type SaveDataFetcher interface {
 	GetKeyshare() (keyshare.ECDSAKeyshare, error)
 	LockKeyshare()
 	UnlockKeyshare()
+}
+
+type EcdsaSignature struct {
+	Signature []byte
+	ID        string
 }
 
 type Signing struct {
@@ -194,9 +200,18 @@ func (s *Signing) processEndMessage(ctx context.Context, endChn chan tssCommon.S
 		//nolint
 		case sig := <-endChn:
 			{
+
 				s.Log.Info().Msg("Successfully generated signature")
 
-				s.resultChn <- &sig
+				es := []byte{}
+				es = append(es[:], ethCommon.LeftPadBytes(sig.R, 32)...)
+				es = append(es[:], ethCommon.LeftPadBytes(sig.S, 32)...)
+				es = append(es[:], sig.SignatureRecovery...)
+
+				s.resultChn <- EcdsaSignature{
+					Signature: es,
+					ID:        s.SID,
+				}
 				return nil
 			}
 		case <-ctx.Done():
