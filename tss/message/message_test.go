@@ -4,6 +4,7 @@
 package message_test
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/sprintertech/sprinter-signing/tss/message"
@@ -58,7 +59,7 @@ type SignatureMessageTestSuite struct {
 }
 
 func TestRunSignatureMessageTestSuite(t *testing.T) {
-	suite.Run(t, new(StartMessageTestSuite))
+	suite.Run(t, new(SignatureMessageTestSuite))
 }
 
 func (s *SignatureMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
@@ -70,6 +71,29 @@ func (s *SignatureMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
 	s.Nil(err)
 
 	unmarshaledMsg, err := message.UnmarshalSignatureMessage(msgBytes)
+	s.Nil(err)
+
+	s.Equal(originalMsg, unmarshaledMsg)
+}
+
+type AcrossMessageTestSuite struct {
+	suite.Suite
+}
+
+func TestRunAcrossMessageTestSuite(t *testing.T) {
+	suite.Run(t, new(AcrossMessageTestSuite))
+}
+
+func (s *AcrossMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
+	originalMsg := &message.AcrossMessage{
+		DepositId:   big.NewInt(100),
+		Source:      1,
+		Destination: 2,
+	}
+	msgBytes, err := message.MarshalAcrossMessage(originalMsg.DepositId, originalMsg.Source, originalMsg.Destination)
+	s.Nil(err)
+
+	unmarshaledMsg, err := message.UnmarshalAcrossMessage(msgBytes)
 	s.Nil(err)
 
 	s.Equal(originalMsg, unmarshaledMsg)

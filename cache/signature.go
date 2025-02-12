@@ -18,9 +18,7 @@ const (
 
 type SignatureCache struct {
 	sigCache *ttlcache.Cache[string, []byte]
-
-	comm  comm.Communication
-	subID comm.SubscriptionID
+	comm     comm.Communication
 }
 
 func NewSignatureCache(ctx context.Context, c comm.Communication, sigChn chan interface{}) *SignatureCache {
@@ -28,17 +26,13 @@ func NewSignatureCache(ctx context.Context, c comm.Communication, sigChn chan in
 		ttlcache.WithTTL[string, []byte](SIGNATURE_TTL),
 	)
 
-	msgChn := make(chan *comm.WrappedMessage)
-	subID := c.Subscribe(comm.SignatureSessionID, comm.SignatureMsg, msgChn)
-
 	sc := &SignatureCache{
 		sigCache: cache,
-		subID:    subID,
 		comm:     c,
 	}
 
 	go cache.Start()
-	go sc.watch(ctx, sigChn, msgChn)
+	go sc.watch(ctx, sigChn)
 	return sc
 }
 
@@ -51,7 +45,10 @@ func (s *SignatureCache) Signature(id string) ([]byte, error) {
 	return sig.Value(), nil
 }
 
-func (s *SignatureCache) watch(ctx context.Context, sigChn chan interface{}, msgChn chan *comm.WrappedMessage) {
+func (s *SignatureCache) watch(ctx context.Context, sigChn chan interface{}) {
+	msgChn := make(chan *comm.WrappedMessage)
+	subID := s.comm.Subscribe(comm.SignatureSessionID, comm.SignatureMsg, msgChn)
+
 	for {
 		select {
 		case sig := <-sigChn:
@@ -73,7 +70,7 @@ func (s *SignatureCache) watch(ctx context.Context, sigChn chan interface{}, msg
 		case <-ctx.Done():
 			{
 				s.sigCache.Stop()
-				s.comm.UnSubscribe(s.subID)
+				s.comm.UnSubscribe(subID)
 				return
 			}
 		}

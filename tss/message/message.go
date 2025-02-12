@@ -5,6 +5,7 @@ package message
 
 import (
 	"encoding/json"
+	"math/big"
 )
 
 type TssMessage struct {
@@ -84,6 +85,37 @@ func MarshalSignatureMessage(id string, signature []byte) ([]byte, error) {
 
 func UnmarshalSignatureMessage(msgBytes []byte) (*SignatureMessage, error) {
 	msg := &SignatureMessage{}
+	err := json.Unmarshal(msgBytes, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+type AcrossMessage struct {
+	DepositId   *big.Int `json:"depositId"`
+	Source      uint8    `json:"source"`
+	Destination uint8    `json:"destination"`
+}
+
+func MarshalAcrossMessage(depositId *big.Int, source, destination uint8) ([]byte, error) {
+	signatureMessage := &AcrossMessage{
+		DepositId:   depositId,
+		Source:      source,
+		Destination: destination,
+	}
+
+	msgBytes, err := json.Marshal(signatureMessage)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return msgBytes, nil
+}
+
+func UnmarshalAcrossMessage(msgBytes []byte) (*AcrossMessage, error) {
+	msg := &AcrossMessage{}
 	err := json.Unmarshal(msgBytes, msg)
 	if err != nil {
 		return nil, err

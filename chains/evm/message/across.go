@@ -11,10 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
+	tssMessage "github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
@@ -28,7 +31,8 @@ type EventFilterer interface {
 }
 
 type AcrossData struct {
-	depositId *big.Int
+	depositId   *big.Int
+	coordinator peer.ID
 }
 
 func NewAcrossMessage(source uint8, destination uint8, acrossData AcrossData) *message.Message {
@@ -47,12 +51,44 @@ type AcrossMessageHandler struct {
 	across common.Address
 	abi    abi.ABI
 
-	coordinator   *tss.Coordinator
-	host          host.Host
-	communication comm.Communication
-	fetcher       signing.SaveDataFetcher
+	coordinator *tss.Coordinator
+	host        host.Host
+	comm        comm.Communication
+	fetcher     signing.SaveDataFetcher
 
-	resultChn chan interface{}
+	sigChn chan interface{}
+}
+
+func (h *AcrossMessageHandler) Listen(ctx context.Context) {
+	msgChn := make(chan *comm.WrappedMessage)
+	subID := h.comm.Subscribe(comm.AcrossSessionID, comm.AcrossMsg, msgChn)
+
+	for {
+		select {
+		case wMsg := <-msgChn:
+			{
+				acrossMsg, err := tssMessage.UnmarshalAcrossMessage(wMsg.Payload)
+				if err != nil {
+					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
+					continue
+				}
+
+				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, AcrossData{
+					depositId:   acrossMsg.DepositId,
+					coordinator: wMsg.From,
+				})
+				_, err = h.HandleMessage(msg)
+				if err != nil {
+					log.Err(err).Msgf("Failed handling across message %+v because of: %s", acrossMsg, err)
+				}
+			}
+		case <-ctx.Done():
+			{
+				h.comm.UnSubscribe(subID)
+				return
+			}
+		}
+	}
 }
 
 // HandleMessage finds the Across deposit with the according deposit ID and starts
@@ -60,6 +96,11 @@ type AcrossMessageHandler struct {
 // cache through the result channel.
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(AcrossData)
+	err := h.notify(m, data)
+	if err != nil {
+		return nil, err
+	}
+
 	d, err := h.deposit(data.depositId)
 	if err != nil {
 		return nil, err
@@ -70,17 +111,26 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		data.depositId.Text(16),
 		data.depositId.Text(16),
 		h.host,
-		h.communication,
+		h.comm,
 		h.fetcher)
 	if err != nil {
 		return nil, err
 	}
 
-	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.resultChn, h.host.ID())
+	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.coordinator)
 	if err != nil {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
+	msgBytes, err := tssMessage.MarshalAcrossMessage(data.depositId, m.Source, m.Destination)
+	if err != nil {
+		return err
+	}
+
+	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, comm.AcrossSessionID)
 }
 
 func (h *AcrossMessageHandler) deposit(depositId *big.Int) (*events.AcrossDeposit, error) {
