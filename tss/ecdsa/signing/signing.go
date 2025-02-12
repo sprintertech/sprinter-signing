@@ -25,6 +25,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	errors "github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/sprintertech/sprinter-signing/tss/util"
 )
 
@@ -200,7 +201,6 @@ func (s *Signing) processEndMessage(ctx context.Context, endChn chan tssCommon.S
 		//nolint
 		case sig := <-endChn:
 			{
-
 				s.Log.Info().Msg("Successfully generated signature")
 
 				es := []byte{}
@@ -211,6 +211,11 @@ func (s *Signing) processEndMessage(ctx context.Context, endChn chan tssCommon.S
 				s.resultChn <- EcdsaSignature{
 					Signature: es,
 					ID:        s.SID,
+				}
+
+				err := s.distributeSignature(es)
+				if err != nil {
+					log.Warn().Msgf("Failed distributing signature: %s", err)
 				}
 				return nil
 			}
@@ -267,4 +272,18 @@ func (s *Signing) monitorSigning(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (s *Signing) distributeSignature(sig []byte) error {
+	if s.coordinator {
+		return nil
+	}
+
+	sigMsg, err := message.MarshalSignatureMessage(s.SessionID(), sig)
+	if err != nil {
+		return err
+	}
+
+	err = s.Communication.Broadcast(s.Host.Peerstore().Peers(), sigMsg, comm.SignatureMsg, comm.SignatureSessionID)
+	return err
 }

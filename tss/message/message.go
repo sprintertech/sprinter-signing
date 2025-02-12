@@ -62,3 +62,32 @@ func UnmarshalStartMessage(msgBytes []byte) (*StartMessage, error) {
 
 	return msg, nil
 }
+
+type SignatureMessage struct {
+	Signature []byte `json:"signature"`
+	ID        string `json:"id"`
+}
+
+func MarshalSignatureMessage(id string, signature []byte) ([]byte, error) {
+	signatureMessage := &SignatureMessage{
+		Signature: signature,
+		ID:        id,
+	}
+
+	msgBytes, err := json.Marshal(signatureMessage)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return msgBytes, nil
+}
+
+func UnmarshalSignatureMessage(msgBytes []byte) (*SignatureMessage, error) {
+	msg := &SignatureMessage{}
+	err := json.Unmarshal(msgBytes, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}

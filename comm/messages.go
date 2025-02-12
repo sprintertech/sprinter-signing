@@ -33,8 +33,14 @@ const (
 	CoordinatorPingMsg
 	// CoordinatorPingResponseMsg message type used to respond on CoordinatorPingMsg message.
 	CoordinatorPingResponseMsg
+	// SignatureMsg message type is used to the share the signature to all relayers
+	SignatureMsg
 	// Unknown message type
 	Unknown
+)
+
+const (
+	SignatureSessionID = "signatures"
 )
 
 // String implements fmt.Stringer

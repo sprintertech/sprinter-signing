@@ -52,3 +52,25 @@ func (s *StartMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
 
 	s.Equal(originalMsg, unmarshaledMsg)
 }
+
+type SignatureMessageTestSuite struct {
+	suite.Suite
+}
+
+func TestRunSignatureMessageTestSuite(t *testing.T) {
+	suite.Run(t, new(StartMessageTestSuite))
+}
+
+func (s *SignatureMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
+	originalMsg := &message.SignatureMessage{
+		ID:        "id",
+		Signature: []byte("test"),
+	}
+	msgBytes, err := message.MarshalSignatureMessage(originalMsg.ID, originalMsg.Signature)
+	s.Nil(err)
+
+	unmarshaledMsg, err := message.UnmarshalSignatureMessage(msgBytes)
+	s.Nil(err)
+
+	s.Equal(originalMsg, unmarshaledMsg)
+}
