@@ -9,7 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
@@ -24,6 +27,11 @@ import (
 
 const (
 	AcrossMessage = "AcrossMessage"
+
+	DOMAIN_NAME     = ""
+	VERSION         = "v1.0.0"
+	BORROW_TYPEHASH = "Borrow(address borrowToken,uint256 amount,address target,bytes targetCallData,uint256 nonce,uint256 deadline)"
+	PROTOCOL_ID     = 1
 )
 
 type EventFilterer interface {
@@ -45,10 +53,16 @@ func NewAcrossMessage(source uint8, destination uint8, acrossData AcrossData) *m
 	}
 }
 
+type Coordinator interface {
+	Execute(ctx context.Context, tssProcesses []tss.TssProcess, resultChn chan interface{}, coordinator peer.ID) error
+}
+
 type AcrossMessageHandler struct {
-	client EventFilterer
+	client        EventFilterer
+	sourceChainID *big.Int
 
 	across common.Address
+	pools  map[uint64]common.Address
 	abi    abi.ABI
 
 	coordinator *tss.Coordinator
@@ -106,8 +120,13 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
+	unlockHash, err := h.unlockHash(d)
+	if err != nil {
+		return nil, err
+	}
+
 	signing, err := signing.NewSigning(
-		d.DepositId,
+		new(big.Int).SetBytes(unlockHash),
 		data.depositId.Text(16),
 		data.depositId.Text(16),
 		h.host,
@@ -160,4 +179,63 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	var d *events.AcrossDeposit
 	err := h.abi.UnpackIntoInterface(&d, "V3FundsDeposited", l.Data)
 	return d, err
+}
+
+func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit) ([]byte, error) {
+	calldata, err := deposit.ToV3RelayData(h.sourceChainID).Calldata()
+	if err != nil {
+		return []byte{}, nil
+	}
+
+	encodedData := crypto.Keccak256(
+		crypto.Keccak256(
+			[]byte(
+				"Borrow(address borrowToken,uint256 amount,address target,bytes targetCallData,uint256 nonce,uint256 deadline)",
+			),
+		),
+		deposit.OutputToken[12:],
+		deposit.OutputAmount.Bytes(),
+		deposit.Recipient[12:],
+		calldata,
+		common.LeftPadBytes(h.nonce(deposit).Bytes(), 32),
+		new(big.Int).SetUint64(uint64(deposit.FillDeadline)).Bytes(),
+	)
+
+	poolAddress := h.pools[h.sourceChainID.Uint64()]
+	typedData := apitypes.TypedData{
+		Domain: apitypes.TypedDataDomain{
+			Name:              DOMAIN_NAME,
+			ChainId:           math.NewHexOrDecimal256(deposit.DestinationChainId.Int64()),
+			Version:           VERSION,
+			VerifyingContract: poolAddress.Hex(),
+		},
+	}
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	if err != nil {
+		return []byte{}, err
+	}
+
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(encodedData)))
+	return crypto.Keccak256(rawData), nil
+}
+
+// nonce creates a unique ID from the across deposit id, origin chain id and protocol id.
+// Resulting id has this format: [originChainID (8 bits)][protocolID (8 bits)][nonce (240 bits)].
+func (h *AcrossMessageHandler) nonce(deposit *events.AcrossDeposit) *big.Int {
+	// Create a new big.Int
+	nonce := new(big.Int)
+
+	// Set originChainID (64 bits)
+	nonce.SetInt64(h.sourceChainID.Int64())
+	nonce.Lsh(nonce, 256) // Shift left by 320 bits (248 + 8)
+
+	// Add protocolID in the middle (shifted left by 248 bits)
+	protocolInt := big.NewInt(PROTOCOL_ID)
+	protocolInt.Lsh(protocolInt, 248)
+	nonce.Or(nonce, protocolInt)
+
+	// Add nonce at the end
+	nonce.Or(nonce, deposit.DepositId)
+
+	return nonce
 }

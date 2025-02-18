@@ -5,9 +5,12 @@ package events
 
 import (
 	"math/big"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 )
 
 type EventSig string
@@ -34,14 +37,54 @@ type AcrossDeposit struct {
 	OutputToken         [32]byte
 	InputAmount         *big.Int
 	OutputAmount        *big.Int
-	RepaymentChainId    *big.Int
-	OriginChainId       *big.Int
+	DestinationChainId  *big.Int
 	DepositId           *big.Int
 	QuoteTimestamp      uint32
-	FillDeadline        uint32
 	ExclusivityDeadline uint32
+	FillDeadline        uint32
 	Depositor           [32]byte
 	Recipient           [32]byte
-	ExclusiveRelayer    common.Address
+	ExclusiveRelayer    [32]byte
 	Message             []byte
+}
+
+func (a *AcrossDeposit) ToV3RelayData(originChainID *big.Int) *AcrossV3RelayData {
+	return &AcrossV3RelayData{
+		Depositor:           a.Depositor,
+		Recipient:           a.Recipient,
+		ExclusiveRelayer:    a.ExclusiveRelayer,
+		InputToken:          a.InputToken,
+		OutputToken:         a.OutputToken,
+		InputAmount:         a.InputAmount,
+		OutputAmount:        a.OutputAmount,
+		OriginChainId:       originChainID,
+		DepositId:           a.DepositId,
+		FillDeadline:        a.FillDeadline,
+		ExclusivityDeadline: a.ExclusivityDeadline,
+		Message:             a.Message,
+	}
+}
+
+type AcrossV3RelayData struct {
+	Depositor           [32]byte
+	Recipient           [32]byte
+	ExclusiveRelayer    [32]byte
+	InputToken          [32]byte
+	OutputToken         [32]byte
+	InputAmount         *big.Int
+	OutputAmount        *big.Int
+	OriginChainId       *big.Int
+	DepositId           *big.Int
+	FillDeadline        uint32
+	ExclusivityDeadline uint32
+	Message             []byte
+}
+
+func (a *AcrossV3RelayData) Calldata() ([]byte, error) {
+	abi, _ := abi.JSON(strings.NewReader(consts.SpokePoolABI))
+	input, err := abi.Pack("fillRelay", a)
+	if err != nil {
+		return []byte{}, err
+	}
+	return input, nil
 }
