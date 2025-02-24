@@ -26,6 +26,7 @@ test:
 genmocks:
 	mockgen -destination=./tss/ecdsa/common/mock/tss.go github.com/binance-chain/tss-lib/tss Message
 	mockgen -destination=./tss/ecdsa/common/mock/communication.go -source=./tss/ecdsa/common/base.go -package mock_tss
+	mockgen -destination=./tss/ecdsa/common/mock/fetcher.go -source=./tss/ecdsa/signing/signing.go -package mock_tss
 	mockgen --package mock_tss -destination=./tss/mock/ecdsa.go -source=./tss/ecdsa/keygen/keygen.go
 	mockgen -source=./tss/coordinator.go -destination=./tss/mock/coordinator.go
 	mockgen -source=./comm/communication.go -destination=./comm/mock/communication.go
@@ -34,6 +35,7 @@ genmocks:
 	mockgen -destination=./comm/p2p/mock/host/host.go github.com/libp2p/go-libp2p/core/host Host
 	mockgen -destination=./comm/p2p/mock/conn/conn.go github.com/libp2p/go-libp2p/core/network Conn
 	mockgen -destination=./comm/p2p/mock/stream/stream.go github.com/libp2p/go-libp2p/core/network Stream,Conn
+	mockgen -source=./chains/evm/message/across.go -destination=./chains/evm/message/mock/across.go
 
 
 

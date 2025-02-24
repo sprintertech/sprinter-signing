@@ -23,7 +23,7 @@ const (
 	StartKeygenSig EventSig = "StartKeygen()"
 	KeyRefreshSig  EventSig = "KeyRefresh(string)"
 
-	AcrossDepositSig EventSig = "FundsDeposited(address,address,uint256,uin256,uint256,uint32,uint32,uint32,uint32,address,address,address,bytes)"
+	AcrossDepositSig EventSig = "FundsDeposited(bytes32,bytes32,uint256,uint256,uint256,uint256,uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes)"
 )
 
 // Refresh struct holds key refresh event data
@@ -80,9 +80,9 @@ type AcrossV3RelayData struct {
 	Message             []byte
 }
 
-func (a *AcrossV3RelayData) Calldata() ([]byte, error) {
+func (a *AcrossV3RelayData) Calldata(repaymentChainID *big.Int, repaymentAddress common.Address) ([]byte, error) {
 	abi, _ := abi.JSON(strings.NewReader(consts.SpokePoolABI))
-	input, err := abi.Pack("fillRelay", a)
+	input, err := abi.Pack("fillRelay", a, repaymentChainID, [32]byte(common.LeftPadBytes(repaymentAddress.Bytes(), 32)))
 	if err != nil {
 		return []byte{}, err
 	}

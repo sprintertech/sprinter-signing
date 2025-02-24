@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sprintertech/sprinter-signing/config/relayer"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
 	mock_topology "github.com/sprintertech/sprinter-signing/topology/mock"
 )

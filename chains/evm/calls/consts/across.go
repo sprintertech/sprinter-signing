@@ -86,6 +86,91 @@ const SpokePoolABI = `
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
-  }
+  },
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "bytes32",
+      "name": "inputToken",
+      "type": "bytes32"
+    },
+    {
+      "indexed": false,
+      "internalType": "bytes32",
+      "name": "outputToken",
+      "type": "bytes32"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "inputAmount",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "outputAmount",
+      "type": "uint256"
+    },
+    {
+      "indexed": true,
+      "internalType": "uint256",
+      "name": "destinationChainId",
+      "type": "uint256"
+    },
+    {
+      "indexed": true,
+      "internalType": "uint256",
+      "name": "depositId",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint32",
+      "name": "quoteTimestamp",
+      "type": "uint32"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint32",
+      "name": "fillDeadline",
+      "type": "uint32"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint32",
+      "name": "exclusivityDeadline",
+      "type": "uint32"
+    },
+    {
+      "indexed": true,
+      "internalType": "bytes32",
+      "name": "depositor",
+      "type": "bytes32"
+    },
+    {
+      "indexed": false,
+      "internalType": "bytes32",
+      "name": "recipient",
+      "type": "bytes32"
+    },
+    {
+      "indexed": false,
+      "internalType": "bytes32",
+      "name": "exclusiveRelayer",
+      "type": "bytes32"
+    },
+    {
+      "indexed": false,
+      "internalType": "bytes",
+      "name": "message",
+      "type": "bytes"
+    }
+  ],
+  "name": "FundsDeposited",
+  "type": "event"
+}
 ]
 `

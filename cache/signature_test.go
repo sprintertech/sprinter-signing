@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/sprintertech/sprinter-signing/cache"
 	"github.com/sprintertech/sprinter-signing/comm"
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 type SignatureCacheTestSuite struct {
