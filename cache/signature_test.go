@@ -31,7 +31,7 @@ func TestRunSignatureCacheTestSuite(t *testing.T) {
 func (s *SignatureCacheTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 
-	s.sigChn = make(chan interface{})
+	s.sigChn = make(chan interface{}, 1)
 
 	s.mockCommunication = mock_communication.NewMockCommunication(ctrl)
 	s.mockCommunication.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(sessionID string, msgType comm.MessageType, channel chan *comm.WrappedMessage) comm.SubscriptionID {
@@ -44,6 +44,7 @@ func (s *SignatureCacheTestSuite) SetupTest() {
 	s.cancel = cancel
 
 	s.sc = cache.NewSignatureCache(ctx, s.mockCommunication, s.sigChn)
+	time.Sleep(time.Millisecond * 100)
 }
 func (s *SignatureCacheTestSuite) TearDownTest() {
 	s.cancel()
@@ -78,6 +79,7 @@ func (s *SignatureCacheTestSuite) Test_Signature_ValidMessage() {
 	wMsg := &comm.WrappedMessage{
 		Payload: wMsgBytes,
 	}
+
 	s.msgChn <- wMsg
 	time.Sleep(time.Millisecond * 100)
 

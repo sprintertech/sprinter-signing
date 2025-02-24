@@ -31,8 +31,8 @@ func NewSignatureCache(ctx context.Context, c comm.Communication, sigChn chan in
 		comm:     c,
 	}
 
-	go cache.Start()
 	go sc.watch(ctx, sigChn)
+	go cache.Start()
 	return sc
 }
 
