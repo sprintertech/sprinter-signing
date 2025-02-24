@@ -63,7 +63,7 @@ func (s *SigningTestSuite) Test_ValidSigningProcess() {
 	for i, coordinator := range coordinators {
 		coordinator := coordinator
 		pool.Go(func(ctx context.Context) error {
-			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn)
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, peer.ID(""))
 		})
 	}
 
@@ -73,6 +73,60 @@ func (s *SigningTestSuite) Test_ValidSigningProcess() {
 	if sig1 == nil && sig2 == nil {
 		s.Fail("signature is nil")
 	}
+
+	time.Sleep(time.Millisecond * 100)
+	cancel()
+	err := pool.Wait()
+	s.Nil(err)
+}
+
+func (s *SigningTestSuite) Test_ValidSigningProcess_ManualCoordinator() {
+	communicationMap := make(map[peer.ID]*tsstest.TestCommunication)
+	coordinators := []*tss.Coordinator{}
+	processes := []tss.TssProcess{}
+
+	for i, host := range s.Hosts {
+		communication := tsstest.TestCommunication{
+			Host:          host,
+			Subscriptions: make(map[comm.SubscriptionID]chan *comm.WrappedMessage),
+		}
+		communicationMap[host.ID()] = &communication
+		fetcher := keyshare.NewECDSAKeyshareStore(fmt.Sprintf("../../test/keyshares/%d.keyshare", i))
+
+		msgBytes := []byte("Message")
+		msg := big.NewInt(0)
+		msg.SetBytes(msgBytes)
+		signing, err := signing.NewSigning(msg, "signing1", "signing1", host, &communication, fetcher)
+		if err != nil {
+			panic(err)
+		}
+		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		processes = append(processes, signing)
+	}
+	tsstest.SetupCommunication(communicationMap)
+
+	resultChn := make(chan interface{}, 2)
+
+	coordinatorPeerID := s.Hosts[1].ID()
+	ctx, cancel := context.WithCancel(context.Background())
+	pool := pool.New().WithContext(ctx)
+	for i, coordinator := range coordinators {
+		coordinator := coordinator
+
+		if s.Hosts[i].ID().String() == coordinatorPeerID.String() {
+			pool.Go(func(ctx context.Context) error {
+				return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, coordinatorPeerID)
+			})
+		} else {
+			pool.Go(func(ctx context.Context) error {
+				return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, make(chan interface{}, 1), coordinatorPeerID)
+			})
+		}
+	}
+
+	sig := <-resultChn
+	s.NotNil(sig)
 
 	time.Sleep(time.Millisecond * 100)
 	cancel()
@@ -113,7 +167,7 @@ func (s *SigningTestSuite) Test_SigningTimeout() {
 	for i, coordinator := range coordinators {
 		coordinator := coordinator
 		pool.Go(func(ctx context.Context) error {
-			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn)
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, peer.ID(""))
 		})
 	}
 
@@ -142,8 +196,12 @@ func (s *SigningTestSuite) Test_PendingProcessExists() {
 	s.MockECDSAStorer.EXPECT().UnlockKeyshare().AnyTimes()
 	pool := pool.New().WithContext(context.Background()).WithCancelOnError()
 	for i, coordinator := range coordinators {
-		pool.Go(func(ctx context.Context) error { return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, nil) })
-		pool.Go(func(ctx context.Context) error { return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, nil) })
+		pool.Go(func(ctx context.Context) error {
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, nil, peer.ID(""))
+		})
+		pool.Go(func(ctx context.Context) error {
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, nil, peer.ID(""))
+		})
 	}
 
 	err := pool.Wait()

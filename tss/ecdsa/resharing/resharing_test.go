@@ -69,7 +69,7 @@ func (s *ResharingTestSuite) Test_ValidResharingProcess_OldAndNewSubset() {
 	pool := pool.New().WithContext(context.Background()).WithCancelOnError()
 	for i, coordinator := range coordinators {
 		pool.Go(func(ctx context.Context) error {
-			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn)
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, peer.ID(""))
 		})
 	}
 
@@ -116,7 +116,7 @@ func (s *ResharingTestSuite) Test_ValidResharingProcess_RemovePeer() {
 	pool := pool.New().WithContext(context.Background()).WithCancelOnError()
 	for i, coordinator := range coordinators {
 		pool.Go(func(ctx context.Context) error {
-			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn)
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, peer.ID(""))
 		})
 	}
 
@@ -166,7 +166,7 @@ func (s *ResharingTestSuite) Test_InvalidResharingProcess_InvalidOldThreshold_Le
 	pool := pool.New().WithContext(context.Background())
 	for i, coordinator := range coordinators {
 		pool.Go(func(ctx context.Context) error {
-			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn)
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, peer.ID(""))
 		})
 	}
 	err := pool.Wait()
@@ -215,7 +215,7 @@ func (s *ResharingTestSuite) Test_InvalidResharingProcess_InvalidOldThreshold_Bi
 	pool := pool.New().WithContext(context.Background())
 	for i, coordinator := range coordinators {
 		pool.Go(func(ctx context.Context) error {
-			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn)
+			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, resultChn, peer.ID(""))
 		})
 	}
 
