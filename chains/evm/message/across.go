@@ -43,12 +43,11 @@ type EventFilterer interface {
 }
 
 type AcrossData struct {
-	DepositId     *big.Int
-	Coordinator   peer.ID
-	SourceChainId *big.Int
+	DepositId   *big.Int
+	Coordinator peer.ID
 }
 
-func NewAcrossMessage(source uint8, destination uint8, acrossData AcrossData) *message.Message {
+func NewAcrossMessage(source, destination uint64, acrossData AcrossData) *message.Message {
 	return &message.Message{
 		Source:      source,
 		Destination: destination,
@@ -110,9 +109,8 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 				}
 
 				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, AcrossData{
-					DepositId:     acrossMsg.DepositId,
-					SourceChainId: acrossMsg.SourceChainId,
-					Coordinator:   wMsg.From,
+					DepositId:   acrossMsg.DepositId,
+					Coordinator: wMsg.From,
 				})
 				_, err = h.HandleMessage(msg)
 				if err != nil {
@@ -133,17 +131,19 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 // cache through the result channel.
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(AcrossData)
+	sourceChainID := m.Destination
+
 	err := h.notify(m, data)
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := h.Deposit(data.DepositId, data.SourceChainId)
+	d, err := h.Deposit(data.DepositId, sourceChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	unlockHash, err := h.unlockHash(d, data.SourceChainId)
+	unlockHash, err := h.unlockHash(d, sourceChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 }
 
 func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
-	msgBytes, err := tssMessage.MarshalAcrossMessage(data.DepositId, data.SourceChainId, m.Source, m.Destination)
+	msgBytes, err := tssMessage.MarshalAcrossMessage(data.DepositId, m.Source, m.Destination)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, comm.AcrossSessionID)
 }
 
-func (h *AcrossMessageHandler) Deposit(depositId, sourceChainId *big.Int) (*events.AcrossDeposit, error) {
+func (h *AcrossMessageHandler) Deposit(depositId *big.Int, sourceChainId uint64) (*events.AcrossDeposit, error) {
 	latestBlock, err := h.client.LatestBlock()
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func (h *AcrossMessageHandler) Deposit(depositId, sourceChainId *big.Int) (*even
 		ToBlock:   latestBlock,
 		FromBlock: new(big.Int).Sub(latestBlock, big.NewInt(BLOCK_RANGE)),
 		Addresses: []common.Address{
-			h.pools[sourceChainId.Uint64()],
+			h.pools[sourceChainId],
 		},
 		Topics: [][]common.Hash{
 			{
@@ -228,9 +228,9 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	return d, err
 }
 
-func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceChainId *big.Int) ([]byte, error) {
+func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceChainId uint64) ([]byte, error) {
 	lpAddress := common.HexToAddress(LIQUIDITY_POOL)
-	calldata, err := deposit.ToV3RelayData(sourceChainId).Calldata(deposit.DestinationChainId, lpAddress)
+	calldata, err := deposit.ToV3RelayData(new(big.Int).SetUint64(sourceChainId)).Calldata(deposit.DestinationChainId, lpAddress)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -286,12 +286,12 @@ func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceC
 
 // nonce creates a unique ID from the across deposit id, origin chain id and protocol id.
 // Resulting id has this format: [originChainID (8 bits)][protocolID (8 bits)][nonce (240 bits)].
-func (h *AcrossMessageHandler) nonce(deposit *events.AcrossDeposit, sourceChainId *big.Int) *big.Int {
+func (h *AcrossMessageHandler) nonce(deposit *events.AcrossDeposit, sourceChainId uint64) *big.Int {
 	// Create a new big.Int
 	nonce := new(big.Int)
 
 	// Set originChainID (64 bits)
-	nonce.SetInt64(sourceChainId.Int64())
+	nonce.SetUint64(sourceChainId)
 	nonce.Lsh(nonce, 248) // Shift left by 248 bits (240 + 8)
 
 	// Add protocolID in the middle (shifted left by 240 bits)
