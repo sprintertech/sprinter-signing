@@ -23,17 +23,29 @@ func NewSigningHandler() *SigningHandler {
 	return &SigningHandler{}
 }
 
+// HandleSigning sends a message to the across message handler and returns status code 202
+// if the deposit has been accepted for the signing process
 func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	i := &SigningInput{}
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(i)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed reading request body: %s", err), http.StatusBadRequest)
+		JSONError(w, fmt.Sprintf("Failed reading request body: %s", err), http.StatusBadRequest)
 		return
 	}
 
+	errChn := make(chan error, 1)
 	am := across.NewAcrossMessage(0, i.ChainId, across.AcrossData{
 		DepositId: i.DepositId,
+		ErrChn:    errChn,
 	})
 	h.msgChan <- []*message.Message{am}
+
+	err = <-errChn
+	if err != nil {
+		JSONError(w, fmt.Sprintf("Singing failed: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
