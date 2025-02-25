@@ -131,6 +131,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 // cache through the result channel.
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(AcrossData)
+	data.Coordinator = h.host.ID()
 	sourceChainID := m.Destination
 
 	err := h.notify(m, data)
