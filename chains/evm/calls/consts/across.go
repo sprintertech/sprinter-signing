@@ -1,6 +1,12 @@
 package consts
 
-const SpokePoolABI = `
+import (
+	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+)
+
+var SpokePoolABI, _ = abi.JSON(strings.NewReader(`
 [
   {
     "inputs": [
@@ -173,4 +179,4 @@ const SpokePoolABI = `
   "type": "event"
 }
 ]
-`
+`))

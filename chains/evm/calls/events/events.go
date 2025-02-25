@@ -5,9 +5,7 @@ package events
 
 import (
 	"math/big"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
@@ -81,8 +79,7 @@ type AcrossV3RelayData struct {
 }
 
 func (a *AcrossV3RelayData) Calldata(repaymentChainID *big.Int, repaymentAddress common.Address) ([]byte, error) {
-	abi, _ := abi.JSON(strings.NewReader(consts.SpokePoolABI))
-	input, err := abi.Pack("fillRelay", a, repaymentChainID, [32]byte(common.LeftPadBytes(repaymentAddress.Bytes(), 32)))
+	input, err := consts.SpokePoolABI.Pack("fillRelay", a, repaymentChainID, [32]byte(common.LeftPadBytes(repaymentAddress.Bytes(), 32)))
 	if err != nil {
 		return []byte{}, err
 	}

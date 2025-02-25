@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -216,8 +214,7 @@ func (h *AcrossMessageHandler) Deposit(depositId *big.Int) (*events.AcrossDeposi
 
 func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit, error) {
 	d := &events.AcrossDeposit{}
-	abi, _ := abi.JSON(strings.NewReader(consts.SpokePoolABI))
-	err := abi.UnpackIntoInterface(d, "FundsDeposited", l.Data)
+	err := consts.SpokePoolABI.UnpackIntoInterface(d, "FundsDeposited", l.Data)
 	if err != nil {
 		return nil, err
 	}
