@@ -91,14 +91,15 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 
 func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 	rawConfig := map[string]interface{}{
-		"id":          1,
-		"endpoint":    "ws://domain.com",
-		"name":        "evm1",
-		"from":        "address",
-		"bridge":      "bridgeAddress",
-		"admin":       "adminAddress",
-		"retry":       "retryAddress",
-		"frostKeygen": "frostKeygen",
+		"id":            1,
+		"endpoint":      "ws://domain.com",
+		"name":          "evm1",
+		"from":          "address",
+		"bridge":        "bridgeAddress",
+		"admin":         "adminAddress",
+		"liquidityPool": "pool",
+		"retry":         "retryAddress",
+		"frostKeygen":   "frostKeygen",
 		"handlers": []evm.HandlerConfig{
 			{
 				Type:    "erc20",
@@ -135,5 +136,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		BlockInterval:      big.NewInt(2),
 		BlockRetryInterval: time.Duration(10) * time.Second,
 		Admin:              "adminAddress",
+		LiqudityPool:       "pool",
 	})
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -16,6 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/sprintertech/sprinter-signing/config/relayer"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 
 	mock_comm "github.com/sprintertech/sprinter-signing/comm/mock"
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/mock"
@@ -25,7 +25,6 @@ type CoordinatorTestSuite struct {
 	suite.Suite
 	GomockController  *gomock.Controller
 	MockECDSAStorer   *mock_tss.MockECDSAKeyshareStorer
-	MockFrostStorer   *mock_tss.MockFrostKeyshareStorer
 	MockCommunication *mock_comm.MockCommunication
 	MockTssProcess    *mock_tss.MockTssProcess
 
@@ -38,7 +37,6 @@ type CoordinatorTestSuite struct {
 func (s *CoordinatorTestSuite) SetupTest() {
 	s.GomockController = gomock.NewController(s.T())
 	s.MockECDSAStorer = mock_tss.NewMockECDSAKeyshareStorer(s.GomockController)
-	s.MockFrostStorer = mock_tss.NewMockFrostKeyshareStorer(s.GomockController)
 	s.MockCommunication = mock_comm.NewMockCommunication(s.GomockController)
 	s.MockTssProcess = mock_tss.NewMockTssProcess(s.GomockController)
 	s.PartyNumber = 3

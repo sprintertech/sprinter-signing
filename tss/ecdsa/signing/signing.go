@@ -14,6 +14,7 @@ import (
 	tssCommon "github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/tss"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
@@ -24,6 +25,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	errors "github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
+	"github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/sprintertech/sprinter-signing/tss/util"
 )
 
@@ -31,6 +33,11 @@ type SaveDataFetcher interface {
 	GetKeyshare() (keyshare.ECDSAKeyshare, error)
 	LockKeyshare()
 	UnlockKeyshare()
+}
+
+type EcdsaSignature struct {
+	Signature []byte
+	ID        string
 }
 
 type Signing struct {
@@ -196,12 +203,20 @@ func (s *Signing) processEndMessage(ctx context.Context, endChn chan tssCommon.S
 			{
 				s.Log.Info().Msg("Successfully generated signature")
 
-				if s.coordinator {
-					s.resultChn <- &sig
-				} else {
-					s.resultChn <- nil
+				es := []byte{}
+				es = append(es[:], ethCommon.LeftPadBytes(sig.R, 32)...)
+				es = append(es[:], ethCommon.LeftPadBytes(sig.S, 32)...)
+				es = append(es[:], sig.SignatureRecovery...)
+
+				s.resultChn <- EcdsaSignature{
+					Signature: es,
+					ID:        s.SID,
 				}
 
+				err := s.distributeSignature(es)
+				if err != nil {
+					log.Warn().Msgf("Failed distributing signature: %s", err)
+				}
 				return nil
 			}
 		case <-ctx.Done():
@@ -257,4 +272,18 @@ func (s *Signing) monitorSigning(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (s *Signing) distributeSignature(sig []byte) error {
+	if s.coordinator {
+		return nil
+	}
+
+	sigMsg, err := message.MarshalSignatureMessage(s.SessionID(), sig)
+	if err != nil {
+		return err
+	}
+
+	err = s.Communication.Broadcast(s.Host.Peerstore().Peers(), sigMsg, comm.SignatureMsg, comm.SignatureSessionID)
+	return err
 }
