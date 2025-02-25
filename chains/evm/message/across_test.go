@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
@@ -46,7 +47,10 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockCommunication = mock_communication.NewMockCommunication(ctrl)
 	s.mockCoordinator = mock_message.NewMockCoordinator(ctrl)
 	s.mockEventFilterer = mock_message.NewMockEventFilterer(ctrl)
+
 	s.mockHost = mock_host.NewMockHost(ctrl)
+	s.mockHost.EXPECT().ID().Return(peer.ID("")).AnyTimes()
+
 	s.mockFetcher = mock_tss.NewMockSaveDataFetcher(ctrl)
 	s.mockFetcher.EXPECT().UnlockKeyshare().AnyTimes()
 	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
@@ -81,7 +85,10 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedNotify() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	ad := message.AcrossData{}
+	errChn := make(chan error, 1)
+	ad := message.AcrossData{
+		ErrChn: errChn,
+	}
 	m := &coreMessage.Message{
 		Data:        ad,
 		Source:      1,
@@ -91,6 +98,9 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedNotify() {
 	prop, err := s.handler.HandleMessage(m)
 
 	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
 	s.NotNil(err)
 }
 
@@ -106,7 +116,10 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{}, fmt.Errorf("error"))
 
-	ad := message.AcrossData{}
+	errChn := make(chan error, 1)
+	ad := message.AcrossData{
+		ErrChn: errChn,
+	}
 	m := &coreMessage.Message{
 		Data:        ad,
 		Source:      1,
@@ -116,6 +129,9 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	prop, err := s.handler.HandleMessage(m)
 
 	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
 	s.NotNil(err)
 }
 
@@ -131,7 +147,10 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{}, nil)
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
 
-	ad := message.AcrossData{}
+	errChn := make(chan error, 1)
+	ad := message.AcrossData{
+		ErrChn: errChn,
+	}
 	m := &coreMessage.Message{
 		Data:        ad,
 		Source:      1,
@@ -141,6 +160,9 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 	prop, err := s.handler.HandleMessage(m)
 
 	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
 	s.NotNil(err)
 }
 
@@ -161,7 +183,10 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 		},
 	}, nil)
 
-	ad := message.AcrossData{}
+	errChn := make(chan error, 1)
+	ad := message.AcrossData{
+		ErrChn: errChn,
+	}
 	m := &coreMessage.Message{
 		Data:        ad,
 		Source:      1,
@@ -171,6 +196,9 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 	prop, err := s.handler.HandleMessage(m)
 
 	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
 	s.NotNil(err)
 }
 
@@ -198,7 +226,10 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	}, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	ad := message.AcrossData{}
+	errChn := make(chan error, 1)
+	ad := message.AcrossData{
+		ErrChn: errChn,
+	}
 	m := &coreMessage.Message{
 		Data:        ad,
 		Source:      1,
@@ -208,5 +239,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	prop, err := s.handler.HandleMessage(m)
 
 	s.Nil(prop)
+	s.Nil(err)
+
+	err = <-errChn
 	s.Nil(err)
 }

@@ -45,6 +45,7 @@ type EventFilterer interface {
 type AcrossData struct {
 	DepositId   *big.Int
 	Coordinator peer.ID
+	ErrChn      chan error
 }
 
 func NewAcrossMessage(source, destination uint64, acrossData AcrossData) *message.Message {
@@ -136,34 +137,45 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 
 	err := h.notify(m, data)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
 
 	d, err := h.Deposit(data.DepositId, sourceChainID)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
 
 	unlockHash, err := h.unlockHash(d, sourceChainID)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
 
+	sessionID := fmt.Sprintf("%d-%s", sourceChainID, data.DepositId)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
-		data.DepositId.Text(16),
-		data.DepositId.Text(16),
+		sessionID,
+		sessionID,
 		h.host,
 		h.comm,
 		h.fetcher)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
 
-	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-	if err != nil {
-		return nil, err
-	}
+	go func() {
+		err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
+		if err != nil {
+			log.Err(err).Msgf("Failed executing signing process")
+			data.ErrChn <- err
+			return
+		}
+
+		data.ErrChn <- nil
+	}()
 	return nil, nil
 }
 
