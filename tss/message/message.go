@@ -94,16 +94,18 @@ func UnmarshalSignatureMessage(msgBytes []byte) (*SignatureMessage, error) {
 }
 
 type AcrossMessage struct {
-	DepositId   *big.Int `json:"depositId"`
-	Source      uint8    `json:"source"`
-	Destination uint8    `json:"destination"`
+	DepositId     *big.Int `json:"depositId"`
+	SourceChainId *big.Int `json:"sourceChainId"`
+	Source        uint8    `json:"source"`
+	Destination   uint8    `json:"destination"`
 }
 
-func MarshalAcrossMessage(depositId *big.Int, source, destination uint8) ([]byte, error) {
+func MarshalAcrossMessage(depositId, sourceChainId *big.Int, source, destination uint8) ([]byte, error) {
 	signatureMessage := &AcrossMessage{
-		DepositId:   depositId,
-		Source:      source,
-		Destination: destination,
+		DepositId:     depositId,
+		SourceChainId: sourceChainId,
+		Source:        source,
+		Destination:   destination,
 	}
 
 	msgBytes, err := json.Marshal(signatureMessage)
