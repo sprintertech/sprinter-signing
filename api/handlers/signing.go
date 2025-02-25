@@ -19,8 +19,10 @@ type SigningHandler struct {
 	msgChan chan []*message.Message
 }
 
-func NewSigningHandler() *SigningHandler {
-	return &SigningHandler{}
+func NewSigningHandler(msgChan chan []*message.Message) *SigningHandler {
+	return &SigningHandler{
+		msgChan: msgChan,
+	}
 }
 
 // HandleSigning sends a message to the across message handler and returns status code 202
