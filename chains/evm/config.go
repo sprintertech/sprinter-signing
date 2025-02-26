@@ -22,6 +22,7 @@ type HandlerConfig struct {
 type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
 	Admin              string
+	LiqudityPool       string
 	BlockConfirmations *big.Int
 	BlockInterval      *big.Int
 	BlockRetryInterval time.Duration
@@ -30,6 +31,7 @@ type EVMConfig struct {
 type RawEVMConfig struct {
 	chain.GeneralChainConfig `mapstructure:",squash"`
 	Admin                    string `mapstructure:"admin"`
+	LiqudityPool             string `mapstructure:"liquidityPool"`
 	BlockConfirmations       int64  `mapstructure:"blockConfirmations" default:"10"`
 	BlockInterval            int64  `mapstructure:"blockInterval" default:"5"`
 	BlockRetryInterval       uint64 `mapstructure:"blockRetryInterval" default:"5"`
@@ -71,6 +73,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,
+		LiqudityPool:       c.LiqudityPool,
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
 		BlockConfirmations: big.NewInt(c.BlockConfirmations),
 		BlockInterval:      big.NewInt(c.BlockInterval),

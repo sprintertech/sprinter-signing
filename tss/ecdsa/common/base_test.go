@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/binance-chain/tss-lib/tss"
-	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sourcegraph/conc/pool"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -21,6 +20,7 @@ import (
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
 	"github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 type BaseTssTestSuite struct {
