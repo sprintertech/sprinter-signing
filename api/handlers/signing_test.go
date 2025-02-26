@@ -66,7 +66,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingChainID() {
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -89,7 +89,31 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-s.msgChn
+		ad := msg[0].Data.(across.AcrossData)
+		ad.ErrChn <- fmt.Errorf("error handling message")
+	}()
+
+	s.handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusBadRequest, recorder.Code)
+}
+
+func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
+	input := handlers.SigningBody{
+		ChainId:   1,
+		DepositId: big.NewInt(1000),
+		Protocol:  "invalid",
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -109,10 +133,11 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	input := handlers.SigningBody{
 		ChainId:   1,
 		DepositId: big.NewInt(1000),
+		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -132,10 +157,11 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	input := handlers.SigningBody{
 		ChainId:   1,
 		DepositId: big.NewInt(1000),
+		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -148,6 +174,5 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 
 	s.handler.HandleSigning(recorder, req)
 
-	fmt.Println(recorder.Body.String())
 	s.Equal(http.StatusAccepted, recorder.Code)
 }

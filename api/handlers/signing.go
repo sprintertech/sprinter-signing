@@ -10,9 +10,16 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
+type ProtocolType string
+
+const (
+	AcrossProtocol ProtocolType = "across"
+)
+
 type SigningBody struct {
-	DepositId *big.Int `json:"depositId"`
-	ChainId   uint64   `json:"chainId"`
+	DepositId *big.Int     `json:"depositId"`
+	ChainId   uint64       `json:"chainId"`
+	Protocol  ProtocolType `json:"protocol"`
 }
 
 type SigningHandler struct {
@@ -43,13 +50,22 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
 		return
 	}
-
 	errChn := make(chan error, 1)
-	am := across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-		DepositId: b.DepositId,
-		ErrChn:    errChn,
-	})
-	h.msgChan <- []*message.Message{am}
+
+	var m *message.Message
+	switch b.Protocol {
+	case AcrossProtocol:
+		{
+			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
+				DepositId: b.DepositId,
+				ErrChn:    errChn,
+			})
+		}
+	default:
+		JSONError(w, fmt.Sprintf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
+		return
+	}
+	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
 	if err != nil {

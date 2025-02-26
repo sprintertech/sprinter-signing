@@ -15,7 +15,7 @@ func Serve(
 	signingHandler *handlers.SigningHandler,
 ) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /signing", signingHandler.HandleSigning)
+	mux.HandleFunc("POST /v1/signing", signingHandler.HandleSigning)
 
 	server := &http.Server{
 		Addr: addr,
