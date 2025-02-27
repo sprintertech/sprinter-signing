@@ -14,9 +14,11 @@ func Serve(
 	ctx context.Context,
 	addr string,
 	signingHandler *handlers.SigningHandler,
+	statusHandler *handlers.StatusHandler,
 ) {
 	r := mux.NewRouter()
 	r.HandleFunc("POST /v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning)
+	r.HandleFunc("GET /v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest)
 	http.Handle("/", r)
 
 	server := &http.Server{

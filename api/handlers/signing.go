@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -99,4 +101,67 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	}
 
 	return nil
+}
+
+type SignatureCacher interface {
+	Subscribe(ctx context.Context, id string, sigChannel chan []byte)
+}
+
+type StatusHandler struct {
+	cache  SignatureCacher
+	chains map[uint64]struct{}
+}
+
+func NewStatusHandler(cache SignatureCacher, chains map[uint64]struct{}) *StatusHandler {
+	return &StatusHandler{
+		cache:  cache,
+		chains: chains,
+	}
+}
+
+// HandleRequest is an sse handler that waits until the signing signature is ready
+// and returns it
+func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	chainId, ok := new(big.Int).SetString(vars["chainId"], 0)
+	if !ok {
+		JSONError(w, "chain id invalid", http.StatusBadRequest)
+		return
+	}
+	_, ok = h.chains[chainId.Uint64()]
+	if !ok {
+		JSONError(w, fmt.Sprintf("chain %d not supported", chainId.Int64()), http.StatusNotFound)
+		return
+	}
+	depositId, ok := vars["depositId"]
+	if !ok {
+		JSONError(w, "missing 'depositId", http.StatusBadRequest)
+		return
+	}
+
+	h.setheaders(w)
+
+	ctx := r.Context()
+	sigChn := make(chan []byte, 1)
+	h.cache.Subscribe(ctx, fmt.Sprintf("%d-%s", chainId, depositId), sigChn)
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case sig := <-sigChn:
+			{
+				fmt.Fprintf(w, "data: %s\n\n", hex.EncodeToString(sig))
+				w.(http.Flusher).Flush()
+				return
+			}
+		}
+	}
+}
+
+func (h *StatusHandler) setheaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 }
