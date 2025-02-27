@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 )
@@ -14,8 +15,9 @@ func Serve(
 	addr string,
 	signingHandler *handlers.SigningHandler,
 ) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /v1/signing", signingHandler.HandleSigning)
+	r := mux.NewRouter()
+	r.HandleFunc("POST /v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning)
+	http.Handle("/", r)
 
 	server := &http.Server{
 		Addr: addr,

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/stretchr/testify/suite"
@@ -40,12 +41,15 @@ func (s *SigningHandlerTestSuite) SetupTest() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 	input := handlers.SigningBody{
-		ChainId: 1,
+		Protocol: "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
 
 	recorder := httptest.NewRecorder()
 
@@ -60,13 +64,17 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
-func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingChainID() {
+func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 	input := handlers.SigningBody{
 		DepositId: big.NewInt(1000),
+		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/invalid/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "invalid",
+	})
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -84,12 +92,15 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingChainID() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	input := handlers.SigningBody{
-		ChainId:   2,
 		DepositId: big.NewInt(1000),
+		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/111/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "3",
+	})
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -107,13 +118,15 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	input := handlers.SigningBody{
-		ChainId:   1,
 		DepositId: big.NewInt(1000),
 		Protocol:  "invalid",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -131,13 +144,15 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	input := handlers.SigningBody{
-		ChainId:   1,
 		DepositId: big.NewInt(1000),
 		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
@@ -155,13 +170,15 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	input := handlers.SigningBody{
-		ChainId:   1,
 		DepositId: big.NewInt(1000),
 		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/signing", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
 	req.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()

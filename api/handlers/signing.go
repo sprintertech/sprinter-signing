@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
@@ -17,8 +18,8 @@ const (
 )
 
 type SigningBody struct {
+	ChainId   uint64
 	DepositId *big.Int     `json:"depositId"`
-	ChainId   uint64       `json:"chainId"`
 	Protocol  ProtocolType `json:"protocol"`
 }
 
@@ -45,7 +46,8 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.validate(b)
+	vars := mux.Vars(r)
+	err = h.validate(b, vars)
 	if err != nil {
 		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
 		return
@@ -76,7 +78,13 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (h *SigningHandler) validate(b *SigningBody) error {
+func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error {
+	chainId, ok := new(big.Int).SetString(vars["chainId"], 10)
+	if !ok {
+		return fmt.Errorf("field 'chainId' invalid")
+	}
+	b.ChainId = chainId.Uint64()
+
 	if b.DepositId == nil {
 		return fmt.Errorf("missing field 'depositId'")
 	}
@@ -85,7 +93,7 @@ func (h *SigningHandler) validate(b *SigningBody) error {
 		return fmt.Errorf("missing field 'chainId'")
 	}
 
-	_, ok := h.chains[b.ChainId]
+	_, ok = h.chains[b.ChainId]
 	if !ok {
 		return fmt.Errorf("chain '%d' not supported", b.ChainId)
 	}
