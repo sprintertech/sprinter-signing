@@ -36,6 +36,34 @@ func NewSignatureCache(ctx context.Context, c comm.Communication, sigChn chan in
 	return sc
 }
 
+// Subscribe watches for new signatures for given id and returns it through the channel
+func (s *SignatureCache) Subscribe(ctx context.Context, id string, sigChannel chan []byte) {
+	sig := s.sigCache.Get(id)
+	if sig != nil {
+		sigChannel <- sig.Value()
+		return
+	}
+
+	ping := time.Tick(time.Millisecond * 250)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ping:
+			{
+				sig := s.sigCache.Get(id)
+				if sig == nil {
+					continue
+				}
+
+				sigChannel <- sig.Value()
+				return
+			}
+		}
+
+	}
+}
+
 func (s *SignatureCache) Signature(id string) ([]byte, error) {
 	sig := s.sigCache.Get(id)
 	if sig == nil {
