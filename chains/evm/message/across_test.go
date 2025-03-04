@@ -56,8 +56,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
-	pools := make(map[uint64]common.Address)
-	pools[1] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
+	pool := common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
 
 	s.sigChn = make(chan interface{}, 1)
 
@@ -66,7 +65,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 
 	s.handler = message.NewAcrossMessageHandler(
 		s.mockEventFilterer,
-		pools,
+		pool,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,

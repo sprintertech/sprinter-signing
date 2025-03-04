@@ -65,7 +65,7 @@ type Coordinator interface {
 type AcrossMessageHandler struct {
 	client EventFilterer
 
-	pools map[uint64]common.Address
+	pool common.Address
 
 	coordinator Coordinator
 	host        host.Host
@@ -77,7 +77,7 @@ type AcrossMessageHandler struct {
 
 func NewAcrossMessageHandler(
 	client EventFilterer,
-	pools map[uint64]common.Address,
+	pool common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
@@ -86,7 +86,7 @@ func NewAcrossMessageHandler(
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
 		client:      client,
-		pools:       pools,
+		pool:        pool,
 		coordinator: coordinator,
 		host:        host,
 		comm:        comm,
@@ -198,7 +198,7 @@ func (h *AcrossMessageHandler) Deposit(depositId *big.Int, sourceChainId uint64)
 		ToBlock:   latestBlock,
 		FromBlock: new(big.Int).Sub(latestBlock, big.NewInt(BLOCK_RANGE)),
 		Addresses: []common.Address{
-			h.pools[sourceChainId],
+			h.pool,
 		},
 		Topics: [][]common.Hash{
 			{

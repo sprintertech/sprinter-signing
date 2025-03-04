@@ -37,7 +37,6 @@ func (s *NewEVMConfigTestSuite) Test_FailedGeneralConfigValidation() {
 
 func (s *NewEVMConfigTestSuite) Test_FailedEVMConfigValidation() {
 	_, err := evm.NewEVMConfig(map[string]interface{}{
-		"id":       1,
 		"endpoint": "ws://domain.com",
 		"name":     "evm1",
 		"from":     "address",
@@ -69,6 +68,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		"bridge":      "bridgeAddress",
 		"admin":       "adminAddress",
 		"frostKeygen": "frostKeygen",
+		"acrossPool":  "acrossPool",
 	}
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig)
@@ -86,6 +86,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		BlockInterval:      big.NewInt(5),
 		BlockRetryInterval: time.Duration(5) * time.Second,
 		Admin:              "adminAddress",
+		AcrossPool:         "acrossPool",
 	})
 }
 
@@ -100,6 +101,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"liquidityPool": "pool",
 		"retry":         "retryAddress",
 		"frostKeygen":   "frostKeygen",
+		"acrossPool":    "acrossPool",
 		"handlers": []evm.HandlerConfig{
 			{
 				Type:    "erc20",
@@ -137,5 +139,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		BlockRetryInterval: time.Duration(10) * time.Second,
 		Admin:              "adminAddress",
 		LiqudityPool:       "pool",
+		AcrossPool:         "acrossPool",
 	})
 }

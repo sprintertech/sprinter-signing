@@ -22,6 +22,7 @@ type HandlerConfig struct {
 type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
 	Admin              string
+	AcrossPool         string
 	LiqudityPool       string
 	BlockConfirmations *big.Int
 	BlockInterval      *big.Int
@@ -32,6 +33,7 @@ type RawEVMConfig struct {
 	chain.GeneralChainConfig `mapstructure:",squash"`
 	Admin                    string `mapstructure:"admin"`
 	LiqudityPool             string `mapstructure:"liquidityPool"`
+	AcrossPool               string `mapstructure:"acrossPool"`
 	BlockConfirmations       int64  `mapstructure:"blockConfirmations" default:"10"`
 	BlockInterval            int64  `mapstructure:"blockInterval" default:"5"`
 	BlockRetryInterval       uint64 `mapstructure:"blockRetryInterval" default:"5"`
@@ -40,9 +42,6 @@ type RawEVMConfig struct {
 func (c *RawEVMConfig) Validate() error {
 	if err := c.GeneralChainConfig.Validate(); err != nil {
 		return err
-	}
-	if c.Admin == "" {
-		return fmt.Errorf("required field chain.Admin empty for chain %v", *c.Id)
 	}
 	if c.BlockConfirmations < 1 {
 		return fmt.Errorf("blockConfirmations has to be >=1")
@@ -74,6 +73,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,
 		LiqudityPool:       c.LiqudityPool,
+		AcrossPool:         c.AcrossPool,
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
 		BlockConfirmations: big.NewInt(c.BlockConfirmations),
 		BlockInterval:      big.NewInt(c.BlockInterval),
