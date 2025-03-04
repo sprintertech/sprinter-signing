@@ -17,7 +17,9 @@ import (
 type SignatureCacheTestSuite struct {
 	suite.Suite
 
-	sc                *cache.SignatureCache
+	sc  *cache.SignatureCache
+	ctx context.Context
+
 	mockCommunication *mock_communication.MockCommunication
 	cancel            context.CancelFunc
 	sigChn            chan interface{}
@@ -42,8 +44,10 @@ func (s *SignatureCacheTestSuite) SetupTest() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancel = cancel
+	s.ctx = ctx
 
-	s.sc = cache.NewSignatureCache(ctx, s.mockCommunication, s.sigChn)
+	s.sc = cache.NewSignatureCache(s.mockCommunication)
+	go s.sc.Watch(s.ctx, s.sigChn)
 	time.Sleep(time.Millisecond * 100)
 }
 func (s *SignatureCacheTestSuite) TearDownTest() {

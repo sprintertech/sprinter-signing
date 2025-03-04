@@ -21,7 +21,7 @@ type SignatureCache struct {
 	comm     comm.Communication
 }
 
-func NewSignatureCache(ctx context.Context, c comm.Communication, sigChn chan interface{}) *SignatureCache {
+func NewSignatureCache(c comm.Communication) *SignatureCache {
 	cache := ttlcache.New(
 		ttlcache.WithTTL[string, []byte](SIGNATURE_TTL),
 	)
@@ -31,7 +31,6 @@ func NewSignatureCache(ctx context.Context, c comm.Communication, sigChn chan in
 		comm:     c,
 	}
 
-	go sc.watch(ctx, sigChn)
 	go cache.Start()
 	return sc
 }
@@ -73,7 +72,7 @@ func (s *SignatureCache) Signature(id string) ([]byte, error) {
 	return sig.Value(), nil
 }
 
-func (s *SignatureCache) watch(ctx context.Context, sigChn chan interface{}) {
+func (s *SignatureCache) Watch(ctx context.Context, sigChn chan interface{}) {
 	msgChn := make(chan *comm.WrappedMessage)
 	subID := s.comm.Subscribe(comm.SignatureSessionID, comm.SignatureMsg, msgChn)
 
