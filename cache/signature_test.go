@@ -88,3 +88,51 @@ func (s *SignatureCacheTestSuite) Test_Signature_ValidMessage() {
 	s.Nil(err)
 	s.Equal(sig, expectedSig.Signature)
 }
+
+func (s *SignatureCacheTestSuite) Test_Subscribe_ValidMessage_EarlyExit() {
+	expectedSig := signing.EcdsaSignature{
+		Signature: []byte("signature"),
+		ID:        "signatureID",
+	}
+	wMsgBytes, _ := message.MarshalSignatureMessage(expectedSig.ID, expectedSig.Signature)
+	wMsg := &comm.WrappedMessage{
+		Payload: wMsgBytes,
+	}
+
+	s.msgChn <- wMsg
+	time.Sleep(time.Millisecond * 100)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChn := make(chan []byte, 1)
+
+	go s.sc.Subscribe(ctx, expectedSig.ID, sigChn)
+
+	sig := <-sigChn
+	s.Equal(sig, expectedSig.Signature)
+}
+
+func (s *SignatureCacheTestSuite) Test_Subscribe_ValidMessage() {
+	expectedSig := signing.EcdsaSignature{
+		Signature: []byte("signature"),
+		ID:        "signatureID",
+	}
+	wMsgBytes, _ := message.MarshalSignatureMessage(expectedSig.ID, expectedSig.Signature)
+	wMsg := &comm.WrappedMessage{
+		Payload: wMsgBytes,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChn := make(chan []byte, 1)
+
+	go s.sc.Subscribe(ctx, expectedSig.ID, sigChn)
+
+	time.Sleep(time.Millisecond * 100)
+	s.msgChn <- wMsg
+
+	sig := <-sigChn
+	s.Equal(sig, expectedSig.Signature)
+}

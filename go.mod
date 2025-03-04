@@ -8,17 +8,19 @@ require (
 	github.com/creasty/defaults v1.6.0
 	github.com/ethereum/go-ethereum v1.15.2
 	github.com/golang/mock v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/imdario/mergo v0.3.12
 	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/libp2p/go-libp2p v0.38.2
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/multiformats/go-multiaddr-dns v0.4.1
+	github.com/r3labs/sse v0.0.0-20210224172625-26fe804710bc
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.10.0
-	github.com/sygmaprotocol/sygma-core v0.0.0-20241028121638-2c5597ae589f
+	github.com/sygmaprotocol/sygma-core v0.0.0-20250225141249-bce76075ddb4
 	github.com/taurusgroup/multi-party-sig v0.6.0-alpha-2021-09-21.0.20230619131919-9c7c6ffd7217
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/metric v1.16.0
@@ -79,6 +81,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
+	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
