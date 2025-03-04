@@ -90,7 +90,10 @@ func (s *AcrossMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
 		Source:      1,
 		Destination: 2,
 	}
-	msgBytes, err := message.MarshalAcrossMessage(originalMsg.DepositId, originalMsg.Source, originalMsg.Destination)
+	msgBytes, err := message.MarshalAcrossMessage(
+		originalMsg.DepositId,
+		originalMsg.Source,
+		originalMsg.Destination)
 	s.Nil(err)
 
 	unmarshaledMsg, err := message.UnmarshalAcrossMessage(msgBytes)
