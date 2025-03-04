@@ -73,7 +73,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig)
 
-	id := new(uint8)
+	id := new(uint64)
 	*id = 1
 	s.Nil(err)
 	s.Equal(*actualConfig, evm.EVMConfig{
@@ -123,7 +123,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig)
 
-	id := new(uint8)
+	id := new(uint64)
 	*id = 1
 	s.Nil(err)
 	s.Equal(*actualConfig, evm.EVMConfig{
