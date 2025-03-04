@@ -17,12 +17,12 @@ func Serve(
 	statusHandler *handlers.StatusHandler,
 ) {
 	r := mux.NewRouter()
-	r.HandleFunc("POST /v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning)
-	r.HandleFunc("GET /v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest)
-	http.Handle("/", r)
+	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning).Methods("POST")
+	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest).Methods("GET")
 
 	server := &http.Server{
-		Addr: addr,
+		Addr:    addr,
+		Handler: r,
 	}
 	go func() {
 		log.Info().Msgf("Starting server on %s", addr)

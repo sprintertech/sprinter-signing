@@ -6,6 +6,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,8 +37,8 @@ import (
 	"github.com/sprintertech/sprinter-signing/tss"
 	coreEvm "github.com/sygmaprotocol/sygma-core/chains/evm"
 	evmClient "github.com/sygmaprotocol/sygma-core/chains/evm/client"
+	coreListener "github.com/sygmaprotocol/sygma-core/chains/evm/listener"
 
-	"github.com/sygmaprotocol/sygma-core/chains/evm/listener"
 	"github.com/sygmaprotocol/sygma-core/observability"
 	"github.com/sygmaprotocol/sygma-core/relayer"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -171,23 +172,23 @@ func Run() error {
 					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
 				}
 
-				var chain *coreEvm.EVMChain
-				eventHandlers := make([]listener.EventHandler, 0)
+				var startBlock *big.Int
+				var listener *coreListener.EVMListener
+				eventHandlers := make([]coreListener.EventHandler, 0)
 				if config.Admin != "" {
 					head, err := client.LatestBlock()
 					panicOnError(err)
-					startBlock := head
+
+					startBlock = head
 
 					tssListener := events.NewListener(client)
 					adminAddress := common.HexToAddress(config.Admin)
 					eventHandlers = append(eventHandlers, evmListener.NewKeygenEventHandler(l, tssListener, coordinator, host, communication, keyshareStore, adminAddress, networkTopology.Threshold))
 					eventHandlers = append(eventHandlers, evmListener.NewRefreshEventHandler(l, topologyProvider, topologyStore, tssListener, coordinator, host, communication, connectionGate, keyshareStore, adminAddress))
-					evmListener := listener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *config.GeneralChainConfig.Id, config.BlockRetryInterval, config.BlockConfirmations, config.BlockInterval)
-					chain = coreEvm.NewEVMChain(evmListener, mh, nil, *config.GeneralChainConfig.Id, startBlock)
-				} else {
-					chain = coreEvm.NewEVMChain(nil, mh, nil, *config.GeneralChainConfig.Id, nil)
+					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *config.GeneralChainConfig.Id, config.BlockRetryInterval, config.BlockConfirmations, config.BlockInterval)
 				}
 
+				chain := coreEvm.NewEVMChain(listener, mh, nil, *config.GeneralChainConfig.Id, startBlock)
 				domains[*config.GeneralChainConfig.Id] = chain
 			}
 		default:
