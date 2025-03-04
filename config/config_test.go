@@ -92,6 +92,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 			Env:        "TEST",
 			Id:         "123",
 			HealthPort: 9001,
+			ApiAddr:    "0.0.0.0:3000",
 			MpcConfig: relayer.MpcRelayerConfig{
 				TopologyConfiguration: relayer.TopologyConfiguration{
 					EncryptionKey: "test-enc-key",
@@ -209,6 +210,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV_RandomOrder() {
 			Env:        "TEST",
 			Id:         "123",
 			HealthPort: 9001,
+			ApiAddr:    "0.0.0.0:3000",
 			MpcConfig: relayer.MpcRelayerConfig{
 				TopologyConfiguration: relayer.TopologyConfiguration{
 					EncryptionKey: "test-enc-key",
@@ -488,6 +490,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					LogFile:                   "out.log",
 					OpenTelemetryCollectorURL: "",
 					HealthPort:                9001,
+					ApiAddr:                   "0.0.0.0:3000",
 					MpcConfig: relayer.MpcRelayerConfig{
 						Port: 9000,
 						TopologyConfiguration: relayer.TopologyConfiguration{
@@ -525,6 +528,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					LogLevel:   "debug",
 					LogFile:    "custom.log",
 					HealthPort: "9002",
+					ApiAddr:    "0.0.0.0:3001",
 					MpcConfig: relayer.RawMpcRelayerConfig{
 						TopologyConfiguration: relayer.TopologyConfiguration{
 							EncryptionKey: "enc-key",
@@ -564,6 +568,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					LogFile:                   "custom.log",
 					OpenTelemetryCollectorURL: "",
 					HealthPort:                9002,
+					ApiAddr:                   "0.0.0.0:3001",
 					MpcConfig: relayer.MpcRelayerConfig{
 						Port:         2020,
 						KeysharePath: "./share.key",

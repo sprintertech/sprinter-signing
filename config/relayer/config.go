@@ -22,6 +22,7 @@ type RelayerConfig struct {
 	MpcConfig                 MpcRelayerConfig
 	BullyConfig               BullyConfig
 	UploaderConfig            UploaderConfig
+	ApiAddr                   string
 }
 
 type MpcRelayerConfig struct {
@@ -63,6 +64,7 @@ type RawRelayerConfig struct {
 	MpcConfig                 RawMpcRelayerConfig `mapstructure:"MpcConfig" json:"mpcConfig"`
 	BullyConfig               RawBullyConfig      `mapstructure:"BullyConfig" json:"bullyConfig"`
 	UploaderConfig            UploaderConfig      `mapstructure:"uploaderConfig"`
+	ApiAddr                   string              `mapstructure:"apiAddr" default:"0.0.0.0:3000"`
 }
 
 type RawMpcRelayerConfig struct {
@@ -132,6 +134,7 @@ func NewRelayerConfig(rawConfig RawRelayerConfig) (RelayerConfig, error) {
 	config.Env = rawConfig.Env
 	config.Id = rawConfig.Id
 	config.UploaderConfig = rawConfig.UploaderConfig
+	config.ApiAddr = rawConfig.ApiAddr
 	return config, nil
 }
 
