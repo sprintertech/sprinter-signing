@@ -15,12 +15,11 @@ require (
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/multiformats/go-multiaddr-dns v0.4.1
-	github.com/r3labs/sse v0.0.0-20210224172625-26fe804710bc
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.10.0
-	github.com/sygmaprotocol/sygma-core v0.0.0-20250225141249-bce76075ddb4
+	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	github.com/taurusgroup/multi-party-sig v0.6.0-alpha-2021-09-21.0.20230619131919-9c7c6ffd7217
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/metric v1.16.0
@@ -81,7 +80,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
-	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
@@ -160,7 +158,6 @@ require (
 	github.com/otiai10/primes v0.0.0-20210501021515-f1b2be525a11 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
-	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.5 // indirect
@@ -176,7 +173,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a
+	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.39.0 // indirect

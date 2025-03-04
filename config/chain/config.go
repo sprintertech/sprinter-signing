@@ -16,8 +16,6 @@ type GeneralChainConfig struct {
 	Endpoint       string  `mapstructure:"endpoint"`
 	Type           string  `mapstructure:"type"`
 	BlockstorePath string  `mapstructure:"blockstorePath"`
-	FreshStart     bool    `mapstructure:"fresh"`
-	LatestBlock    bool    `mapstructure:"latest"`
 	Key            string
 	Insecure       bool
 }
@@ -40,13 +38,5 @@ func (c *GeneralChainConfig) ParseFlags() {
 	blockstore := viper.GetString(config.BlockstoreFlagName)
 	if blockstore != "" {
 		c.BlockstorePath = blockstore
-	}
-	freshStart := viper.GetBool(config.FreshStartFlagName)
-	if freshStart {
-		c.FreshStart = freshStart
-	}
-	latestBlock := viper.GetBool(config.LatestBlockFlagName)
-	if latestBlock {
-		c.LatestBlock = latestBlock
 	}
 }
