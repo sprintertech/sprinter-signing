@@ -148,6 +148,5 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 
 	s.handler.HandleSigning(recorder, req)
 
-	fmt.Println(recorder.Body.String())
 	s.Equal(http.StatusAccepted, recorder.Code)
 }
