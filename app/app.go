@@ -206,7 +206,6 @@ func Run() error {
 	sig := <-sysErr
 	log.Info().Msgf("terminating got ` [%v] signal", sig)
 	return nil
-
 }
 
 func panicOnError(err error) {
