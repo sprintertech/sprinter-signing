@@ -15,7 +15,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/multiformats/go-multiaddr-dns v0.4.1
-	github.com/r3labs/sse v0.0.0-20210224172625-26fe804710bc
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
@@ -81,7 +80,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
-	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
