@@ -207,10 +207,6 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 
 	handler.HandleSigning(recorder, req)
 
-	if recorder.Code == http.StatusInternalServerError {
-		fmt.Println(recorder.Body)
-	}
-
 	s.Equal(http.StatusAccepted, recorder.Code)
 }
 
