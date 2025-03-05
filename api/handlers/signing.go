@@ -21,7 +21,7 @@ const (
 
 type SigningBody struct {
 	ChainId   uint64
-	DepositId *big.Int     `json:"depositId"`
+	DepositId *BigInt      `json:"depositId"`
 	Protocol  ProtocolType `json:"protocol"`
 }
 
@@ -61,7 +61,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	case AcrossProtocol:
 		{
 			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-				DepositId: b.DepositId,
+				DepositId: b.DepositId.Int,
 				ErrChn:    errChn,
 			})
 		}
@@ -163,5 +163,4 @@ func (h *StatusHandler) setheaders(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 }

@@ -74,6 +74,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		Admin:              c.Admin,
 		LiqudityPool:       c.LiqudityPool,
 		AcrossPool:         c.AcrossPool,
+		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
 		BlockConfirmations: big.NewInt(c.BlockConfirmations),
 		BlockInterval:      big.NewInt(c.BlockInterval),

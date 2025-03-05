@@ -6,6 +6,7 @@ package relayer
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -110,6 +111,9 @@ func NewRelayerConfig(rawConfig RawRelayerConfig) (RelayerConfig, error) {
 	if err != nil {
 		return RelayerConfig{}, fmt.Errorf("unable to parse health port %v", err)
 	}
+	if healthPort < 0 || healthPort > math.MaxUint16 {
+		return RelayerConfig{}, fmt.Errorf("mpc port %d is out of valid range for uint16", healthPort)
+	}
 	config.HealthPort = uint16(healthPort)
 
 	mpcConfig, err := parseMpcConfig(rawConfig)
@@ -135,6 +139,9 @@ func parseMpcConfig(rawConfig RawRelayerConfig) (MpcRelayerConfig, error) {
 	port, err := strconv.ParseInt(rawConfig.MpcConfig.Port, 0, 16)
 	if err != nil {
 		return MpcRelayerConfig{}, fmt.Errorf("unable to parse mpc port from config %v", err)
+	}
+	if port < 0 || port > math.MaxUint16 {
+		return MpcRelayerConfig{}, fmt.Errorf("mpc port %d is out of valid range for uint16", port)
 	}
 	mpcConfig.Port = uint16(port)
 

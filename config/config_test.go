@@ -550,7 +550,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 	for _, t := range testCases {
 		s.Run(t.name, func() {
 			file, _ := json.Marshal(t.inConfig)
-			_ = os.WriteFile("test.json", file, 0644)
+			_ = os.WriteFile("test.json", file, 0600)
 
 			conf, err := config.GetConfigFromFile("test.json", &config.Config{
 				ChainConfigs: []map[string]interface{}{

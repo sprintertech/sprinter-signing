@@ -21,8 +21,9 @@ func Serve(
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest).Methods("GET")
 
 	server := &http.Server{
-		Addr:    addr,
-		Handler: r,
+		Addr:        addr,
+		Handler:     r,
+		ReadTimeout: time.Second * 10,
 	}
 	go func() {
 		log.Info().Msgf("Starting server on %s", addr)
