@@ -1,0 +1,41 @@
+# Refer to golangci-lint's example config file for more options and information:
+# https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  exclude-dirs:
+    - vendor
+    - third_party
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - goimports
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - bodyclose
+    - contextcheck
+    - depguard
+    - dupl
+    - exhaustive
+    - gci
+    - gocognit
+    - goconst
+    - godox
+    - gosec
+    - misspell
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - reassign
+    - wastedassign
+    - whitespace
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

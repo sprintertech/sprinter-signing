@@ -752,8 +752,6 @@ github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/supranational/blst v0.3.14 h1:xNMoHRJOTwMn63ip6qoWJ2Ymgvj7E2b9jY2FAwY+qRo=
 github.com/supranational/blst v0.3.14/go.mod h1:jZJtfjgudtNl4en1tzwPIV3KjUnQUvG3/j+w+fVonLw=
-github.com/sygmaprotocol/sygma-core v0.0.0-20241028121638-2c5597ae589f h1:tZb5+2slQMAb+OTYZGDvri7JJn8osd9lPJWbNv9Z8XU=
-github.com/sygmaprotocol/sygma-core v0.0.0-20241028121638-2c5597ae589f/go.mod h1:Shna6DuIf/SE2yGmhO+76Ou0oszfWKabX4n8gMnIH8U=
 github.com/sygmaprotocol/sygma-core v0.0.0-20250225141249-bce76075ddb4 h1:pH+pFUjj4IBX97t639jgwWN+0D3KfBZivI9ihOK7af4=
 github.com/sygmaprotocol/sygma-core v0.0.0-20250225141249-bce76075ddb4/go.mod h1:Shna6DuIf/SE2yGmhO+76Ou0oszfWKabX4n8gMnIH8U=
 github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a h1:1ur3QoCqvE5fl+nylMaIr9PVV1w343YRDtsy+Rwu7XI=
