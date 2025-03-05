@@ -26,7 +26,7 @@ type CoordinatorElectorTestSuite struct {
 	testPeers      peer.IDSlice
 }
 
-const numberOfTestHosts = 3
+const numberOfTestHosts uint16 = 3
 
 func TestRunStaticCommunicationCoordinatorTestSuite(t *testing.T) {
 	suite.Run(t, new(CoordinatorElectorTestSuite))
@@ -39,21 +39,21 @@ func (s *CoordinatorElectorTestSuite) SetupTest() {
 
 	peers := peer.IDSlice{}
 	// create test hosts
-	for i := 0; i < numberOfTestHosts; i++ {
+	for i := range numberOfTestHosts {
 		privKeyForHost, _, _ := crypto.GenerateKeyPair(crypto.ECDSA, 1)
 		topology := &topology.NetworkTopology{
 			Peers: []*peer.AddrInfo{},
 		}
-		newHost, _ := p2p.NewHost(privKeyForHost, topology, p2p.NewConnectionGate(topology), uint16(4000+i))
+		newHost, _ := p2p.NewHost(privKeyForHost, topology, p2p.NewConnectionGate(topology), 4000+i)
 		s.testHosts = append(s.testHosts, newHost)
 		peers = append(peers, newHost.ID())
 	}
 	s.testPeers = peers
 
 	// populate peerstores
-	peersAdrInfos := map[int][]*peer.AddrInfo{}
-	for i := 0; i < numberOfTestHosts; i++ {
-		for j := 0; j < numberOfTestHosts; j++ {
+	peersAdrInfos := map[uint16][]*peer.AddrInfo{}
+	for i := range numberOfTestHosts {
+		for j := range numberOfTestHosts {
 			if i != j {
 				adrInfoForHost, _ := peer.AddrInfoFromString(fmt.Sprintf(
 					"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+j, s.testHosts[j].ID().String(),

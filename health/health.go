@@ -6,6 +6,7 @@ package health
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -16,6 +17,19 @@ func StartHealthEndpoint(port uint16) {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	_ = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	srv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+	}
+
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Err(err).Msgf("Failed starting health server")
+		return
+	}
+
 	log.Info().Msgf("started /health endpoint on port %d", port)
 }

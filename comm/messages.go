@@ -4,7 +4,7 @@
 package comm
 
 // MessageType represents message type identificator
-type MessageType uint8
+type MessageType int64
 
 const (
 	// TssKeyGenMsg message type used for communicating key generation.

@@ -142,8 +142,8 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_StreamHandlerFunc
 func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_SendReceiveMessage() {
 	var testHosts []host.Host
 	var communications []p2p.Libp2pCommunication
-	numberOfTestHosts := 2
-	portOffset := 0
+	numberOfTestHosts := uint16(2)
+	portOffset := uint16(0)
 	protocolID := "/p2p/test"
 
 	topology := &topology.NetworkTopology{
@@ -151,7 +151,7 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_SendReceiveMessag
 	}
 
 	privateKeys := []crypto.PrivKey{}
-	for i := 0; i < numberOfTestHosts; i++ {
+	for i := range numberOfTestHosts {
 		privKeyForHost, _, _ := crypto.GenerateKeyPair(crypto.ECDSA, 1)
 		privateKeys = append(privateKeys, privKeyForHost)
 		peerID, _ := peer.IDFromPrivateKey(privKeyForHost)
@@ -161,9 +161,9 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_SendReceiveMessag
 		topology.Peers = append(topology.Peers, addrInfoForHost)
 	}
 
-	for i := 0; i < numberOfTestHosts; i++ {
+	for i := range numberOfTestHosts {
 		connectionGate := p2p.NewConnectionGate(topology)
-		newHost, _ := p2p.NewHost(privateKeys[i], topology, connectionGate, uint16(4000+portOffset+i))
+		newHost, _ := p2p.NewHost(privateKeys[i], topology, connectionGate, 4000+portOffset+i)
 		testHosts = append(testHosts, newHost)
 		communications = append(communications, p2p.NewCommunication(newHost, protocol.ID(protocolID)))
 	}

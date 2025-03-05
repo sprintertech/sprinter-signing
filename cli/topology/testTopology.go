@@ -35,7 +35,6 @@ func init() {
 	testTopologyCMD.PersistentFlags().StringVar(&url, "url", "", "url to fetch topology")
 	_ = testTopologyCMD.MarkFlagRequired("url")
 	testTopologyCMD.PersistentFlags().StringVar(&hash, "hash", "", "hash of topology")
-
 }
 
 func testTopology(cmd *cobra.Command, args []string) error {

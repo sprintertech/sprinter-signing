@@ -16,7 +16,7 @@ import (
 type SubscriptionID string
 
 func NewSubscriptionID(sessionID string, msgType MessageType) SubscriptionID {
-	return SubscriptionID(fmt.Sprintf("%s-%d-%d", sessionID, msgType, uint32(time.Now().UnixNano())))
+	return SubscriptionID(fmt.Sprintf("%s-%d-%d", sessionID, msgType, time.Now().UnixNano()))
 }
 
 func (sID SubscriptionID) SessionID() string {

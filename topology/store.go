@@ -27,7 +27,6 @@ func (ts *TopologyStore) StoreTopology(topology *NetworkTopology) error {
 
 	f, err := os.OpenFile(ts.path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-
 		return err
 	}
 	defer f.Close()

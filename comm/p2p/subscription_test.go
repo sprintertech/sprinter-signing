@@ -4,8 +4,9 @@
 package p2p_test
 
 import (
-	"github.com/sprintertech/sprinter-signing/comm/p2p"
 	"testing"
+
+	"github.com/sprintertech/sprinter-signing/comm/p2p"
 
 	comm "github.com/sprintertech/sprinter-signing/comm"
 	"github.com/stretchr/testify/suite"
