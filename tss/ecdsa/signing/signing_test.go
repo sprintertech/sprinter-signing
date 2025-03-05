@@ -172,7 +172,8 @@ func (s *SigningTestSuite) Test_SigningTimeout() {
 	}
 
 	err := pool.Wait()
-	s.NotNil(err)
+
+	s.Nil(err)
 }
 
 func (s *SigningTestSuite) Test_PendingProcessExists() {

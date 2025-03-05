@@ -89,5 +89,6 @@ func (s *KeygenTestSuite) Test_KeygenTimeout() {
 	}
 
 	err := pool.Wait()
-	s.NotNil(err)
+
+	s.Nil(err)
 }

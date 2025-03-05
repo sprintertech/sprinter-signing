@@ -18,7 +18,6 @@ type CoordinatorElectorType int
 
 const (
 	Static CoordinatorElectorType = iota
-	Bully
 )
 
 const ProtocolID protocol.ID = "/sygma/coordinator/1.0.0"
@@ -53,8 +52,6 @@ func (c *CoordinatorElectorFactory) CoordinatorElector(
 	switch electorType {
 	case Static:
 		return NewCoordinatorElector(sessionID)
-	case Bully:
-		return NewBullyCoordinatorElector(sessionID, c.h, c.config, c.comm)
 	default:
 		return nil
 	}
