@@ -28,7 +28,7 @@ type BullyTestSuite struct {
 	mockController *gomock.Controller
 	testProtocolID protocol.ID
 	testSessionID  string
-	portOffset     int
+	portOffset     uint16
 }
 
 type RelayerTestDescriber struct {
@@ -61,13 +61,13 @@ func (s *BullyTestSuite) SetupIndividualTest(c BullyTestCase) ([]elector.Coordin
 	allowedPeers := peer.IDSlice{}
 	var testBullyCoordinators []elector.CoordinatorElector
 
-	numberOfTestHosts := len(c.testRelayers)
+	numberOfTestHosts := uint16(len(c.testRelayers))
 
 	topology := &topology.NetworkTopology{
 		Peers: []*peer.AddrInfo{},
 	}
 	privateKeys := []crypto.PrivKey{}
-	for i := 0; i < numberOfTestHosts; i++ {
+	for i := range numberOfTestHosts {
 		privKeyForHost, _, _ := crypto.GenerateKeyPair(crypto.ECDSA, 1)
 		privateKeys = append(privateKeys, privKeyForHost)
 		peerID, _ := peer.IDFromPrivateKey(privKeyForHost)
@@ -78,9 +78,9 @@ func (s *BullyTestSuite) SetupIndividualTest(c BullyTestCase) ([]elector.Coordin
 	}
 
 	// create test hosts
-	for i := 0; i < numberOfTestHosts; i++ {
+	for i := range numberOfTestHosts {
 		connectionGate := p2p.NewConnectionGate(topology)
-		newHost, _ := p2p.NewHost(privateKeys[i], topology, connectionGate, uint16(4000+s.portOffset+i))
+		newHost, _ := p2p.NewHost(privateKeys[i], topology, connectionGate, 4000+s.portOffset+i)
 		testHosts = append(testHosts, newHost)
 		allowedPeers = append(allowedPeers, newHost.ID())
 	}
@@ -95,7 +95,7 @@ func (s *BullyTestSuite) SetupIndividualTest(c BullyTestCase) ([]elector.Coordin
 	}
 
 	s.portOffset += numberOfTestHosts
-	for i := 0; i < numberOfTestHosts; i++ {
+	for i := range numberOfTestHosts {
 		com := p2p.NewCommunication(
 			testHosts[i],
 			s.testProtocolID,
@@ -215,7 +215,6 @@ func (s *BullyTestSuite) TestBully_GetCoordinator_OneDelay() {
 				c := <-resultChan
 
 				s.Equal(finalCoordinator.String(), c.String())
-
 			}
 		})
 	}

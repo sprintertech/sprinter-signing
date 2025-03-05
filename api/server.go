@@ -29,7 +29,7 @@ func Serve(
 	}()
 
 	<-ctx.Done()
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	err := server.Shutdown(shutdownCtx)

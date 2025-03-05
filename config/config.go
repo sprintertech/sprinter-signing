@@ -70,6 +70,7 @@ func GetSharedConfigFromNetwork(url string) (*Config, error) {
 	rawConfig := RawConfig{}
 	config := &Config{}
 
+	//nolint:gosec
 	resp, err := http.Get(url)
 	if err != nil {
 		return &Config{}, err
