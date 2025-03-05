@@ -11,9 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -103,30 +101,15 @@ func Run() error {
 	electorFactory := elector.NewCoordinatorElectorFactory(host, configuration.RelayerConfig.BullyConfig)
 	coordinator := tss.NewCoordinator(host, communication, electorFactory)
 
-	// this is temporary solution related to specifics of aws deployment
-	// effectively it waits until old instance is killed
-	var db *lvldb.LVLDB
-	for {
-		db, err = lvldb.NewLvlDB(viper.GetString(config.BlockstoreFlagName))
-		if err != nil {
-			log.Error().Err(err).Msg("Unable to connect to blockstore file, retry in 10 seconds")
-			time.Sleep(10 * time.Second)
-		} else {
-			log.Info().Msg("Successfully connected to blockstore file")
-			break
-		}
+	db, err := lvldb.NewLvlDB(viper.GetString(config.BlockstoreFlagName))
+	if err != nil {
+		panicOnError(err)
 	}
 	blockstore := store.NewBlockStore(db)
 	keyshareStore := keyshare.NewECDSAKeyshareStore(configuration.RelayerConfig.MpcConfig.KeysharePath)
 
-	// wait until executions are done and then stop further executions before exiting
-	exitLock := &sync.RWMutex{}
-	defer exitLock.Lock()
-
 	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL)
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 	defer func() {
 		if err := mp.Shutdown(context.Background()); err != nil {
 			log.Error().Msgf("Error shutting down meter provider: %v", err)
