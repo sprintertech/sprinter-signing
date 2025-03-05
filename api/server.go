@@ -18,7 +18,8 @@ func Serve(
 	mux.HandleFunc("POST /signing", signingHandler.HandleSigning)
 
 	server := &http.Server{
-		Addr: addr,
+		Addr:        addr,
+		ReadTimeout: 10 * time.Second,
 	}
 	go func() {
 		log.Info().Msgf("Starting server on %s", addr)
