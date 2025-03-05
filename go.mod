@@ -8,6 +8,7 @@ require (
 	github.com/creasty/defaults v1.6.0
 	github.com/ethereum/go-ethereum v1.15.2
 	github.com/golang/mock v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/imdario/mergo v0.3.12
 	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/libp2p/go-libp2p v0.38.2

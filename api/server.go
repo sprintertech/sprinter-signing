@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 )
@@ -13,13 +14,16 @@ func Serve(
 	ctx context.Context,
 	addr string,
 	signingHandler *handlers.SigningHandler,
+	statusHandler *handlers.StatusHandler,
 ) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /signing", signingHandler.HandleSigning)
+	r := mux.NewRouter()
+	r.HandleFunc("POST /v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning)
+	r.HandleFunc("GET /v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest)
+	http.Handle("/", r)
 
 	server := &http.Server{
 		Addr:        addr,
-		ReadTimeout: 10 * time.Second,
+		ReadTimeout: time.Second * 10,
 	}
 	go func() {
 		log.Info().Msgf("Starting server on %s", addr)
@@ -29,7 +33,7 @@ func Serve(
 	}()
 
 	<-ctx.Done()
-	shutdownCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err := server.Shutdown(shutdownCtx)

@@ -1,17 +1,28 @@
 package handlers
 
 import (
+	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
+type ProtocolType string
+
+const (
+	AcrossProtocol ProtocolType = "across"
+)
+
 type SigningBody struct {
-	DepositId *BigInt `json:"depositId"`
-	ChainId   uint64  `json:"chainId"`
+	ChainId   uint64
+	DepositId *BigInt      `json:"depositId"`
+	Protocol  ProtocolType `json:"protocol"`
 }
 
 type SigningHandler struct {
@@ -37,18 +48,28 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.validate(b)
+	vars := mux.Vars(r)
+	err = h.validate(b, vars)
 	if err != nil {
 		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
 		return
 	}
-
 	errChn := make(chan error, 1)
-	am := across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-		DepositId: b.DepositId.Int,
-		ErrChn:    errChn,
-	})
-	h.msgChan <- []*message.Message{am}
+
+	var m *message.Message
+	switch b.Protocol {
+	case AcrossProtocol:
+		{
+			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
+				DepositId: b.DepositId.Int,
+				ErrChn:    errChn,
+			})
+		}
+	default:
+		JSONError(w, fmt.Sprintf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
+		return
+	}
+	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
 	if err != nil {
@@ -59,7 +80,13 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (h *SigningHandler) validate(b *SigningBody) error {
+func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error {
+	chainId, ok := new(big.Int).SetString(vars["chainId"], 10)
+	if !ok {
+		return fmt.Errorf("field 'chainId' invalid")
+	}
+	b.ChainId = chainId.Uint64()
+
 	if b.DepositId == nil {
 		return fmt.Errorf("missing field 'depositId'")
 	}
@@ -68,10 +95,72 @@ func (h *SigningHandler) validate(b *SigningBody) error {
 		return fmt.Errorf("missing field 'chainId'")
 	}
 
-	_, ok := h.chains[b.ChainId]
+	_, ok = h.chains[b.ChainId]
 	if !ok {
 		return fmt.Errorf("chain '%d' not supported", b.ChainId)
 	}
 
 	return nil
+}
+
+type SignatureCacher interface {
+	Subscribe(ctx context.Context, id string, sigChannel chan []byte)
+}
+
+type StatusHandler struct {
+	cache  SignatureCacher
+	chains map[uint64]struct{}
+}
+
+func NewStatusHandler(cache SignatureCacher, chains map[uint64]struct{}) *StatusHandler {
+	return &StatusHandler{
+		cache:  cache,
+		chains: chains,
+	}
+}
+
+// HandleRequest is an sse handler that waits until the signing signature is ready
+// and returns it
+func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	chainId, ok := new(big.Int).SetString(vars["chainId"], 0)
+	if !ok {
+		JSONError(w, "chain id invalid", http.StatusBadRequest)
+		return
+	}
+	_, ok = h.chains[chainId.Uint64()]
+	if !ok {
+		JSONError(w, fmt.Sprintf("chain %d not supported", chainId.Int64()), http.StatusNotFound)
+		return
+	}
+	depositId, ok := vars["depositId"]
+	if !ok {
+		JSONError(w, "missing 'depositId", http.StatusBadRequest)
+		return
+	}
+
+	h.setheaders(w)
+
+	ctx := r.Context()
+	sigChn := make(chan []byte, 1)
+	h.cache.Subscribe(ctx, fmt.Sprintf("%d-%s", chainId, depositId), sigChn)
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case sig := <-sigChn:
+			{
+				fmt.Fprintf(w, "data: %s\n\n", hex.EncodeToString(sig))
+				w.(http.Flusher).Flush()
+				return
+			}
+		}
+	}
+}
+
+func (h *StatusHandler) setheaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 }
