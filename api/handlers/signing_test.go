@@ -62,7 +62,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingChainID() {
 	input := handlers.SigningBody{
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -85,7 +85,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingChainID() {
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	input := handlers.SigningBody{
 		ChainId:   2,
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -108,7 +108,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	input := handlers.SigningBody{
 		ChainId:   1,
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -131,7 +131,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	input := handlers.SigningBody{
 		ChainId:   1,
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 	}
 	body, _ := json.Marshal(input)
 

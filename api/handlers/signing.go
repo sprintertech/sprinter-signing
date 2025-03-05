@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"net/http"
 
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
@@ -11,8 +10,8 @@ import (
 )
 
 type SigningBody struct {
-	DepositId *big.Int `json:"depositId"`
-	ChainId   uint64   `json:"chainId"`
+	DepositId *BigInt `json:"depositId"`
+	ChainId   uint64  `json:"chainId"`
 }
 
 type SigningHandler struct {
@@ -46,7 +45,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 
 	errChn := make(chan error, 1)
 	am := across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-		DepositId: b.DepositId,
+		DepositId: b.DepositId.Int,
 		ErrChn:    errChn,
 	})
 	h.msgChan <- []*message.Message{am}
