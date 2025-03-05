@@ -139,8 +139,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 
 		err := h.notify(m, data)
 		if err != nil {
-			data.ErrChn <- err
-			return nil, err
+			log.Warn().Msgf("Failed to notify relayers because of %s", err)
 		}
 	}
 

@@ -74,35 +74,6 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	)
 }
 
-func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedNotify() {
-	s.mockCommunication.EXPECT().Broadcast(
-		gomock.Any(),
-		gomock.Any(),
-		comm.AcrossMsg,
-		comm.AcrossSessionID,
-	).Return(fmt.Errorf("error"))
-	p, _ := pstoremem.NewPeerstore()
-	s.mockHost.EXPECT().Peerstore().Return(p)
-
-	errChn := make(chan error, 1)
-	ad := message.AcrossData{
-		ErrChn: errChn,
-	}
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      1,
-		Destination: 2,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
 func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
