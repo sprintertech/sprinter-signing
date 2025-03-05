@@ -22,7 +22,8 @@ func Serve(
 	http.Handle("/", r)
 
 	server := &http.Server{
-		Addr: addr,
+		Addr:        addr,
+		ReadTimeout: time.Second * 10,
 	}
 	go func() {
 		log.Info().Msgf("Starting server on %s", addr)

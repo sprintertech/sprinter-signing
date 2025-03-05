@@ -185,12 +185,12 @@ func (s *CommunicationIntegrationTestSuite) TestCommunication_BroadcastMessage_S
 /**
 * Util function used for setting tests with multiple communications
  */
-func InitializeHostsAndCommunications(numberOfActors int, protocolID protocol.ID) ([]host.Host, []comm.Communication) {
+func InitializeHostsAndCommunications(numberOfActors uint16, protocolID protocol.ID) ([]host.Host, []comm.Communication) {
 	topology := &topology.NetworkTopology{
 		Peers: []*peer.AddrInfo{},
 	}
 	privateKeys := []crypto.PrivKey{}
-	for i := 0; i < numberOfActors; i++ {
+	for i := range numberOfActors {
 		privKeyForHost, _, _ := crypto.GenerateKeyPair(crypto.ECDSA, 1)
 		privateKeys = append(privateKeys, privKeyForHost)
 		peerID, _ := peer.IDFromPrivateKey(privKeyForHost)
@@ -202,15 +202,16 @@ func InitializeHostsAndCommunications(numberOfActors int, protocolID protocol.ID
 
 	var testHosts []host.Host
 	// create test hosts
-	for i := 0; i < numberOfActors; i++ {
-		newHost, _ := p2p.NewHost(privateKeys[i], topology, p2p.NewConnectionGate(topology), uint16(4000+i))
+
+	for i := range numberOfActors {
+		newHost, _ := p2p.NewHost(privateKeys[i], topology, p2p.NewConnectionGate(topology), 4000+i)
 		testHosts = append(testHosts, newHost)
 	}
 
 	// populate peerstores
-	peersAdrInfos := map[int][]*peer.AddrInfo{}
-	for i := 0; i < numberOfActors; i++ {
-		for j := 0; j < numberOfActors; j++ {
+	peersAdrInfos := map[uint16][]*peer.AddrInfo{}
+	for i := range numberOfActors {
+		for j := range numberOfActors {
 			if i != j {
 				adrInfoForHost, _ := peer.AddrInfoFromString(fmt.Sprintf(
 					"/ip4/127.0.0.1/tcp/%d/p2p/%s", 4000+j, testHosts[j].ID().String(),
@@ -223,7 +224,7 @@ func InitializeHostsAndCommunications(numberOfActors int, protocolID protocol.ID
 
 	// create communications
 	var testCommunications []comm.Communication
-	for i := 0; i < numberOfActors; i++ {
+	for i := range numberOfActors {
 		com := p2p.NewCommunication(
 			testHosts[i],
 			protocolID,

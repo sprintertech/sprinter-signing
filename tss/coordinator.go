@@ -211,7 +211,7 @@ func (c *Coordinator) start(ctx context.Context, tssProcesses []TssProcess, coor
 }
 
 // retry initiates full bully process to calculate coordinator and starts a new tss process after
-// an expected error ocurred during regular tss execution
+// an expected error occurred during regular tss execution
 func (c *Coordinator) retry(ctx context.Context, tssProcesses []TssProcess, resultChn chan interface{}, excludedPeers []peer.ID) error {
 	coordinatorElector := c.electorFactory.CoordinatorElector(tssProcesses[0].SessionID(), elector.Bully)
 	coordinator, err := coordinatorElector.Coordinator(ctx, common.ExcludePeers(tssProcesses[0].ValidCoordinators(), excludedPeers))
