@@ -231,7 +231,6 @@ func (s *Signing) processEndMessage(ctx context.Context, endChn chan tssCommon.S
 func (s *Signing) readyParticipants(readyPeers []peer.ID) []peer.ID {
 	readyParticipants := make([]peer.ID, 0)
 	for _, peer := range readyPeers {
-
 		if !slices.Contains(s.key.Peers, peer) {
 			continue
 		}

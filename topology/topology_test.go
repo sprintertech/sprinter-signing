@@ -137,7 +137,6 @@ func TestRunTopologyProviderTestSuite(t *testing.T) {
 func (s *TopologyProviderTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	s.fetcher = mock_topology.NewMockFetcher(ctrl)
-
 }
 
 func (s *TopologyProviderTestSuite) Test_FetchingTopologyFails() {
