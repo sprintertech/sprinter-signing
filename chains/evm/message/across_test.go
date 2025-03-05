@@ -117,7 +117,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -148,7 +149,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -184,7 +186,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -227,7 +230,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
