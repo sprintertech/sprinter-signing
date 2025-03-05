@@ -70,7 +70,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 	input := handlers.SigningBody{
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
@@ -96,7 +96,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	input := handlers.SigningBody{
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
@@ -122,7 +122,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	input := handlers.SigningBody{
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "invalid",
 	}
 	body, _ := json.Marshal(input)
@@ -148,7 +148,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	input := handlers.SigningBody{
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
@@ -174,7 +174,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	input := handlers.SigningBody{
-		DepositId: big.NewInt(1000),
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
 	}
 	body, _ := json.Marshal(input)
