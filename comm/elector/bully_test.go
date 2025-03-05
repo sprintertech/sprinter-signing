@@ -61,6 +61,7 @@ func (s *BullyTestSuite) SetupIndividualTest(c BullyTestCase) ([]elector.Coordin
 	allowedPeers := peer.IDSlice{}
 	var testBullyCoordinators []elector.CoordinatorElector
 
+	// nolint:gosec
 	numberOfTestHosts := uint16(len(c.testRelayers))
 
 	topology := &topology.NetworkTopology{
