@@ -60,7 +60,6 @@ func (s *SignatureCache) Subscribe(ctx context.Context, id string, sigChannel ch
 				return
 			}
 		}
-
 	}
 }
 
