@@ -204,7 +204,6 @@ func InitializeHostsAndCommunications(numberOfActors uint16, protocolID protocol
 	// create test hosts
 
 	for i := range numberOfActors {
-		// nolint:gosec
 		newHost, _ := p2p.NewHost(privateKeys[i], topology, p2p.NewConnectionGate(topology), 4000+i)
 		testHosts = append(testHosts, newHost)
 	}
