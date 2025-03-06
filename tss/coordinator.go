@@ -24,7 +24,7 @@ import (
 
 var (
 	initiatePeriod = 1 * time.Second
-	tssTimeout     = 10 * time.Second
+	tssTimeout     = 30 * time.Second
 )
 
 type TssProcess interface {

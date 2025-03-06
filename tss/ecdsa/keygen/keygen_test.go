@@ -41,7 +41,6 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 		keygen := keygen.NewKeygen("keygen", s.Threshold, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
 		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
-		coordinator.TssTimeout = 30 * time.Second
 		coordinators = append(coordinators, coordinator)
 		processes = append(processes, keygen)
 	}
