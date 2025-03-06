@@ -48,7 +48,11 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 	s.MockECDSAStorer.EXPECT().LockKeyshare().Times(3)
 	s.MockECDSAStorer.EXPECT().UnlockKeyshare().Times(3)
 	s.MockECDSAStorer.EXPECT().StoreKeyshare(gomock.Any()).Times(3)
-	pool := pool.New().WithContext(context.Background()).WithCancelOnError()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	pool := pool.New().WithContext(ctx)
 	for i, coordinator := range coordinators {
 		pool.Go(func(ctx context.Context) error {
 			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, nil, peer.ID(""))
