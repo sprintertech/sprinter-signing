@@ -88,8 +88,6 @@ func (t *TopologyProvider) NetworkTopology(hash string) (*NetworkTopology, error
 		return nil, err
 	}
 
-	fmt.Println(string(body))
-
 	response := strings.TrimSuffix(string(body), "\n")
 	ct, err := hex.DecodeString(response)
 	if err != nil {
@@ -108,8 +106,6 @@ func (t *TopologyProvider) NetworkTopology(hash string) (*NetworkTopology, error
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(unecryptedBody))
 
 	return ProcessRawTopology(rawTopology)
 }
