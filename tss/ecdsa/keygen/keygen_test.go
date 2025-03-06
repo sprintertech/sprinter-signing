@@ -40,7 +40,9 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 		communicationMap[host.ID()] = &communication
 		keygen := keygen.NewKeygen("keygen", s.Threshold, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
+		coordinator.TssTimeout = 30 * time.Second
+		coordinators = append(coordinators, coordinator)
 		processes = append(processes, keygen)
 	}
 	tsstest.SetupCommunication(communicationMap)
