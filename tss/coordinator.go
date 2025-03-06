@@ -137,10 +137,10 @@ func (c *Coordinator) handleError(ctx context.Context, err error, tssProcesses [
 	var commError *comm.CommunicationError
 	var subsetError *SubsetError
 	var tssError *tss.Error
-	if errors.Is(err, commError) {
+	if errors.As(err, &commError) {
 		log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
 		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, []peer.ID{}) })
-	} else if errors.Is(err, &tss.Error{}) {
+	} else if errors.As(err, &tssError) {
 		log.Err(err).Str("SessionID", sessionID).Msgf("Tss process failed with error %+v", err)
 		excludedPeers, err := common.PeersFromParties(tssError.Culprits())
 		if err != nil {
