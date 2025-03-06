@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
     @author ChainSafe Systems.
  */
 contract Admin is Ownable {
+    address public _MPCAddress;
+
     event StartKeygen();
     event EndKeygen();
     event KeyRefresh(string hash);
