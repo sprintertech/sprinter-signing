@@ -1,5 +1,9 @@
 name: Publish Latest Docker Image
 
+permissions:
+  packages: write
+  contents: read
+
 on:
   push:
     branches:
