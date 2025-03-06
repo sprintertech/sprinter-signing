@@ -111,7 +111,6 @@ func (t *TopologyProvider) NetworkTopology(hash string) (*NetworkTopology, error
 }
 
 func ProcessRawTopology(rawTopology *RawTopology) (*NetworkTopology, error) {
-
 	var peers []*peer.AddrInfo
 	for _, p := range rawTopology.Peers {
 		fmt.Println(p)
