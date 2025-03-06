@@ -42,7 +42,37 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		Protocol: "across",
+		Protocol:      "across",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(across.AcrossData)
+		ad.ErrChn <- fmt.Errorf("error handling message")
+	}()
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusBadRequest, recorder.Code)
+}
+
+func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingLiquidityPool() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
+	input := handlers.SigningBody{
+		Protocol:  "across",
+		DepositId: &handlers.BigInt{big.NewInt(1000)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -70,8 +100,9 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId: &handlers.BigInt{big.NewInt(1000)},
-		Protocol:  "across",
+		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		Protocol:      "across",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 	}
 	body, _ := json.Marshal(input)
 
@@ -99,8 +130,9 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId: &handlers.BigInt{big.NewInt(1000)},
-		Protocol:  "across",
+		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		Protocol:      "across",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 	}
 	body, _ := json.Marshal(input)
 
@@ -128,8 +160,9 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId: &handlers.BigInt{big.NewInt(1000)},
-		Protocol:  "invalid",
+		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		Protocol:      "invalid",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 	}
 	body, _ := json.Marshal(input)
 
@@ -157,8 +190,9 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId: &handlers.BigInt{big.NewInt(1000)},
-		Protocol:  "across",
+		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		Protocol:      "across",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 	}
 	body, _ := json.Marshal(input)
 
@@ -186,8 +220,9 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId: &handlers.BigInt{big.NewInt(1000)},
-		Protocol:  "across",
+		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		Protocol:      "across",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 	}
 	body, _ := json.Marshal(input)
 

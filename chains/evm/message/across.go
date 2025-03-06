@@ -33,7 +33,6 @@ const (
 	VERSION         = "v1.0.0"
 	BORROW_TYPEHASH = "Borrow(address borrowToken,uint256 amount,address target,bytes targetCallData,uint256 nonce,uint256 deadline)"
 	PROTOCOL_ID     = 1
-	LIQUIDITY_POOL  = "0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5"
 	BLOCK_RANGE     = 1000
 )
 
@@ -43,9 +42,10 @@ type EventFilterer interface {
 }
 
 type AcrossData struct {
-	DepositId   *big.Int
-	Coordinator peer.ID
-	ErrChn      chan error
+	DepositId     *big.Int
+	LiquidityPool common.Address
+	Coordinator   peer.ID
+	ErrChn        chan error
 }
 
 func NewAcrossMessage(source, destination uint64, acrossData AcrossData) *message.Message {
@@ -149,7 +149,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	unlockHash, err := h.unlockHash(d, sourceChainID)
+	unlockHash, err := h.unlockHash(d, sourceChainID, data.LiquidityPool)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -243,9 +243,8 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	return d, err
 }
 
-func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceChainId uint64) ([]byte, error) {
-	lpAddress := common.HexToAddress(LIQUIDITY_POOL)
-	calldata, err := deposit.ToV3RelayData(new(big.Int).SetUint64(sourceChainId)).Calldata(deposit.DestinationChainId, lpAddress)
+func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceChainId uint64, pool common.Address) ([]byte, error) {
+	calldata, err := deposit.ToV3RelayData(new(big.Int).SetUint64(sourceChainId)).Calldata(deposit.DestinationChainId, pool)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -280,7 +279,7 @@ func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceC
 			Name:              DOMAIN_NAME,
 			ChainId:           math.NewHexOrDecimal256(deposit.DestinationChainId.Int64()),
 			Version:           VERSION,
-			VerifyingContract: lpAddress.Hex(),
+			VerifyingContract: pool.Hex(),
 		},
 		Message: msg,
 	}

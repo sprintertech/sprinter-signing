@@ -88,6 +88,8 @@ func (t *TopologyProvider) NetworkTopology(hash string) (*NetworkTopology, error
 		return nil, err
 	}
 
+	fmt.Println(string(body))
+
 	response := strings.TrimSuffix(string(body), "\n")
 	ct, err := hex.DecodeString(response)
 	if err != nil {
@@ -107,12 +109,17 @@ func (t *TopologyProvider) NetworkTopology(hash string) (*NetworkTopology, error
 		return nil, err
 	}
 
+	fmt.Println(string(unecryptedBody))
+
 	return ProcessRawTopology(rawTopology)
 }
 
 func ProcessRawTopology(rawTopology *RawTopology) (*NetworkTopology, error) {
+
 	var peers []*peer.AddrInfo
 	for _, p := range rawTopology.Peers {
+		fmt.Println(p)
+
 		addrInfo, err := peer.AddrInfoFromString(p.PeerAddress)
 		if err != nil {
 			return nil, fmt.Errorf("invalid peer address %s: %w", p.PeerAddress, err)
