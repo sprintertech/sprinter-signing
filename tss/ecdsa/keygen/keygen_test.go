@@ -40,7 +40,8 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 		communicationMap[host.ID()] = &communication
 		keygen := keygen.NewKeygen("keygen", s.Threshold, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
+		coordinators = append(coordinators, coordinator)
 		processes = append(processes, keygen)
 	}
 	tsstest.SetupCommunication(communicationMap)
@@ -48,7 +49,11 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 	s.MockECDSAStorer.EXPECT().LockKeyshare().Times(3)
 	s.MockECDSAStorer.EXPECT().UnlockKeyshare().Times(3)
 	s.MockECDSAStorer.EXPECT().StoreKeyshare(gomock.Any()).Times(3)
-	pool := pool.New().WithContext(context.Background()).WithCancelOnError()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	pool := pool.New().WithContext(ctx)
 	for i, coordinator := range coordinators {
 		pool.Go(func(ctx context.Context) error {
 			return coordinator.Execute(ctx, []tss.TssProcess{processes[i]}, nil, peer.ID(""))
@@ -89,5 +94,6 @@ func (s *KeygenTestSuite) Test_KeygenTimeout() {
 	}
 
 	err := pool.Wait()
-	s.NotNil(err)
+
+	s.Nil(err)
 }

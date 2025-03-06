@@ -56,8 +56,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
-	pools := make(map[uint64]common.Address)
-	pools[1] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
+	pool := common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
 
 	s.sigChn = make(chan interface{}, 1)
 
@@ -66,42 +65,13 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 
 	s.handler = message.NewAcrossMessageHandler(
 		s.mockEventFilterer,
-		pools,
+		pool,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,
 		s.mockFetcher,
 		s.sigChn,
 	)
-}
-
-func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedNotify() {
-	s.mockCommunication.EXPECT().Broadcast(
-		gomock.Any(),
-		gomock.Any(),
-		comm.AcrossMsg,
-		comm.AcrossSessionID,
-	).Return(fmt.Errorf("error"))
-	p, _ := pstoremem.NewPeerstore()
-	s.mockHost.EXPECT().Peerstore().Return(p)
-
-	errChn := make(chan error, 1)
-	ad := message.AcrossData{
-		ErrChn: errChn,
-	}
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      1,
-		Destination: 2,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
 }
 
 func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
@@ -118,7 +88,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -149,7 +120,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -185,7 +157,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -228,7 +201,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
-		ErrChn: errChn,
+		ErrChn:    errChn,
+		DepositId: big.NewInt(100),
 	}
 	m := &coreMessage.Message{
 		Data:        ad,

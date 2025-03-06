@@ -1,0 +1,33 @@
+services:
+  relayer1:
+    build:
+      context: ../.
+      dockerfile: ./Dockerfile
+    command: run --config /cfg/config_evm-evm_1.json 
+    ports:
+      - 3000:3000
+    volumes:
+      - ./cfg:/cfg
+    restart: always
+
+  relayer2:
+    build:
+      context: ../.
+      dockerfile: ./Dockerfile
+    command: run --config /cfg/config_evm-evm_2.json
+    volumes:
+      - ./cfg:/cfg
+    restart: always
+    ports:
+      - 3001:3000
+
+  relayer3:
+    build:
+      context: ../.
+      dockerfile: ./Dockerfile
+    command: run --config /cfg/config_evm-evm_3.json 
+    volumes:
+      - ./cfg:/cfg
+    ports:
+      - 3002:3000
+    restart: always

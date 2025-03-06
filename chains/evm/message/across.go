@@ -65,7 +65,7 @@ type Coordinator interface {
 type AcrossMessageHandler struct {
 	client EventFilterer
 
-	pools map[uint64]common.Address
+	pool common.Address
 
 	coordinator Coordinator
 	host        host.Host
@@ -77,7 +77,7 @@ type AcrossMessageHandler struct {
 
 func NewAcrossMessageHandler(
 	client EventFilterer,
-	pools map[uint64]common.Address,
+	pool common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
@@ -86,7 +86,7 @@ func NewAcrossMessageHandler(
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
 		client:      client,
-		pools:       pools,
+		pool:        pool,
 		coordinator: coordinator,
 		host:        host,
 		comm:        comm,
@@ -132,13 +132,15 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 // cache through the result channel.
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(AcrossData)
-	data.Coordinator = h.host.ID()
-	sourceChainID := m.Destination
 
-	err := h.notify(m, data)
-	if err != nil {
-		data.ErrChn <- err
-		return nil, err
+	sourceChainID := m.Destination
+	if data.Coordinator == peer.ID("") {
+		data.Coordinator = h.host.ID()
+
+		err := h.notify(m, data)
+		if err != nil {
+			log.Warn().Msgf("Failed to notify relayers because of %s", err)
+		}
 	}
 
 	d, err := h.Deposit(data.DepositId, sourceChainID)
@@ -198,7 +200,7 @@ func (h *AcrossMessageHandler) Deposit(depositId *big.Int, sourceChainId uint64)
 		ToBlock:   latestBlock,
 		FromBlock: new(big.Int).Sub(latestBlock, big.NewInt(BLOCK_RANGE)),
 		Addresses: []common.Address{
-			h.pools[sourceChainId],
+			h.pool,
 		},
 		Topics: [][]common.Hash{
 			{
@@ -206,7 +208,7 @@ func (h *AcrossMessageHandler) Deposit(depositId *big.Int, sourceChainId uint64)
 			},
 			{},
 			{
-				common.HexToHash(depositId.Text(16)),
+				common.HexToHash(common.Bytes2Hex(common.LeftPadBytes(depositId.Bytes(), 32))),
 			},
 		},
 	}
@@ -303,17 +305,22 @@ func (h *AcrossMessageHandler) nonce(deposit *events.AcrossDeposit, sourceChainI
 	// Create a new big.Int
 	nonce := new(big.Int)
 
-	// Set originChainID (64 bits)
-	nonce.SetUint64(sourceChainId)
-	nonce.Lsh(nonce, 248) // Shift left by 248 bits (240 + 8)
+	// Set originChainID (8 bits)
+	originChainID := new(big.Int).SetUint64(sourceChainId)
+	originChainID.And(originChainID, new(big.Int).SetUint64(0xFF)) // Ensure only 8 bits are used
+	nonce.Lsh(originChainID, 248)                                  // Shift left by 248 bits
 
-	// Add protocolID in the middle (shifted left by 240 bits)
+	// Add protocolID in the middle (8 bits, shifted left by 240 bits)
 	protocolInt := big.NewInt(PROTOCOL_ID)
+	protocolInt.And(protocolInt, new(big.Int).SetUint64(0xFF)) // Ensure only 8 bits are used
 	protocolInt.Lsh(protocolInt, 240)
 	nonce.Or(nonce, protocolInt)
 
-	// Add nonce at the end
-	nonce.Or(nonce, deposit.DepositId)
+	// Add depositId at the end (240 bits)
+	depositIdMask := new(big.Int).Lsh(big.NewInt(1), 240)
+	depositIdMask.Sub(depositIdMask, big.NewInt(1))                 // Create a mask of 240 1's
+	depositId := new(big.Int).And(deposit.DepositId, depositIdMask) // Ensure only 240 bits are used
+	nonce.Or(nonce, depositId)
 
 	return nonce
 }

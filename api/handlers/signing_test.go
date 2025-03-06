@@ -24,8 +24,7 @@ import (
 type SigningHandlerTestSuite struct {
 	suite.Suite
 
-	handler *handlers.SigningHandler
-	msgChn  chan []*message.Message
+	chains map[uint64]struct{}
 }
 
 func TestRunSigningHandlerTestSuite(t *testing.T) {
@@ -33,17 +32,15 @@ func TestRunSigningHandlerTestSuite(t *testing.T) {
 }
 
 func (s *SigningHandlerTestSuite) SetupTest() {
-	ctrl := gomock.NewController(s.T())
-	defer ctrl.Finish()
-
 	chains := make(map[uint64]struct{})
 	chains[1] = struct{}{}
-
-	s.msgChn = make(chan []*message.Message, 1)
-	s.handler = handlers.NewSigningHandler(s.msgChn, chains)
+	s.chains = chains
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
 	input := handlers.SigningBody{
 		Protocol: "across",
 	}
@@ -58,17 +55,20 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 	recorder := httptest.NewRecorder()
 
 	go func() {
-		msg := <-s.msgChn
+		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
-	s.handler.HandleSigning(recorder, req)
+	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
 	input := handlers.SigningBody{
 		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
@@ -84,17 +84,20 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 	recorder := httptest.NewRecorder()
 
 	go func() {
-		msg := <-s.msgChn
+		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
-	s.handler.HandleSigning(recorder, req)
+	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
 	input := handlers.SigningBody{
 		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
@@ -110,17 +113,20 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	recorder := httptest.NewRecorder()
 
 	go func() {
-		msg := <-s.msgChn
+		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
-	s.handler.HandleSigning(recorder, req)
+	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
 	input := handlers.SigningBody{
 		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "invalid",
@@ -136,17 +142,20 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	recorder := httptest.NewRecorder()
 
 	go func() {
-		msg := <-s.msgChn
+		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
-	s.handler.HandleSigning(recorder, req)
+	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
 	input := handlers.SigningBody{
 		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
@@ -162,17 +171,20 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	recorder := httptest.NewRecorder()
 
 	go func() {
-		msg := <-s.msgChn
+		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
-	s.handler.HandleSigning(recorder, req)
+	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusInternalServerError, recorder.Code)
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
 	input := handlers.SigningBody{
 		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Protocol:  "across",
@@ -188,12 +200,12 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	recorder := httptest.NewRecorder()
 
 	go func() {
-		msg := <-s.msgChn
+		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
 		ad.ErrChn <- nil
 	}()
 
-	s.handler.HandleSigning(recorder, req)
+	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusAccepted, recorder.Code)
 }

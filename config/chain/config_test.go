@@ -8,7 +8,7 @@ import (
 )
 
 func TestValidateConfig(t *testing.T) {
-	var id uint8 = 1
+	var id uint64 = 1
 	valid := GeneralChainConfig{
 		Name:     "chain",
 		Id:       &id,

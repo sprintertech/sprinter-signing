@@ -92,6 +92,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 			Env:        "TEST",
 			Id:         "123",
 			HealthPort: 9001,
+			ApiAddr:    "0.0.0.0:3000",
 			MpcConfig: relayer.MpcRelayerConfig{
 				TopologyConfiguration: relayer.TopologyConfiguration{
 					EncryptionKey: "test-enc-key",
@@ -110,10 +111,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 				PingInterval:     1 * time.Second,
 				ElectionWaitTime: 2 * time.Second,
 				BullyWaitTime:    3 * time.Minute,
-			},
-			UploaderConfig: relayer.UploaderConfig{
-				MaxRetries:     5,
-				MaxElapsedTime: 300000,
 			},
 		},
 		ChainConfigs: []map[string]interface{}{
@@ -209,6 +206,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV_RandomOrder() {
 			Env:        "TEST",
 			Id:         "123",
 			HealthPort: 9001,
+			ApiAddr:    "0.0.0.0:3000",
 			MpcConfig: relayer.MpcRelayerConfig{
 				TopologyConfiguration: relayer.TopologyConfiguration{
 					EncryptionKey: "test-enc-key",
@@ -227,10 +225,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV_RandomOrder() {
 				PingInterval:     1 * time.Second,
 				ElectionWaitTime: 2 * time.Second,
 				BullyWaitTime:    3 * time.Minute,
-			},
-			UploaderConfig: relayer.UploaderConfig{
-				MaxRetries:     5,
-				MaxElapsedTime: 300000,
 			},
 		},
 		ChainConfigs: []map[string]interface{}{
@@ -349,12 +343,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						PingInterval:     "1s",
 						ElectionWaitTime: "1s",
 					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
-					},
 				},
 			},
 			shouldFail: true,
@@ -372,12 +360,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 							Url:           "url",
 							Path:          "path",
 						},
-					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
 					},
 				},
 				ChainConfigs: []map[string]interface{}{{
@@ -409,12 +391,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						PingInterval:     "",
 						ElectionWaitTime: "",
 					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
-					},
 				},
 				ChainConfigs: []map[string]interface{}{{
 					"id":   float64(1),
@@ -434,12 +410,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					MpcConfig: relayer.RawMpcRelayerConfig{
 						TopologyConfiguration: relayer.TopologyConfiguration{},
 						Port:                  "2020",
-					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
 					},
 				},
 
@@ -467,12 +437,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						},
 						// Port: use default value,
 					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
-					},
 				},
 				ChainConfigs: []map[string]interface{}{{
 					"id":   float64(1),
@@ -488,6 +452,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					LogFile:                   "out.log",
 					OpenTelemetryCollectorURL: "",
 					HealthPort:                9001,
+					ApiAddr:                   "0.0.0.0:3000",
 					MpcConfig: relayer.MpcRelayerConfig{
 						Port: 9000,
 						TopologyConfiguration: relayer.TopologyConfiguration{
@@ -504,12 +469,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						ElectionWaitTime: 2 * time.Second,
 						BullyWaitTime:    3 * time.Minute,
 					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
-					},
 				},
 				ChainConfigs: []map[string]interface{}{{
 					"id":   float64(1),
@@ -525,6 +484,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					LogLevel:   "debug",
 					LogFile:    "custom.log",
 					HealthPort: "9002",
+					ApiAddr:    "0.0.0.0:3001",
 					MpcConfig: relayer.RawMpcRelayerConfig{
 						TopologyConfiguration: relayer.TopologyConfiguration{
 							EncryptionKey: "enc-key",
@@ -543,12 +503,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						ElectionWaitTime: "1s",
 						BullyWaitTime:    "1s",
 					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
-					},
 				},
 				ChainConfigs: []map[string]interface{}{{
 					"id":   float64(1),
@@ -564,6 +518,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 					LogFile:                   "custom.log",
 					OpenTelemetryCollectorURL: "",
 					HealthPort:                9002,
+					ApiAddr:                   "0.0.0.0:3001",
 					MpcConfig: relayer.MpcRelayerConfig{
 						Port:         2020,
 						KeysharePath: "./share.key",
@@ -581,12 +536,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						PingInterval:     time.Second,
 						ElectionWaitTime: time.Second,
 						BullyWaitTime:    time.Second,
-					},
-					UploaderConfig: relayer.UploaderConfig{
-						URL:            "https://testIPFSProvider.com",
-						AuthToken:      "testToken",
-						MaxRetries:     5,
-						MaxElapsedTime: 5 * time.Minute,
 					},
 				},
 				ChainConfigs: []map[string]interface{}{{
