@@ -29,11 +29,10 @@ import (
 const (
 	AcrossMessage = "AcrossMessage"
 
-	DOMAIN_NAME     = "LiquidityPool"
-	VERSION         = "v1.0.0"
-	BORROW_TYPEHASH = "Borrow(address borrowToken,uint256 amount,address target,bytes targetCallData,uint256 nonce,uint256 deadline)"
-	PROTOCOL_ID     = 1
-	BLOCK_RANGE     = 1000
+	DOMAIN_NAME = "LiquidityPool"
+	VERSION     = "1.0.0"
+	PROTOCOL_ID = 1
+	BLOCK_RANGE = 1000
 )
 
 type EventFilterer interface {
@@ -44,6 +43,7 @@ type EventFilterer interface {
 type AcrossData struct {
 	DepositId     *big.Int
 	LiquidityPool common.Address
+	Caller        common.Address
 	Coordinator   peer.ID
 	ErrChn        chan error
 }
@@ -110,8 +110,11 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 				}
 
 				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, AcrossData{
-					DepositId:   acrossMsg.DepositId,
-					Coordinator: wMsg.From,
+					DepositId:     acrossMsg.DepositId,
+					Coordinator:   wMsg.From,
+					LiquidityPool: common.HexToAddress(acrossMsg.LiqudityPool),
+					Caller:        common.HexToAddress(acrossMsg.Caller),
+					ErrChn:        make(chan error),
 				})
 				_, err = h.HandleMessage(msg)
 				if err != nil {
@@ -149,7 +152,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	unlockHash, err := h.unlockHash(d, sourceChainID, data.LiquidityPool)
+	unlockHash, err := h.unlockHash(d, sourceChainID, data)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -182,7 +185,12 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 }
 
 func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
-	msgBytes, err := tssMessage.MarshalAcrossMessage(data.DepositId, m.Source, m.Destination)
+	msgBytes, err := tssMessage.MarshalAcrossMessage(
+		data.DepositId,
+		data.LiquidityPool.Hex(),
+		data.Caller.Hex(),
+		m.Source,
+		m.Destination)
 	if err != nil {
 		return err
 	}
@@ -243,12 +251,20 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	return d, err
 }
 
-func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceChainId uint64, pool common.Address) ([]byte, error) {
-	calldata, err := deposit.ToV3RelayData(new(big.Int).SetUint64(sourceChainId)).Calldata(deposit.DestinationChainId, pool)
+func (h *AcrossMessageHandler) unlockHash(
+	deposit *events.AcrossDeposit,
+	sourceChainId uint64,
+	data AcrossData,
+) ([]byte, error) {
+	calldata, err := deposit.ToV3RelayData(
+		new(big.Int).SetUint64(sourceChainId),
+	).Calldata(deposit.DestinationChainId, data.LiquidityPool)
 	if err != nil {
 		return []byte{}, err
 	}
+
 	msg := apitypes.TypedDataMessage{
+		"caller":         data.Caller.Hex(),
 		"borrowToken":    common.BytesToAddress(deposit.OutputToken[12:]).Hex(),
 		"amount":         deposit.OutputAmount,
 		"target":         common.BytesToAddress(deposit.Recipient[12:]).Hex(),
@@ -266,6 +282,7 @@ func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceC
 				{Name: "verifyingContract", Type: "address"},
 			},
 			"Borrow": []apitypes.Type{
+				{Name: "caller", Type: "address"},
 				{Name: "borrowToken", Type: "address"},
 				{Name: "amount", Type: "uint256"},
 				{Name: "target", Type: "address"},
@@ -279,7 +296,7 @@ func (h *AcrossMessageHandler) unlockHash(deposit *events.AcrossDeposit, sourceC
 			Name:              DOMAIN_NAME,
 			ChainId:           math.NewHexOrDecimal256(deposit.DestinationChainId.Int64()),
 			Version:           VERSION,
-			VerifyingContract: pool.Hex(),
+			VerifyingContract: data.LiquidityPool.Hex(),
 		},
 		Message: msg,
 	}
