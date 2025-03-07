@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -20,9 +21,11 @@ const (
 )
 
 type SigningBody struct {
-	ChainId   uint64
-	DepositId *BigInt      `json:"depositId"`
-	Protocol  ProtocolType `json:"protocol"`
+	ChainId       uint64
+	DepositId     *BigInt      `json:"depositId"`
+	Protocol      ProtocolType `json:"protocol"`
+	LiquidityPool string       `json:"liquidityPool"`
+	Caller        string       `json:"caller"`
 }
 
 type SigningHandler struct {
@@ -61,8 +64,10 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	case AcrossProtocol:
 		{
 			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-				DepositId: b.DepositId.Int,
-				ErrChn:    errChn,
+				DepositId:     b.DepositId.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				ErrChn:        errChn,
 			})
 		}
 	default:
@@ -89,6 +94,14 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 
 	if b.DepositId == nil {
 		return fmt.Errorf("missing field 'depositId'")
+	}
+
+	if b.LiquidityPool == "" {
+		return fmt.Errorf("missing field 'liquidityPool'")
+	}
+
+	if b.Caller == "" {
+		return fmt.Errorf("missing field 'caller'")
 	}
 
 	if b.ChainId == 0 {
