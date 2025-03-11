@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/config/chain"
 	"github.com/stretchr/testify/suite"
@@ -45,18 +46,24 @@ func (s *NewEVMConfigTestSuite) Test_FailedEVMConfigValidation() {
 	s.NotNil(err)
 }
 
-func (s *NewEVMConfigTestSuite) Test_InvalidBlockConfirmation() {
-	_, err := evm.NewEVMConfig(map[string]interface{}{
-		"id":                 1,
-		"endpoint":           "ws://domain.com",
-		"name":               "evm1",
-		"from":               "address",
-		"admin":              "bridgeAddress",
-		"blockConfirmations": -1,
-	})
+func (s *NewEVMConfigTestSuite) Test_InvalidConfirmations() {
+	rawConfig := map[string]interface{}{
+		"id":          1,
+		"endpoint":    "ws://domain.com",
+		"name":        "evm1",
+		"from":        "address",
+		"bridge":      "bridgeAddress",
+		"admin":       "adminAddress",
+		"frostKeygen": "frostKeygen",
+		"acrossPool":  "acrossPool",
+		"blockConfirmations": map[string]uint64{
+			"1000": 0,
+		},
+	}
+
+	_, err := evm.NewEVMConfig(rawConfig)
 
 	s.NotNil(err)
-	s.Equal(err.Error(), "blockConfirmations has to be >=1")
 }
 
 func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
@@ -82,11 +89,12 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 			Endpoint: "ws://domain.com",
 			Id:       id,
 		},
-		BlockConfirmations: big.NewInt(10),
 		BlockInterval:      big.NewInt(5),
 		BlockRetryInterval: time.Duration(5) * time.Second,
 		Admin:              "adminAddress",
 		AcrossPool:         "acrossPool",
+		BlockConfirmations: make(map[uint64]uint64),
+		Tokens:             make(map[string]common.Address),
 	})
 }
 
@@ -96,32 +104,33 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"endpoint":      "ws://domain.com",
 		"name":          "evm1",
 		"from":          "address",
-		"bridge":        "bridgeAddress",
 		"admin":         "adminAddress",
 		"liquidityPool": "pool",
-		"retry":         "retryAddress",
-		"frostKeygen":   "frostKeygen",
 		"acrossPool":    "acrossPool",
-		"handlers": []evm.HandlerConfig{
-			{
-				Type:    "erc20",
-				Address: "address1",
-			},
-			{
-				Type:    "erc721",
-				Address: "address2",
-			},
-		},
+
 		"maxGasPrice":           1000,
 		"gasMultiplier":         1000,
 		"gasIncreasePercentage": 20,
 		"gasLimit":              1000,
 		"transferGas":           300000,
 		"startBlock":            1000,
-		"blockConfirmations":    10,
 		"blockRetryInterval":    10,
 		"blockInterval":         2,
+		"blockConfirmations": map[string]uint64{
+			"1000": 5,
+			"2000": 10,
+		},
+		"tokens": map[string]string{
+			"usdc": "0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29",
+		},
 	}
+
+	expectedBlockConfirmations := make(map[uint64]uint64)
+	expectedBlockConfirmations[1000] = 5
+	expectedBlockConfirmations[2000] = 10
+
+	expectedTokens := make(map[string]common.Address)
+	expectedTokens["usdc"] = common.HexToAddress("0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29")
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig)
 
@@ -134,11 +143,12 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 			Endpoint: "ws://domain.com",
 			Id:       id,
 		},
-		BlockConfirmations: big.NewInt(10),
 		BlockInterval:      big.NewInt(2),
 		BlockRetryInterval: time.Duration(10) * time.Second,
 		Admin:              "adminAddress",
 		LiqudityPool:       "pool",
 		AcrossPool:         "acrossPool",
+		BlockConfirmations: expectedBlockConfirmations,
+		Tokens:             expectedTokens,
 	})
 }

@@ -6,9 +6,11 @@ package evm
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/creasty/defaults"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/sprintertech/sprinter-signing/config/chain"
@@ -24,27 +26,27 @@ type EVMConfig struct {
 	Admin              string
 	AcrossPool         string
 	LiqudityPool       string
-	BlockConfirmations *big.Int
+	Tokens             map[string]common.Address
+	// usd bucket -> confirmations
+	BlockConfirmations map[uint64]uint64
 	BlockInterval      *big.Int
 	BlockRetryInterval time.Duration
 }
 
 type RawEVMConfig struct {
 	chain.GeneralChainConfig `mapstructure:",squash"`
-	Admin                    string `mapstructure:"admin"`
-	LiqudityPool             string `mapstructure:"liquidityPool"`
-	AcrossPool               string `mapstructure:"acrossPool"`
-	BlockConfirmations       int64  `mapstructure:"blockConfirmations" default:"10"`
-	BlockInterval            int64  `mapstructure:"blockInterval" default:"5"`
-	BlockRetryInterval       uint64 `mapstructure:"blockRetryInterval" default:"5"`
+	Admin                    string                 `mapstructure:"admin"`
+	LiqudityPool             string                 `mapstructure:"liquidityPool"`
+	AcrossPool               string                 `mapstructure:"acrossPool"`
+	Tokens                   map[string]interface{} `mapstructure:"tokens"`
+	BlockConfirmations       map[string]interface{} `mapstructure:"blockConfirmations"`
+	BlockInterval            int64                  `mapstructure:"blockInterval" default:"5"`
+	BlockRetryInterval       uint64                 `mapstructure:"blockRetryInterval" default:"5"`
 }
 
 func (c *RawEVMConfig) Validate() error {
 	if err := c.GeneralChainConfig.Validate(); err != nil {
 		return err
-	}
-	if c.BlockConfirmations < 1 {
-		return fmt.Errorf("blockConfirmations has to be >=1")
 	}
 	return nil
 }
@@ -68,6 +70,26 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		return nil, err
 	}
 
+	tokens := make(map[string]common.Address)
+	for s, a := range c.Tokens {
+		tokens[s] = common.HexToAddress(a.(string))
+	}
+
+	confirmations := make(map[uint64]uint64)
+	for usd, confirmation := range c.BlockConfirmations {
+		usd, err := strconv.ParseUint(usd, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		confirmation := confirmation.(uint64)
+		if confirmation < 1 {
+			return nil, fmt.Errorf("confirmation cannot be lower than 1")
+		}
+
+		confirmations[usd] = confirmation
+	}
+
 	c.GeneralChainConfig.ParseFlags()
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
@@ -76,8 +98,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		AcrossPool:         c.AcrossPool,
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
-		BlockConfirmations: big.NewInt(c.BlockConfirmations),
 		BlockInterval:      big.NewInt(c.BlockInterval),
+
+		BlockConfirmations: confirmations,
+		Tokens:             tokens,
 	}
 
 	return config, nil
