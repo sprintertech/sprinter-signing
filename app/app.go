@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -31,6 +32,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/jobs"
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/sprintertech/sprinter-signing/metrics"
+	"github.com/sprintertech/sprinter-signing/price"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
 	coreEvm "github.com/sygmaprotocol/sygma-core/chains/evm"
@@ -126,6 +128,10 @@ func Run() error {
 	msgChan := make(chan []*message.Message)
 	sigChn := make(chan interface{})
 
+	priceAPI := price.NewCoinmarketcapAPI(
+		configuration.RelayerConfig.CoinmarketcapConfig.Url,
+		configuration.RelayerConfig.CoinmarketcapConfig.ApiKey)
+
 	signatureCache := cache.NewSignatureCache(communication)
 	go signatureCache.Watch(ctx, sigChn)
 
@@ -148,7 +154,19 @@ func Run() error {
 				mh := message.NewMessageHandler()
 				if config.AcrossPool != "" {
 					poolAddress := common.HexToAddress(config.AcrossPool)
-					acrossMh := evmMessage.NewAcrossMessageHandler(client, poolAddress, coordinator, host, communication, keyshareStore, sigChn)
+					acrossMh := evmMessage.NewAcrossMessageHandler(
+						*config.GeneralChainConfig.Id,
+						client,
+						poolAddress,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						priceAPI,
+						sigChn,
+						config.Tokens,
+						config.ConfirmationsByValue,
+						time.Duration(config.GeneralChainConfig.Blocktime)*time.Second)
 					go acrossMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
@@ -168,7 +186,7 @@ func Run() error {
 					adminAddress := common.HexToAddress(config.Admin)
 					eventHandlers = append(eventHandlers, evmListener.NewKeygenEventHandler(l, tssListener, coordinator, host, communication, keyshareStore, adminAddress, networkTopology.Threshold))
 					eventHandlers = append(eventHandlers, evmListener.NewRefreshEventHandler(l, topologyProvider, topologyStore, tssListener, coordinator, host, communication, connectionGate, keyshareStore, adminAddress))
-					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *config.GeneralChainConfig.Id, config.BlockRetryInterval, config.BlockConfirmations, config.BlockInterval)
+					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *config.GeneralChainConfig.Id, config.BlockRetryInterval, new(big.Int).SetUint64(config.GeneralChainConfig.BlockConfirmations), config.BlockInterval)
 				}
 
 				chain := coreEvm.NewEVMChain(listener, mh, nil, *config.GeneralChainConfig.Id, startBlock)

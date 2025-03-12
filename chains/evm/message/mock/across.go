@@ -15,6 +15,7 @@ import (
 	reflect "reflect"
 
 	ethereum "github.com/ethereum/go-ethereum"
+	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 	tss "github.com/sprintertech/sprinter-signing/tss"
@@ -75,6 +76,21 @@ func (mr *MockEventFiltererMockRecorder) LatestBlock() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LatestBlock", reflect.TypeOf((*MockEventFilterer)(nil).LatestBlock))
 }
 
+// TransactionReceipt mocks base method.
+func (m *MockEventFilterer) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TransactionReceipt", ctx, txHash)
+	ret0, _ := ret[0].(*types.Receipt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TransactionReceipt indicates an expected call of TransactionReceipt.
+func (mr *MockEventFiltererMockRecorder) TransactionReceipt(ctx, txHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransactionReceipt", reflect.TypeOf((*MockEventFilterer)(nil).TransactionReceipt), ctx, txHash)
+}
+
 // MockCoordinator is a mock of Coordinator interface.
 type MockCoordinator struct {
 	ctrl     *gomock.Controller
@@ -111,4 +127,43 @@ func (m *MockCoordinator) Execute(ctx context.Context, tssProcesses []tss.TssPro
 func (mr *MockCoordinatorMockRecorder) Execute(ctx, tssProcesses, resultChn, coordinator any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCoordinator)(nil).Execute), ctx, tssProcesses, resultChn, coordinator)
+}
+
+// MockTokenPricer is a mock of TokenPricer interface.
+type MockTokenPricer struct {
+	ctrl     *gomock.Controller
+	recorder *MockTokenPricerMockRecorder
+	isgomock struct{}
+}
+
+// MockTokenPricerMockRecorder is the mock recorder for MockTokenPricer.
+type MockTokenPricerMockRecorder struct {
+	mock *MockTokenPricer
+}
+
+// NewMockTokenPricer creates a new mock instance.
+func NewMockTokenPricer(ctrl *gomock.Controller) *MockTokenPricer {
+	mock := &MockTokenPricer{ctrl: ctrl}
+	mock.recorder = &MockTokenPricerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTokenPricer) EXPECT() *MockTokenPricerMockRecorder {
+	return m.recorder
+}
+
+// TokenPrice mocks base method.
+func (m *MockTokenPricer) TokenPrice(symbol string) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TokenPrice", symbol)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TokenPrice indicates an expected call of TokenPrice.
+func (mr *MockTokenPricerMockRecorder) TokenPrice(symbol any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenPrice", reflect.TypeOf((*MockTokenPricer)(nil).TokenPrice), symbol)
 }

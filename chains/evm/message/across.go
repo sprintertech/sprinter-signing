@@ -71,7 +71,8 @@ type TokenPricer interface {
 }
 
 type AcrossMessageHandler struct {
-	client EventFilterer
+	client  EventFilterer
+	chainID uint64
 
 	tokens        map[string]evm.TokenConfig
 	confirmations map[uint64]uint64
@@ -88,18 +89,21 @@ type AcrossMessageHandler struct {
 }
 
 func NewAcrossMessageHandler(
+	chainID uint64,
 	client EventFilterer,
 	pool common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
+	tokenPricer TokenPricer,
 	sigChn chan interface{},
 	tokens map[string]evm.TokenConfig,
 	confirmations map[uint64]uint64,
-	blocktime time.Time,
+	blocktime time.Duration,
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
+		chainID:       chainID,
 		client:        client,
 		pool:          pool,
 		coordinator:   coordinator,
@@ -109,12 +113,14 @@ func NewAcrossMessageHandler(
 		sigChn:        sigChn,
 		tokens:        tokens,
 		confirmations: confirmations,
+		blocktime:     blocktime,
+		tokenPricer:   tokenPricer,
 	}
 }
 
 func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 	msgChn := make(chan *comm.WrappedMessage)
-	subID := h.comm.Subscribe(comm.AcrossSessionID, comm.AcrossMsg, msgChn)
+	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID), comm.AcrossMsg, msgChn)
 
 	for {
 		select {
@@ -131,7 +137,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 					Coordinator:   wMsg.From,
 					LiquidityPool: common.HexToAddress(acrossMsg.LiqudityPool),
 					Caller:        common.HexToAddress(acrossMsg.Caller),
-					ErrChn:        make(chan error),
+					ErrChn:        make(chan error, 1),
 				})
 				_, err = h.HandleMessage(msg)
 				if err != nil {
@@ -153,7 +159,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(AcrossData)
 
-	sourceChainID := m.Destination
+	sourceChainID := h.chainID
 	if data.Coordinator == peer.ID("") {
 		data.Coordinator = h.host.ID()
 
@@ -216,7 +222,7 @@ func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error
 		return err
 	}
 
-	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, comm.AcrossSessionID)
+	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID))
 }
 
 func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (uint64, error) {
@@ -230,11 +236,9 @@ func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (ui
 		return 0, err
 	}
 
-	fmt.Println(price)
-
 	orderValue, _ := new(big.Float).Quo(
 		new(big.Float).Mul(big.NewFloat(price), new(big.Float).SetInt(d.InputAmount)),
-		new(big.Float).SetUint64(uint64(c.Decimals)),
+		new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(c.Decimals)), nil)),
 	).Float64()
 
 	for bucket, confirmation := range h.confirmations {
@@ -242,8 +246,6 @@ func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (ui
 			return confirmation, nil
 		}
 	}
-
-	fmt.Println(orderValue)
 
 	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValue)
 }
@@ -283,8 +285,6 @@ func (h *AcrossMessageHandler) waitForConfirmations(
 			if confirmations.Cmp(new(big.Int).SetUint64(requiredConfirmations)) != -1 {
 				return nil
 			}
-
-			fmt.Println(time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())))
 
 			time.Sleep(time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())))
 		}

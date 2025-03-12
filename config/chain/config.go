@@ -11,14 +11,15 @@ import (
 )
 
 type GeneralChainConfig struct {
-	Name           string  `mapstructure:"name"`
-	Id             *uint64 `mapstructure:"id"`
-	Endpoint       string  `mapstructure:"endpoint"`
-	Type           string  `mapstructure:"type"`
-	BlockstorePath string  `mapstructure:"blockstorePath"`
-	Blocktime      uint64  `mapstructure:"blocktime" default:"12"`
-	Key            string
-	Insecure       bool
+	Name               string  `mapstructure:"name"`
+	Id                 *uint64 `mapstructure:"id"`
+	Endpoint           string  `mapstructure:"endpoint"`
+	Type               string  `mapstructure:"type"`
+	BlockstorePath     string  `mapstructure:"blockstorePath"`
+	Blocktime          uint64  `mapstructure:"blocktime" default:"12"`
+	BlockConfirmations uint64  `default:"5"`
+	Key                string
+	Insecure           bool
 }
 
 func (c *GeneralChainConfig) Validate() error {

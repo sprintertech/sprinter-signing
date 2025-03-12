@@ -29,7 +29,7 @@
           "decimals": "6"
         }
       },
-      "confirmations": {
+      "confirmationsByValue": {
         "1000": "4000",
         "10000": "5"
       }
@@ -46,7 +46,7 @@
           "decimals": "6" 
         }
       },
-      "confirmations": {
+      "confirmationsByValue": {
         "1000": "5",
         "10000": "10"
       }

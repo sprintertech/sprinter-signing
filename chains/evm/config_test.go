@@ -56,8 +56,8 @@ func (s *NewEVMConfigTestSuite) Test_InvalidConfirmations() {
 		"admin":       "adminAddress",
 		"frostKeygen": "frostKeygen",
 		"acrossPool":  "acrossPool",
-		"blockConfirmations": map[string]uint64{
-			"1000": 0,
+		"confirmationsByValue": map[string]string{
+			"1000": "0",
 		},
 	}
 
@@ -85,30 +85,30 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 	s.Nil(err)
 	s.Equal(*actualConfig, evm.EVMConfig{
 		GeneralChainConfig: chain.GeneralChainConfig{
-			Name:      "evm1",
-			Endpoint:  "ws://domain.com",
-			Id:        id,
-			Blocktime: 12,
+			Name:               "evm1",
+			Endpoint:           "ws://domain.com",
+			Id:                 id,
+			BlockConfirmations: 5,
+			Blocktime:          12,
 		},
-		BlockInterval:      big.NewInt(5),
-		BlockRetryInterval: time.Duration(5) * time.Second,
-		Admin:              "adminAddress",
-		AcrossPool:         "acrossPool",
-		BlockConfirmations: make(map[uint64]uint64),
-		Tokens:             make(map[string]evm.TokenConfig),
+		BlockInterval:        big.NewInt(5),
+		BlockRetryInterval:   time.Duration(5) * time.Second,
+		Admin:                "adminAddress",
+		AcrossPool:           "acrossPool",
+		ConfirmationsByValue: make(map[uint64]uint64),
+		Tokens:               make(map[string]evm.TokenConfig),
 	})
 }
 
 func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 	rawConfig := map[string]interface{}{
-		"id":            1,
-		"endpoint":      "ws://domain.com",
-		"name":          "evm1",
-		"from":          "address",
-		"admin":         "adminAddress",
-		"liquidityPool": "pool",
-		"acrossPool":    "acrossPool",
-
+		"id":                    1,
+		"endpoint":              "ws://domain.com",
+		"name":                  "evm1",
+		"from":                  "address",
+		"admin":                 "adminAddress",
+		"liquidityPool":         "pool",
+		"acrossPool":            "acrossPool",
 		"maxGasPrice":           1000,
 		"gasMultiplier":         1000,
 		"gasIncreasePercentage": 20,
@@ -118,7 +118,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"blockRetryInterval":    10,
 		"blockInterval":         2,
 		"blocktime":             10,
-		"blockConfirmations": map[string]string{
+		"confirmationsByValue": map[string]string{
 			"1000": "5",
 			"2000": "10",
 		},
@@ -147,17 +147,18 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 	s.Nil(err)
 	s.Equal(*actualConfig, evm.EVMConfig{
 		GeneralChainConfig: chain.GeneralChainConfig{
-			Name:      "evm1",
-			Endpoint:  "ws://domain.com",
-			Id:        id,
-			Blocktime: 10,
+			Name:               "evm1",
+			Endpoint:           "ws://domain.com",
+			Id:                 id,
+			BlockConfirmations: 5,
+			Blocktime:          10,
 		},
-		BlockInterval:      big.NewInt(2),
-		BlockRetryInterval: time.Duration(10) * time.Second,
-		Admin:              "adminAddress",
-		LiqudityPool:       "pool",
-		AcrossPool:         "acrossPool",
-		BlockConfirmations: expectedBlockConfirmations,
-		Tokens:             expectedTokens,
+		BlockInterval:        big.NewInt(2),
+		BlockRetryInterval:   time.Duration(10) * time.Second,
+		Admin:                "adminAddress",
+		LiqudityPool:         "pool",
+		AcrossPool:           "acrossPool",
+		ConfirmationsByValue: expectedBlockConfirmations,
+		Tokens:               expectedTokens,
 	})
 }

@@ -28,9 +28,9 @@ type EVMConfig struct {
 	LiqudityPool       string
 	Tokens             map[string]TokenConfig
 	// usd bucket -> confirmations
-	BlockConfirmations map[uint64]uint64
-	BlockInterval      *big.Int
-	BlockRetryInterval time.Duration
+	ConfirmationsByValue map[uint64]uint64
+	BlockInterval        *big.Int
+	BlockRetryInterval   time.Duration
 }
 
 type RawEVMConfig struct {
@@ -39,7 +39,7 @@ type RawEVMConfig struct {
 	LiqudityPool             string                 `mapstructure:"liquidityPool"`
 	AcrossPool               string                 `mapstructure:"acrossPool"`
 	Tokens                   map[string]interface{} `mapstructure:"tokens"`
-	BlockConfirmations       map[string]interface{} `mapstructure:"blockConfirmations"`
+	ConfirmationsByValue     map[string]interface{} `mapstructure:"confirmationsByValue"`
 	BlockInterval            int64                  `mapstructure:"blockInterval" default:"5"`
 	BlockRetryInterval       uint64                 `mapstructure:"blockRetryInterval" default:"5"`
 }
@@ -87,7 +87,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 	}
 
 	confirmations := make(map[uint64]uint64)
-	for usd, confirmation := range c.BlockConfirmations {
+	for usd, confirmation := range c.ConfirmationsByValue {
 		usd, err := strconv.ParseUint(usd, 10, 64)
 		if err != nil {
 			return nil, err
@@ -115,8 +115,8 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
 		BlockInterval:      big.NewInt(c.BlockInterval),
 
-		BlockConfirmations: confirmations,
-		Tokens:             tokens,
+		ConfirmationsByValue: confirmations,
+		Tokens:               tokens,
 	}
 
 	return config, nil
