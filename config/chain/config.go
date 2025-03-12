@@ -16,6 +16,7 @@ type GeneralChainConfig struct {
 	Endpoint       string  `mapstructure:"endpoint"`
 	Type           string  `mapstructure:"type"`
 	BlockstorePath string  `mapstructure:"blockstorePath"`
+	Blocktime      uint64  `mapstructure:"blocktime" default:"12"`
 	Key            string
 	Insecure       bool
 }

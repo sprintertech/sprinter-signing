@@ -85,9 +85,10 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 	s.Nil(err)
 	s.Equal(*actualConfig, evm.EVMConfig{
 		GeneralChainConfig: chain.GeneralChainConfig{
-			Name:     "evm1",
-			Endpoint: "ws://domain.com",
-			Id:       id,
+			Name:      "evm1",
+			Endpoint:  "ws://domain.com",
+			Id:        id,
+			Blocktime: 12,
 		},
 		BlockInterval:      big.NewInt(5),
 		BlockRetryInterval: time.Duration(5) * time.Second,
@@ -116,6 +117,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"startBlock":            1000,
 		"blockRetryInterval":    10,
 		"blockInterval":         2,
+		"blocktime":             10,
 		"blockConfirmations": map[string]string{
 			"1000": "5",
 			"2000": "10",
@@ -145,9 +147,10 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 	s.Nil(err)
 	s.Equal(*actualConfig, evm.EVMConfig{
 		GeneralChainConfig: chain.GeneralChainConfig{
-			Name:     "evm1",
-			Endpoint: "ws://domain.com",
-			Id:       id,
+			Name:      "evm1",
+			Endpoint:  "ws://domain.com",
+			Id:        id,
+			Blocktime: 10,
 		},
 		BlockInterval:      big.NewInt(2),
 		BlockRetryInterval: time.Duration(10) * time.Second,
