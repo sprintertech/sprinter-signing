@@ -94,7 +94,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		Admin:              "adminAddress",
 		AcrossPool:         "acrossPool",
 		BlockConfirmations: make(map[uint64]uint64),
-		Tokens:             make(map[string]common.Address),
+		Tokens:             make(map[string]evm.TokenConfig),
 	})
 }
 
@@ -116,12 +116,15 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"startBlock":            1000,
 		"blockRetryInterval":    10,
 		"blockInterval":         2,
-		"blockConfirmations": map[string]uint64{
-			"1000": 5,
-			"2000": 10,
+		"blockConfirmations": map[string]string{
+			"1000": "5",
+			"2000": "10",
 		},
-		"tokens": map[string]string{
-			"usdc": "0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29",
+		"tokens": map[string]interface{}{
+			"usdc": map[string]interface{}{
+				"address":  "0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29",
+				"decimals": "8",
+			},
 		},
 	}
 
@@ -129,8 +132,11 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 	expectedBlockConfirmations[1000] = 5
 	expectedBlockConfirmations[2000] = 10
 
-	expectedTokens := make(map[string]common.Address)
-	expectedTokens["usdc"] = common.HexToAddress("0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29")
+	expectedTokens := make(map[string]evm.TokenConfig)
+	expectedTokens["usdc"] = evm.TokenConfig{
+		Address:  common.HexToAddress("0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29"),
+		Decimals: 8,
+	}
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig)
 

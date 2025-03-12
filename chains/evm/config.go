@@ -16,9 +16,9 @@ import (
 	"github.com/sprintertech/sprinter-signing/config/chain"
 )
 
-type HandlerConfig struct {
-	Address string
-	Type    string
+type TokenConfig struct {
+	Address  common.Address
+	Decimals uint8
 }
 
 type EVMConfig struct {
@@ -26,7 +26,7 @@ type EVMConfig struct {
 	Admin              string
 	AcrossPool         string
 	LiqudityPool       string
-	Tokens             map[string]common.Address
+	Tokens             map[string]TokenConfig
 	// usd bucket -> confirmations
 	BlockConfirmations map[uint64]uint64
 	BlockInterval      *big.Int
@@ -70,9 +70,20 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		return nil, err
 	}
 
-	tokens := make(map[string]common.Address)
-	for s, a := range c.Tokens {
-		tokens[s] = common.HexToAddress(a.(string))
+	tokens := make(map[string]TokenConfig)
+	for s, c := range c.Tokens {
+		c := c.(map[string]interface{})
+
+		decimals, err := strconv.ParseUint(c["decimals"].(string), 10, 8)
+		if err != nil {
+			return nil, err
+		}
+
+		tc := TokenConfig{
+			Address:  common.HexToAddress(c["address"].(string)),
+			Decimals: uint8(decimals),
+		}
+		tokens[s] = tc
 	}
 
 	confirmations := make(map[uint64]uint64)
@@ -82,7 +93,11 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 			return nil, err
 		}
 
-		confirmation := confirmation.(uint64)
+		confirmation, err := strconv.ParseUint(confirmation.(string), 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
 		if confirmation < 1 {
 			return nil, fmt.Errorf("confirmation cannot be lower than 1")
 		}

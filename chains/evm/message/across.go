@@ -16,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -33,11 +34,14 @@ const (
 	VERSION     = "1.0.0"
 	PROTOCOL_ID = 1
 	BLOCK_RANGE = 1000
+
+	TIMEOUT = 10 * time.Minute
 )
 
 type EventFilterer interface {
 	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error)
 	LatestBlock() (*big.Int, error)
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 }
 
 type AcrossData struct {
@@ -62,10 +66,18 @@ type Coordinator interface {
 	Execute(ctx context.Context, tssProcesses []tss.TssProcess, resultChn chan interface{}, coordinator peer.ID) error
 }
 
+type TokenPricer interface {
+	TokenPrice(symbol string) (float64, error)
+}
+
 type AcrossMessageHandler struct {
 	client EventFilterer
 
-	pool common.Address
+	tokens        map[string]evm.TokenConfig
+	confirmations map[uint64]uint64
+	blocktime     time.Duration
+	tokenPricer   TokenPricer
+	pool          common.Address
 
 	coordinator Coordinator
 	host        host.Host
@@ -83,15 +95,20 @@ func NewAcrossMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	sigChn chan interface{},
+	tokens map[string]evm.TokenConfig,
+	confirmations map[uint64]uint64,
+	blocktime time.Time,
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
-		client:      client,
-		pool:        pool,
-		coordinator: coordinator,
-		host:        host,
-		comm:        comm,
-		fetcher:     fetcher,
-		sigChn:      sigChn,
+		client:        client,
+		pool:          pool,
+		coordinator:   coordinator,
+		host:          host,
+		comm:          comm,
+		fetcher:       fetcher,
+		sigChn:        sigChn,
+		tokens:        tokens,
+		confirmations: confirmations,
 	}
 }
 
@@ -146,15 +163,26 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		}
 	}
 
-	d, err := h.Deposit(data.DepositId, sourceChainID)
+	txHash, d, err := h.deposit(data.DepositId)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
 
-	unlockHash, err := h.unlockHash(d, sourceChainID, data)
+	confirmations, err := h.minimalConfirmations(d)
 	if err != nil {
 		data.ErrChn <- err
+		return nil, err
+	}
+	data.ErrChn <- nil
+
+	err = h.waitForConfirmations(txHash, confirmations)
+	if err != nil {
+		return nil, err
+	}
+
+	unlockHash, err := h.unlockHash(d, sourceChainID, data)
+	if err != nil {
 		return nil, err
 	}
 
@@ -167,20 +195,13 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		h.comm,
 		h.fetcher)
 	if err != nil {
-		data.ErrChn <- err
 		return nil, err
 	}
 
-	go func() {
-		err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-		if err != nil {
-			log.Err(err).Msgf("Failed executing signing process")
-			data.ErrChn <- err
-			return
-		}
-
-		data.ErrChn <- nil
-	}()
+	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
+	if err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -198,10 +219,92 @@ func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, comm.AcrossSessionID)
 }
 
-func (h *AcrossMessageHandler) Deposit(depositId *big.Int, sourceChainId uint64) (*events.AcrossDeposit, error) {
+func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (uint64, error) {
+	symbol, c, err := h.tokenConfig(d)
+	if err != nil {
+		return 0, err
+	}
+
+	price, err := h.tokenPricer.TokenPrice(symbol)
+	if err != nil {
+		return 0, err
+	}
+
+	fmt.Println(price)
+
+	orderValue, _ := new(big.Float).Quo(
+		new(big.Float).Mul(big.NewFloat(price), new(big.Float).SetInt(d.InputAmount)),
+		new(big.Float).SetUint64(uint64(c.Decimals)),
+	).Float64()
+
+	for bucket, confirmation := range h.confirmations {
+		if uint64(orderValue) < bucket {
+			return confirmation, nil
+		}
+	}
+
+	fmt.Println(orderValue)
+
+	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValue)
+}
+
+func (h *AcrossMessageHandler) waitForConfirmations(
+	txHash common.Hash,
+	requiredConfirmations uint64,
+) error {
+	ctx, cancel := context.WithTimeout(context.Background(), TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for confirmations")
+		default:
+			txReceipt, err := h.client.TransactionReceipt(ctx, txHash)
+			if err != nil {
+				log.Warn().Msgf("Error fetching transaction receipt: %v\n", err)
+				time.Sleep(h.blocktime)
+				continue
+			}
+
+			if txReceipt == nil {
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			currentBlock, err := h.client.LatestBlock()
+			if err != nil {
+				log.Warn().Msgf("Error fetching current block: %v\n", err)
+				time.Sleep(h.blocktime)
+				continue
+			}
+
+			confirmations := new(big.Int).Sub(currentBlock, txReceipt.BlockNumber)
+			if confirmations.Cmp(new(big.Int).SetUint64(requiredConfirmations)) != -1 {
+				return nil
+			}
+
+			fmt.Println(time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())))
+
+			time.Sleep(time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())))
+		}
+	}
+}
+
+func (h *AcrossMessageHandler) tokenConfig(d *events.AcrossDeposit) (string, evm.TokenConfig, error) {
+	for symbol, c := range h.tokens {
+		if c.Address == common.BytesToAddress(d.InputToken[12:]) {
+			return symbol, c, nil
+		}
+	}
+
+	return "", evm.TokenConfig{}, fmt.Errorf("token %s not supported", common.Bytes2Hex(d.InputToken[:]))
+}
+
+func (h *AcrossMessageHandler) deposit(depositId *big.Int) (common.Hash, *events.AcrossDeposit, error) {
 	latestBlock, err := h.client.LatestBlock()
 	if err != nil {
-		return nil, err
+		return common.Hash{}, nil, err
 	}
 
 	q := ethereum.FilterQuery{
@@ -222,16 +325,21 @@ func (h *AcrossMessageHandler) Deposit(depositId *big.Int, sourceChainId uint64)
 	}
 	logs, err := h.client.FilterLogs(context.Background(), q)
 	if err != nil {
-		return nil, err
+		return common.Hash{}, nil, err
 	}
 	if len(logs) == 0 {
-		return nil, fmt.Errorf("no deposit found with ID: %s", depositId)
+		return common.Hash{}, nil, fmt.Errorf("no deposit found with ID: %s", depositId)
 	}
 	if logs[0].Removed {
-		return nil, fmt.Errorf("deposit log removed")
+		return common.Hash{}, nil, fmt.Errorf("deposit log removed")
 	}
 
-	return h.parseDeposit(logs[0])
+	d, err := h.parseDeposit(logs[0])
+	if err != nil {
+		return common.Hash{}, nil, err
+	}
+
+	return logs[0].TxHash, d, nil
 }
 
 func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit, error) {
