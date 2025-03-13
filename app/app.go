@@ -136,6 +136,7 @@ func Run() error {
 	go signatureCache.Watch(ctx, sigChn)
 
 	supportedChains := make(map[uint64]struct{})
+	confirmationsPerChain := make(map[uint64]map[uint64]uint64)
 	domains := make(map[uint64]relayer.RelayedChain)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
@@ -171,6 +172,7 @@ func Run() error {
 
 					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
 					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
 				}
 
 				var startBlock *big.Int
@@ -219,7 +221,8 @@ func Run() error {
 
 	signingHandler := handlers.NewSigningHandler(msgChan, supportedChains)
 	statusHandler := handlers.NewStatusHandler(signatureCache, supportedChains)
-	go api.Serve(ctx, configuration.RelayerConfig.ApiAddr, signingHandler, statusHandler)
+	confirmationsHandler := handlers.NewConfirmationsHandler(confirmationsPerChain)
+	go api.Serve(ctx, configuration.RelayerConfig.ApiAddr, signingHandler, statusHandler, confirmationsHandler)
 
 	sig := <-sysErr
 	log.Info().Msgf("terminating got ` [%v] signal", sig)
