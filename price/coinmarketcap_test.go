@@ -56,7 +56,7 @@ func (s *CoinmarketcapAPITestSuite) SetupTest() {
 				},
 			}
 			respBytes, _ := json.Marshal(response)
-			w.Write(respBytes)
+			_, _ = w.Write(respBytes)
 			return
 		}
 
@@ -86,7 +86,7 @@ func (s *CoinmarketcapAPITestSuite) TestTokenPrice_InvalidSymbol() {
 func (s *CoinmarketcapAPITestSuite) TestTokenPrice_APIError() {
 	s.testServer.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, `{"status": {"error_code": 500, "error_message": "Internal Server Error"}}`)
+		_, _ = io.WriteString(w, `{"status": {"error_code": 500, "error_message": "Internal Server Error"}}`)
 	})
 
 	price, err := s.api.TokenPrice("BTC")

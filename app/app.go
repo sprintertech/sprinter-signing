@@ -167,6 +167,7 @@ func Run() error {
 						sigChn,
 						config.Tokens,
 						config.ConfirmationsByValue,
+						// nolint:gosec
 						time.Duration(config.GeneralChainConfig.Blocktime)*time.Second)
 					go acrossMh.Listen(ctx)
 

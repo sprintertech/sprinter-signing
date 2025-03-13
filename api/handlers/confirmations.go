@@ -37,5 +37,5 @@ func (h *ConfirmationsHandler) HandleRequest(w http.ResponseWriter, r *http.Requ
 	data, _ := json.Marshal(confirmations)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, _ = w.Write(data)
 }

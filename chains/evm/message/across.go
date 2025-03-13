@@ -286,6 +286,7 @@ func (h *AcrossMessageHandler) waitForConfirmations(
 				return nil
 			}
 
+			// nolint:gosec
 			time.Sleep(time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())))
 		}
 	}
