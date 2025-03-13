@@ -270,7 +270,7 @@ func (h *AcrossMessageHandler) waitForConfirmations(
 			}
 
 			if txReceipt == nil {
-				time.Sleep(1 * time.Second)
+				time.Sleep(h.blocktime)
 				continue
 			}
 
