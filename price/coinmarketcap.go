@@ -5,6 +5,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/jellydator/ttlcache/v3"
+)
+
+const (
+	PRICE_TTL = time.Minute * 60
 )
 
 type CoinmarketcapResponse struct {
@@ -24,18 +31,29 @@ type CoinmarketcapResponse struct {
 type CoinmarketcapAPI struct {
 	url    string
 	apiKey string
+	cache  *ttlcache.Cache[string, float64]
 }
 
 func NewCoinmarketcapAPI(url string, apiKey string) *CoinmarketcapAPI {
+	cache := ttlcache.New(
+		ttlcache.WithTTL[string, float64](PRICE_TTL),
+	)
+	go cache.Start()
+
 	return &CoinmarketcapAPI{
 		url:    url,
 		apiKey: apiKey,
+		cache:  cache,
 	}
 }
 
 func (c *CoinmarketcapAPI) TokenPrice(symbol string) (float64, error) {
-	url := fmt.Sprintf("%s/v1/cryptocurrency/quotes/latest?symbol=%s", c.url, symbol)
+	price := c.cache.Get(symbol)
+	if price != nil {
+		return price.Value(), nil
+	}
 
+	url := fmt.Sprintf("%s/v1/cryptocurrency/quotes/latest?symbol=%s", c.url, symbol)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return 0, err
@@ -68,5 +86,7 @@ func (c *CoinmarketcapAPI) TokenPrice(symbol string) (float64, error) {
 		return 0, fmt.Errorf("API Error: %d - %s", cmcResponse.Status.ErrorCode, cmcResponse.Status.ErrorMessage)
 	}
 
-	return cmcResponse.Data[symbol].Quote.USD.Price, nil
+	qoutedPrice := cmcResponse.Data[symbol].Quote.USD.Price
+	c.cache.Set(symbol, qoutedPrice, ttlcache.DefaultTTL)
+	return qoutedPrice, nil
 }
