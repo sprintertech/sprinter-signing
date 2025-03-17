@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	PRICE_TTL = time.Minute * 60
+	PRICE_TTL       = time.Minute * 60
+	DEFAULT_TIMEOUT = time.Second * 30
 )
 
 type CoinmarketcapResponse struct {
@@ -61,7 +62,9 @@ func (c *CoinmarketcapAPI) TokenPrice(symbol string) (float64, error) {
 	req.Header.Set("Accepts", "application/json")
 	req.Header.Set("X-CMC_PRO_API_KEY", c.apiKey)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: DEFAULT_TIMEOUT,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, err
