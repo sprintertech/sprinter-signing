@@ -10,6 +10,9 @@
         "encryptionKey": "BpLnfgDsc2WD8F2qNfHK5a84jjJkwzDk"
       },
       "commHealthCheckInterval": "24h"
+    },
+    "coinmarketcapConfig": {
+      "apiKey": "71e66f46-c016-441b-bb6a-d532b00acb0b"
     }
   },
   "domains": [
@@ -18,14 +21,35 @@
       "name": "Sepolia",
       "type": "evm",
       "endpoint": "wss://ethereum-sepolia-rpc.publicnode.com",
-      "acrossPool": "0x5ef6C01E11889d86803e0B23e3cB3F9E9d97B662"
+      "acrossPool": "0x5ef6C01E11889d86803e0B23e3cB3F9E9d97B662",
+      "tokens": {
+        "USDC": 
+        { 
+          "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+          "decimals": "6"
+        }
+      },
+      "confirmationsByValue": {
+        "1000": "4000",
+        "10000": "10"
+      }
     },
     {
       "id": 84532,
       "name": "base",
       "type": "evm",
       "endpoint": "wss://base-rpc.publicnode.com",
-      "acrossPool": "0x82B564983aE7274c86695917BBf8C99ECb6F0F8F"
+      "acrossPool": "0x82B564983aE7274c86695917BBf8C99ECb6F0F8F",
+      "tokens": {
+        "USDC": {
+          "address": "0x5dEaC602762362FE5f135FA5904351916053cF70",
+          "decimals": "6"
+        }
+      },
+      "confirmationsByValue": {
+        "1000": "5",
+        "10000": "10"
+      }
     }
   ]
 }

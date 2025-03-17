@@ -112,6 +112,9 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 				ElectionWaitTime: 2 * time.Second,
 				BullyWaitTime:    3 * time.Minute,
 			},
+			CoinmarketcapConfig: relayer.CoinmarketcapConfig{
+				Url: "https://pro-api.coinmarketcap.com",
+			},
 		},
 		ChainConfigs: []map[string]interface{}{
 			{
@@ -185,6 +188,7 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV_RandomOrder() {
 	_ = os.Setenv("SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_PATH", "path")
 	_ = os.Setenv("SYG_RELAYER_ENV", "TEST")
 	_ = os.Setenv("SYG_RELAYER_ID", "123")
+	_ = os.Setenv("SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY", "cmckey")
 
 	// load from Env
 	cnf, err := config.GetConfigFromENV(&config.Config{ChainConfigs: []map[string]interface{}{{
@@ -225,6 +229,10 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV_RandomOrder() {
 				PingInterval:     1 * time.Second,
 				ElectionWaitTime: 2 * time.Second,
 				BullyWaitTime:    3 * time.Minute,
+			},
+			CoinmarketcapConfig: relayer.CoinmarketcapConfig{
+				Url:    "https://pro-api.coinmarketcap.com",
+				ApiKey: "cmckey",
 			},
 		},
 		ChainConfigs: []map[string]interface{}{
@@ -469,6 +477,9 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						ElectionWaitTime: 2 * time.Second,
 						BullyWaitTime:    3 * time.Minute,
 					},
+					CoinmarketcapConfig: relayer.CoinmarketcapConfig{
+						Url: "https://pro-api.coinmarketcap.com",
+					},
 				},
 				ChainConfigs: []map[string]interface{}{{
 					"id":   float64(1),
@@ -536,6 +547,9 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						PingInterval:     time.Second,
 						ElectionWaitTime: time.Second,
 						BullyWaitTime:    time.Second,
+					},
+					CoinmarketcapConfig: relayer.CoinmarketcapConfig{
+						Url: "https://pro-api.coinmarketcap.com",
 					},
 				},
 				ChainConfigs: []map[string]interface{}{{
