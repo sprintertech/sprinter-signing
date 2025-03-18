@@ -87,6 +87,7 @@ func TestRunAcrossMessageTestSuite(t *testing.T) {
 func (s *AcrossMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
 	originalMsg := &message.AcrossMessage{
 		DepositId:    big.NewInt(100),
+		Nonce:        big.NewInt(101),
 		Caller:       "caller",
 		LiqudityPool: "pool",
 		Source:       1,
@@ -94,6 +95,7 @@ func (s *AcrossMessageTestSuite) Test_UnmarshaledMessageShouldBeEqual() {
 	}
 	msgBytes, err := message.MarshalAcrossMessage(
 		originalMsg.DepositId,
+		originalMsg.Nonce,
 		originalMsg.LiqudityPool,
 		originalMsg.Caller,
 		originalMsg.Source,

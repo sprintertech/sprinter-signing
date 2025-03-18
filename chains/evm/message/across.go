@@ -46,6 +46,7 @@ type EventFilterer interface {
 
 type AcrossData struct {
 	DepositId     *big.Int
+	Nonce         *big.Int
 	LiquidityPool common.Address
 	Caller        common.Address
 	Coordinator   peer.ID
@@ -134,6 +135,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 
 				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, AcrossData{
 					DepositId:     acrossMsg.DepositId,
+					Nonce:         acrossMsg.Nonce,
 					Coordinator:   wMsg.From,
 					LiquidityPool: common.HexToAddress(acrossMsg.LiqudityPool),
 					Caller:        common.HexToAddress(acrossMsg.Caller),
@@ -214,6 +216,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
 	msgBytes, err := tssMessage.MarshalAcrossMessage(
 		data.DepositId,
+		data.Nonce,
 		data.LiquidityPool.Hex(),
 		data.Caller.Hex(),
 		m.Source,
@@ -378,7 +381,7 @@ func (h *AcrossMessageHandler) unlockHash(
 		"amount":         deposit.OutputAmount,
 		"target":         common.BytesToAddress(deposit.Recipient[12:]).Hex(),
 		"targetCallData": hexutil.Encode(calldata),
-		"nonce":          h.nonce(deposit, sourceChainId),
+		"nonce":          data.Nonce,
 		"deadline":       new(big.Int).SetUint64(uint64(deposit.FillDeadline)),
 	}
 
@@ -422,30 +425,4 @@ func (h *AcrossMessageHandler) unlockHash(
 
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(messageHash)))
 	return crypto.Keccak256(rawData), nil
-}
-
-// nonce creates a unique ID from the across deposit id, origin chain id and protocol id.
-// Resulting id has this format: [originChainID (8 bits)][protocolID (8 bits)][nonce (240 bits)].
-func (h *AcrossMessageHandler) nonce(deposit *events.AcrossDeposit, sourceChainId uint64) *big.Int {
-	// Create a new big.Int
-	nonce := new(big.Int)
-
-	// Set originChainID (8 bits)
-	originChainID := new(big.Int).SetUint64(sourceChainId)
-	originChainID.And(originChainID, new(big.Int).SetUint64(0xFF)) // Ensure only 8 bits are used
-	nonce.Lsh(originChainID, 248)                                  // Shift left by 248 bits
-
-	// Add protocolID in the middle (8 bits, shifted left by 240 bits)
-	protocolInt := big.NewInt(PROTOCOL_ID)
-	protocolInt.And(protocolInt, new(big.Int).SetUint64(0xFF)) // Ensure only 8 bits are used
-	protocolInt.Lsh(protocolInt, 240)
-	nonce.Or(nonce, protocolInt)
-
-	// Add depositId at the end (240 bits)
-	depositIdMask := new(big.Int).Lsh(big.NewInt(1), 240)
-	depositIdMask.Sub(depositIdMask, big.NewInt(1))                 // Create a mask of 240 1's
-	depositId := new(big.Int).And(deposit.DepositId, depositIdMask) // Ensure only 240 bits are used
-	nonce.Or(nonce, depositId)
-
-	return nonce
 }

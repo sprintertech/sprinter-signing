@@ -108,6 +108,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	ad := message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
+		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 	}
@@ -142,6 +143,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 	ad := message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
+		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 	}
@@ -181,6 +183,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 	ad := message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
+		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 	}
@@ -237,6 +240,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	ad := message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
+		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
 	}
