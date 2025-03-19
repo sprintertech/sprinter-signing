@@ -291,9 +291,9 @@ func (h *AcrossMessageHandler) waitForConfirmations(
 				return nil
 			}
 
+			// nolint:gosec
 			duration := time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64()))
 			log.Debug().Msgf("Waiting for tx %s for %s", txHash, duration)
-			// nolint:gosec
 			time.Sleep(duration)
 		}
 	}
