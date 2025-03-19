@@ -161,6 +161,8 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(AcrossData)
 
+	log.Info().Str("depositId", data.DepositId.String()).Msgf("Handling across message %+v", data)
+
 	sourceChainID := h.chainID
 	if data.Coordinator == peer.ID("") {
 		data.Coordinator = h.host.ID()
@@ -289,8 +291,10 @@ func (h *AcrossMessageHandler) waitForConfirmations(
 				return nil
 			}
 
+			duration := time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())
+			log.Debug().Msgf("Waiting for tx %s for %s", txHash, duration)
 			// nolint:gosec
-			time.Sleep(time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64())))
+			time.Sleep(duration))
 		}
 	}
 }
