@@ -23,6 +23,7 @@ const (
 type SigningBody struct {
 	ChainId       uint64
 	DepositId     *BigInt      `json:"depositId"`
+	Nonce         *BigInt      `json:"nonce"`
 	Protocol      ProtocolType `json:"protocol"`
 	LiquidityPool string       `json:"liquidityPool"`
 	Caller        string       `json:"caller"`
@@ -65,6 +66,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		{
 			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
 				DepositId:     b.DepositId.Int,
+				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
 				ErrChn:        errChn,
@@ -102,6 +104,10 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 
 	if b.Caller == "" {
 		return fmt.Errorf("missing field 'caller'")
+	}
+
+	if b.Nonce == nil {
+		return fmt.Errorf("missing field 'nonce'")
 	}
 
 	if b.ChainId == 0 {

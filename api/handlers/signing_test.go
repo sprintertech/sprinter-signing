@@ -45,6 +45,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -75,6 +76,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingCaller() {
 		Protocol:      "across",
 		DepositId:     &handlers.BigInt{big.NewInt(1000)},
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -105,6 +107,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingLiquidityPool() {
 		Protocol:  "across",
 		DepositId: &handlers.BigInt{big.NewInt(1000)},
 		Caller:    "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:     &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -136,6 +139,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -167,6 +171,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -198,6 +203,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 		Protocol:      "invalid",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -229,6 +235,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
@@ -260,6 +267,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
 	body, _ := json.Marshal(input)
 
