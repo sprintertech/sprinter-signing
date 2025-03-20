@@ -3,12 +3,13 @@ package message
 import (
 	"context"
 	"fmt"
+	"maps"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -79,7 +80,7 @@ type AcrossMessageHandler struct {
 	confirmations map[uint64]uint64
 	blocktime     time.Duration
 	tokenPricer   TokenPricer
-	pool          common.Address
+	pools         map[uint64]common.Address
 
 	coordinator Coordinator
 	host        host.Host
@@ -92,7 +93,7 @@ type AcrossMessageHandler struct {
 func NewAcrossMessageHandler(
 	chainID uint64,
 	client EventFilterer,
-	pool common.Address,
+	pools map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
@@ -106,7 +107,7 @@ func NewAcrossMessageHandler(
 	return &AcrossMessageHandler{
 		chainID:       chainID,
 		client:        client,
-		pool:          pool,
+		pools:         pools,
 		coordinator:   coordinator,
 		host:          host,
 		comm:          comm,
@@ -241,18 +242,21 @@ func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (ui
 		return 0, err
 	}
 
-	orderValue, _ := new(big.Float).Quo(
+	orderValueInt := new(big.Int)
+	orderValueInt, _ = new(big.Float).Quo(
 		new(big.Float).Mul(big.NewFloat(price), new(big.Float).SetInt(d.InputAmount)),
 		new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(c.Decimals)), nil)),
-	).Float64()
+	).Int(orderValueInt)
 
-	for bucket, confirmation := range h.confirmations {
-		if uint64(orderValue) < bucket {
-			return confirmation, nil
+	buckets := slices.Collect(maps.Keys(h.confirmations))
+	slices.Sort(buckets)
+	for _, bucket := range buckets {
+		if orderValueInt.Cmp(new(big.Int).SetUint64(bucket)) < 0 {
+			return h.confirmations[bucket], nil
 		}
 	}
 
-	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValue)
+	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValueInt)
 }
 
 func (h *AcrossMessageHandler) waitForConfirmations(
@@ -319,7 +323,7 @@ func (h *AcrossMessageHandler) deposit(depositId *big.Int) (common.Hash, *events
 		ToBlock:   latestBlock,
 		FromBlock: new(big.Int).Sub(latestBlock, big.NewInt(BLOCK_RANGE)),
 		Addresses: []common.Address{
-			h.pool,
+			h.pools[h.chainID],
 		},
 		Topics: [][]common.Hash{
 			{
@@ -374,7 +378,7 @@ func (h *AcrossMessageHandler) unlockHash(
 ) ([]byte, error) {
 	calldata, err := deposit.ToV3RelayData(
 		new(big.Int).SetUint64(sourceChainId),
-	).Calldata(deposit.DestinationChainId, data.LiquidityPool)
+	).Calldata(deposit.DestinationChainId, data.Caller)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -383,8 +387,8 @@ func (h *AcrossMessageHandler) unlockHash(
 		"caller":         data.Caller.Hex(),
 		"borrowToken":    common.BytesToAddress(deposit.OutputToken[12:]).Hex(),
 		"amount":         deposit.OutputAmount,
-		"target":         common.BytesToAddress(deposit.Recipient[12:]).Hex(),
-		"targetCallData": hexutil.Encode(calldata),
+		"target":         h.pools[deposit.DestinationChainId.Uint64()].Hex(),
+		"targetCallData": calldata,
 		"nonce":          data.Nonce,
 		"deadline":       new(big.Int).SetUint64(uint64(deposit.FillDeadline)),
 	}
