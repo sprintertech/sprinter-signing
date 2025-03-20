@@ -378,7 +378,7 @@ func (h *AcrossMessageHandler) unlockHash(
 ) ([]byte, error) {
 	calldata, err := deposit.ToV3RelayData(
 		new(big.Int).SetUint64(sourceChainId),
-	).Calldata(deposit.DestinationChainId, data.Caller)
+	).Calldata(deposit.DestinationChainId, data.LiquidityPool)
 	if err != nil {
 		return []byte{}, err
 	}
