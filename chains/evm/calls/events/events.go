@@ -83,5 +83,6 @@ func (a *AcrossV3RelayData) Calldata(repaymentChainID *big.Int, repaymentAddress
 	if err != nil {
 		return []byte{}, err
 	}
+
 	return input, nil
 }

@@ -61,7 +61,8 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 
 	s.mockPricer = mock_message.NewMockTokenPricer(ctrl)
 
-	pool := common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
+	pools := make(map[uint64]common.Address)
+	pools[2] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
 
 	s.sigChn = make(chan interface{}, 1)
 
@@ -79,7 +80,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.handler = message.NewAcrossMessageHandler(
 		1,
 		s.mockEventFilterer,
-		pool,
+		pools,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,

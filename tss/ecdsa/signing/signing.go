@@ -207,6 +207,7 @@ func (s *Signing) processEndMessage(ctx context.Context, endChn chan tssCommon.S
 				es = append(es[:], ethCommon.LeftPadBytes(sig.R, 32)...)
 				es = append(es[:], ethCommon.LeftPadBytes(sig.S, 32)...)
 				es = append(es[:], sig.SignatureRecovery...)
+				es[len(es)-1] += 27 // Transform V from 0/1 to 27/28
 
 				s.resultChn <- EcdsaSignature{
 					Signature: es,

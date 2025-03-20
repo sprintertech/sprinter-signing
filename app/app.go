@@ -138,6 +138,25 @@ func Run() error {
 	supportedChains := make(map[uint64]struct{})
 	confirmationsPerChain := make(map[uint64]map[uint64]uint64)
 	domains := make(map[uint64]relayer.RelayedChain)
+
+	acrossPools := make(map[uint64]common.Address)
+	for _, chainConfig := range configuration.ChainConfigs {
+		switch chainConfig["type"] {
+		case "evm":
+			{
+				config, err := evm.NewEVMConfig(chainConfig)
+				panicOnError(err)
+
+				if config.AcrossPool != "" {
+					poolAddress := common.HexToAddress(config.AcrossPool)
+					acrossPools[*config.GeneralChainConfig.Id] = poolAddress
+				}
+			}
+		default:
+			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))
+		}
+	}
+
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
@@ -154,11 +173,10 @@ func Run() error {
 
 				mh := message.NewMessageHandler()
 				if config.AcrossPool != "" {
-					poolAddress := common.HexToAddress(config.AcrossPool)
 					acrossMh := evmMessage.NewAcrossMessageHandler(
 						*config.GeneralChainConfig.Id,
 						client,
-						poolAddress,
+						acrossPools,
 						coordinator,
 						host,
 						communication,
