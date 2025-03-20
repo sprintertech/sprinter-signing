@@ -139,7 +139,7 @@ func Run() error {
 	confirmationsPerChain := make(map[uint64]map[uint64]uint64)
 	domains := make(map[uint64]relayer.RelayedChain)
 
-	aavePools := make(map[uint64]common.Address)
+	acrossPools := make(map[uint64]common.Address)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
@@ -149,7 +149,7 @@ func Run() error {
 
 				if config.AcrossPool != "" {
 					poolAddress := common.HexToAddress(config.AcrossPool)
-					aavePools[*config.GeneralChainConfig.Id] = poolAddress
+					acrossPools[*config.GeneralChainConfig.Id] = poolAddress
 				}
 			}
 		default:
@@ -176,7 +176,7 @@ func Run() error {
 					acrossMh := evmMessage.NewAcrossMessageHandler(
 						*config.GeneralChainConfig.Id,
 						client,
-						aavePools,
+						acrossPools,
 						coordinator,
 						host,
 						communication,
