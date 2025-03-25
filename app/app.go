@@ -39,6 +39,7 @@ import (
 	coreEvm "github.com/sygmaprotocol/sygma-core/chains/evm"
 	evmClient "github.com/sygmaprotocol/sygma-core/chains/evm/client"
 	coreListener "github.com/sygmaprotocol/sygma-core/chains/evm/listener"
+	"github.com/sygmaprotocol/sygma-core/crypto/secp256k1"
 
 	"github.com/sygmaprotocol/sygma-core/observability"
 	"github.com/sygmaprotocol/sygma-core/relayer"
@@ -155,7 +156,8 @@ func Run() error {
 				}
 
 				if config.HubPool != "" {
-					client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, nil)
+					kp, _ := secp256k1.GenerateKeypair()
+					client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, kp)
 					panicOnError(err)
 
 					hubPoolAddress := common.HexToAddress(config.HubPool)
