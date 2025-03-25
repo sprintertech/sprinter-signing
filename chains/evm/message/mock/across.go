@@ -167,3 +167,42 @@ func (mr *MockTokenPricerMockRecorder) TokenPrice(symbol any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenPrice", reflect.TypeOf((*MockTokenPricer)(nil).TokenPrice), symbol)
 }
+
+// MockTokenMatcher is a mock of TokenMatcher interface.
+type MockTokenMatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockTokenMatcherMockRecorder
+	isgomock struct{}
+}
+
+// MockTokenMatcherMockRecorder is the mock recorder for MockTokenMatcher.
+type MockTokenMatcherMockRecorder struct {
+	mock *MockTokenMatcher
+}
+
+// NewMockTokenMatcher creates a new mock instance.
+func NewMockTokenMatcher(ctrl *gomock.Controller) *MockTokenMatcher {
+	mock := &MockTokenMatcher{ctrl: ctrl}
+	mock.recorder = &MockTokenMatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTokenMatcher) EXPECT() *MockTokenMatcherMockRecorder {
+	return m.recorder
+}
+
+// DestinationToken mocks base method.
+func (m *MockTokenMatcher) DestinationToken(destinationChainId *big.Int, symbol string) (common.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DestinationToken", destinationChainId, symbol)
+	ret0, _ := ret[0].(common.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DestinationToken indicates an expected call of DestinationToken.
+func (mr *MockTokenMatcherMockRecorder) DestinationToken(destinationChainId, symbol any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestinationToken", reflect.TypeOf((*MockTokenMatcher)(nil).DestinationToken), destinationChainId, symbol)
+}
