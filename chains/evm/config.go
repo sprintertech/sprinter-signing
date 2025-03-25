@@ -107,7 +107,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		confirmations[usd] = confirmation
 	}
 
-	c.GeneralChainConfig.ParseFlags()
+	c.ParseFlags()
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,

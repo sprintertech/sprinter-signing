@@ -32,7 +32,7 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 	coordinators := []*tss.Coordinator{}
 	processes := []tss.TssProcess{}
 
-	for _, host := range s.CoordinatorTestSuite.Hosts {
+	for _, host := range s.Hosts {
 		communication := tsstest.TestCommunication{
 			Host:          host,
 			Subscriptions: make(map[comm.SubscriptionID]chan *comm.WrappedMessage),
@@ -68,7 +68,7 @@ func (s *KeygenTestSuite) Test_KeygenTimeout() {
 	communicationMap := make(map[peer.ID]*tsstest.TestCommunication)
 	coordinators := []*tss.Coordinator{}
 	processes := []tss.TssProcess{}
-	for _, host := range s.CoordinatorTestSuite.Hosts {
+	for _, host := range s.Hosts {
 		communication := tsstest.TestCommunication{
 			Host:          host,
 			Subscriptions: make(map[comm.SubscriptionID]chan *comm.WrappedMessage),

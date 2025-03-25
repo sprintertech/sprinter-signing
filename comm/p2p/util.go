@@ -26,7 +26,7 @@ func ReadStream(r *bufio.Reader) ([]byte, error) {
 
 // WriteStream writes the message to stream
 func WriteStream(msg []byte, w *bufio.Writer) error {
-	_, err := w.WriteString(fmt.Sprintf("%s\n", string(msg[:])))
+	_, err := fmt.Fprintf(w, "%s\n", string(msg[:]))
 	if err != nil {
 		return err
 	}
