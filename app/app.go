@@ -22,6 +22,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	"github.com/sprintertech/sprinter-signing/cache"
 	"github.com/sprintertech/sprinter-signing/chains/evm"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
@@ -139,6 +140,7 @@ func Run() error {
 	confirmationsPerChain := make(map[uint64]map[uint64]uint64)
 	domains := make(map[uint64]relayer.RelayedChain)
 
+	var hubPoolContract evmMessage.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
@@ -150,6 +152,14 @@ func Run() error {
 				if config.AcrossPool != "" {
 					poolAddress := common.HexToAddress(config.AcrossPool)
 					acrossPools[*config.GeneralChainConfig.Id] = poolAddress
+				}
+
+				if config.HubPool != "" {
+					client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, nil)
+					panicOnError(err)
+
+					hubPoolAddress := common.HexToAddress(config.HubPool)
+					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, config.Tokens)
 				}
 			}
 		default:
@@ -182,6 +192,7 @@ func Run() error {
 						communication,
 						keyshareStore,
 						priceAPI,
+						hubPoolContract,
 						sigChn,
 						config.Tokens,
 						config.ConfirmationsByValue,

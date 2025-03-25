@@ -22,6 +22,7 @@
       "type": "evm",
       "endpoint": "wss://ethereum-sepolia-rpc.publicnode.com",
       "acrossPool": "0x5ef6C01E11889d86803e0B23e3cB3F9E9d97B662",
+      "hubPool": "0x14224e63716afAcE30C9a417E0542281869f7d9e",
       "tokens": {
         "USDC": 
         { 
