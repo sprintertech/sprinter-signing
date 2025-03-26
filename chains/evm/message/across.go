@@ -31,11 +31,11 @@ import (
 const (
 	AcrossMessage = "AcrossMessage"
 
-	ZERO_ADDRESS = "0000000000000000000000000000000000000000000000000000000000000000"
-	DOMAIN_NAME  = "LiquidityPool"
-	VERSION      = "1.0.0"
-	PROTOCOL_ID  = 1
-	BLOCK_RANGE  = 1000
+	ZERO_HASH   = "0000000000000000000000000000000000000000000000000000000000000000"
+	DOMAIN_NAME = "LiquidityPool"
+	VERSION     = "1.0.0"
+	PROTOCOL_ID = 1
+	BLOCK_RANGE = 1000
 
 	TIMEOUT = 10 * time.Minute
 )
@@ -245,7 +245,7 @@ func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (ui
 		return 0, err
 	}
 
-	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_ADDRESS {
+	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
 		address, err := h.tokenMatcher.DestinationToken(d.DestinationChainId, symbol)
 		if err != nil {
 			return 0, err
