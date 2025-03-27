@@ -33,6 +33,7 @@ type AcrossMessageHandlerTestSuite struct {
 	mockHost          *mock_host.MockHost
 	mockFetcher       *mock_tss.MockSaveDataFetcher
 	mockPricer        *mock_message.MockTokenPricer
+	mockMatcher       *mock_message.MockTokenMatcher
 
 	handler *message.AcrossMessageHandler
 	sigChn  chan interface{}
@@ -60,6 +61,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
 	s.mockPricer = mock_message.NewMockTokenPricer(ctrl)
+	s.mockMatcher = mock_message.NewMockTokenMatcher(ctrl)
 
 	pools := make(map[uint64]common.Address)
 	pools[2] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
@@ -74,8 +76,13 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 		Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 		Decimals: 18,
 	}
+	tokens["USDC"] = evm.TokenConfig{
+		Address:  common.HexToAddress("0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4"),
+		Decimals: 6,
+	}
 	confirmations := make(map[uint64]uint64)
 	confirmations[1000] = 100
+	confirmations[2000] = 200
 
 	s.handler = message.NewAcrossMessageHandler(
 		1,
@@ -86,6 +93,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 		s.mockCommunication,
 		s.mockFetcher,
 		s.mockPricer,
+		s.mockMatcher,
 		s.sigChn,
 		tokens,
 		confirmations,
@@ -236,6 +244,65 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	}, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockPricer.EXPECT().TokenPrice("ETH").Return(2200.15, nil)
+
+	errChn := make(chan error, 1)
+	ad := message.AcrossData{
+		ErrChn:        errChn,
+		DepositId:     big.NewInt(100),
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
+	}
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      1,
+		Destination: 2,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.Nil(err)
+
+	err = <-errChn
+	s.Nil(err)
+}
+
+func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.AcrossMsg,
+		fmt.Sprintf("%d-%s", 1, comm.AcrossSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	s.mockEventFilterer.EXPECT().TransactionReceipt(
+		gomock.Any(),
+		gomock.Any(),
+	).Return(&types.Receipt{}, fmt.Errorf("missing transaction receipt"))
+	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
+		BlockNumber: big.NewInt(200),
+	}, nil)
+
+	log, _ := hex.DecodeString("0000000000000000000000003355df6d4c9c3035724fd0e3914de96a5a83aaf40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006d7cbe22000000000000000000000000000000000000000000000000000000006d789ac90000000000000000000000000000000000000000000000000000000067ce09230000000000000000000000000000000000000000000000000000000067ce5ea7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000051d55999c7cd91b17af7276cbecd647dbc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
+	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(400), nil).AnyTimes()
+	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
+		{
+			Removed: false,
+			Data:    log,
+			Topics: []common.Hash{
+				{},
+				{},
+				{},
+				{},
+			},
+		},
+	}, nil)
+	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockPricer.EXPECT().TokenPrice("USDC").Return(0.99, nil)
+	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{

@@ -6,6 +6,35 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
+var HubPoolABI, _ = abi.JSON(strings.NewReader(`
+[
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "destinationChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "l1Token",
+        "type": "address"
+      }
+    ],
+    "name": "poolRebalanceRoute",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "destinationToken",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
+`))
+
 var SpokePoolABI, _ = abi.JSON(strings.NewReader(`
 [
   {

@@ -5,11 +5,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/metric"
-	api "go.opentelemetry.io/otel/metric"
 )
 
 type HostMetrics struct {
-	startTimeGauge api.Int64ObservableGauge
+	startTimeGauge metric.Int64ObservableGauge
 }
 
 // NewHostMetrics initializes metrics related to the relayer host
@@ -17,8 +16,8 @@ func NewHostMetrics(ctx context.Context, meter metric.Meter, opts metric.Measure
 	startTime := time.Now().Unix()
 	startTimeGauge, err := meter.Int64ObservableGauge(
 		"relayer.StartTimeSeconds",
-		api.WithDescription("Start time of the relayer"),
-		api.WithInt64Callback(func(ctx context.Context, result api.Int64Observer) error {
+		metric.WithDescription("Start time of the relayer"),
+		metric.WithInt64Callback(func(ctx context.Context, result metric.Int64Observer) error {
 			result.Observe(startTime, opts)
 			return nil
 		}),

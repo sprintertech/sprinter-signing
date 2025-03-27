@@ -18,7 +18,7 @@ func (b *BigInt) UnmarshalJSON(data []byte) error {
 	}
 
 	s := strings.Trim(string(data), "\"")
-	_, ok := b.Int.SetString(s, 10)
+	_, ok := b.SetString(s, 10)
 	if !ok {
 		return fmt.Errorf("failed to parse big.Int from %s", s)
 	}

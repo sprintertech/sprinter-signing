@@ -109,6 +109,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"admin":                 "adminAddress",
 		"liquidityPool":         "pool",
 		"acrossPool":            "acrossPool",
+		"hubPool":               "hubPool",
 		"maxGasPrice":           1000,
 		"gasMultiplier":         1000,
 		"gasIncreasePercentage": 20,
@@ -158,6 +159,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		Admin:                "adminAddress",
 		LiqudityPool:         "pool",
 		AcrossPool:           "acrossPool",
+		HubPool:              "hubPool",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
 	})

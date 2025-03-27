@@ -31,6 +31,7 @@ import (
 const (
 	AcrossMessage = "AcrossMessage"
 
+	ZERO_HASH   = "0000000000000000000000000000000000000000000000000000000000000000"
 	DOMAIN_NAME = "LiquidityPool"
 	VERSION     = "1.0.0"
 	PROTOCOL_ID = 1
@@ -72,6 +73,10 @@ type TokenPricer interface {
 	TokenPrice(symbol string) (float64, error)
 }
 
+type TokenMatcher interface {
+	DestinationToken(destinationChainId *big.Int, symbol string) (common.Address, error)
+}
+
 type AcrossMessageHandler struct {
 	client  EventFilterer
 	chainID uint64
@@ -79,6 +84,7 @@ type AcrossMessageHandler struct {
 	tokens        map[string]evm.TokenConfig
 	confirmations map[uint64]uint64
 	blocktime     time.Duration
+	tokenMatcher  TokenMatcher
 	tokenPricer   TokenPricer
 	pools         map[uint64]common.Address
 
@@ -87,7 +93,7 @@ type AcrossMessageHandler struct {
 	comm        comm.Communication
 	fetcher     signing.SaveDataFetcher
 
-	sigChn chan interface{}
+	sigChn chan any
 }
 
 func NewAcrossMessageHandler(
@@ -99,7 +105,8 @@ func NewAcrossMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	tokenPricer TokenPricer,
-	sigChn chan interface{},
+	tokenMatcher TokenMatcher,
+	sigChn chan any,
 	tokens map[string]evm.TokenConfig,
 	confirmations map[uint64]uint64,
 	blocktime time.Duration,
@@ -117,6 +124,7 @@ func NewAcrossMessageHandler(
 		confirmations: confirmations,
 		blocktime:     blocktime,
 		tokenPricer:   tokenPricer,
+		tokenMatcher:  tokenMatcher,
 	}
 }
 
@@ -235,6 +243,15 @@ func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (ui
 	symbol, c, err := h.tokenConfig(d)
 	if err != nil {
 		return 0, err
+	}
+
+	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
+		address, err := h.tokenMatcher.DestinationToken(d.DestinationChainId, symbol)
+		if err != nil {
+			return 0, err
+		}
+
+		d.OutputToken = common.BytesToHash(address.Bytes())
 	}
 
 	price, err := h.tokenPricer.TokenPrice(symbol)
