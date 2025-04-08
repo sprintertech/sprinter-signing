@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,6 +23,10 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
 
+const (
+	FILTER_LOGS_TIMEOUT = 30 * time.Second
+)
+
 type EventFilterer interface {
 	FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error)
 	LatestBlock() (*big.Int, error)
@@ -38,6 +43,7 @@ type TokenMatcher interface {
 
 type ConfirmationWatcher interface {
 	WaitForConfirmations(
+		ctx context.Context,
 		sourceChainId uint64,
 		client EventFilterer,
 		txHash common.Hash,
@@ -84,6 +90,7 @@ func NewAcrossMessageHandler(
 		fetcher:             fetcher,
 		sigChn:              sigChn,
 		confirmationWatcher: confirmationWatcher,
+		tokenMatcher:        tokenMatcher,
 	}
 }
 
@@ -148,6 +155,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	}
 
 	err = h.confirmationWatcher.WaitForConfirmations(
+		context.Background(),
 		h.chainID,
 		h.client,
 		txHash,
@@ -237,7 +245,11 @@ func (h *AcrossMessageHandler) deposit(depositId *big.Int) (common.Hash, *events
 			},
 		},
 	}
-	logs, err := h.client.FilterLogs(context.Background(), q)
+
+	ctx, cancel := context.WithTimeout(context.Background(), FILTER_LOGS_TIMEOUT)
+	defer cancel()
+
+	logs, err := h.client.FilterLogs(ctx, q)
 	if err != nil {
 		return common.Hash{}, nil, err
 	}

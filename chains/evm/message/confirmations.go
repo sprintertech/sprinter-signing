@@ -27,15 +27,16 @@ type Watcher struct {
 	tokenPricer TokenPricer
 }
 
-// waitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
+// WaitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
 func (w *Watcher) WaitForConfirmations(
+	ctx context.Context,
 	sourceChainId uint64,
 	client EventFilterer,
 	txHash common.Hash,
 	token common.Address,
 	amount *big.Int,
 ) error {
-	ctx, cancel := context.WithTimeout(context.Background(), TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, TIMEOUT)
 	defer cancel()
 
 	requiredConfirmations, err := w.minimalConfirmations(sourceChainId, token, amount)

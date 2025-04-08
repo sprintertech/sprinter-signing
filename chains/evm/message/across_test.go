@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -32,7 +31,7 @@ type AcrossMessageHandlerTestSuite struct {
 	mockEventFilterer *mock_message.MockEventFilterer
 	mockHost          *mock_host.MockHost
 	mockFetcher       *mock_tss.MockSaveDataFetcher
-	mockPricer        *mock_message.MockTokenPricer
+	mockWatcher       *mock_message.MockConfirmationWatcher
 	mockMatcher       *mock_message.MockTokenMatcher
 
 	handler *message.AcrossMessageHandler
@@ -60,7 +59,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
-	s.mockPricer = mock_message.NewMockTokenPricer(ctrl)
+	s.mockWatcher = mock_message.NewMockConfirmationWatcher(ctrl)
 	s.mockMatcher = mock_message.NewMockTokenMatcher(ctrl)
 
 	pools := make(map[uint64]common.Address)
@@ -92,12 +91,9 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 		s.mockHost,
 		s.mockCommunication,
 		s.mockFetcher,
-		s.mockPricer,
 		s.mockMatcher,
+		s.mockWatcher,
 		s.sigChn,
-		tokens,
-		confirmations,
-		time.Millisecond,
 	)
 }
 
@@ -221,14 +217,6 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	s.mockEventFilterer.EXPECT().TransactionReceipt(
-		gomock.Any(),
-		gomock.Any(),
-	).Return(&types.Receipt{}, fmt.Errorf("missing transaction receipt"))
-	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
-		BlockNumber: big.NewInt(100),
-	}, nil)
-
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(200), nil).AnyTimes()
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
 		{
@@ -242,8 +230,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 			},
 		},
 	}, nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), uint64(1), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockPricer.EXPECT().TokenPrice("ETH").Return(2200.15, nil)
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
@@ -278,14 +266,6 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	s.mockEventFilterer.EXPECT().TransactionReceipt(
-		gomock.Any(),
-		gomock.Any(),
-	).Return(&types.Receipt{}, fmt.Errorf("missing transaction receipt"))
-	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
-		BlockNumber: big.NewInt(200),
-	}, nil)
-
 	log, _ := hex.DecodeString("0000000000000000000000003355df6d4c9c3035724fd0e3914de96a5a83aaf40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006d7cbe22000000000000000000000000000000000000000000000000000000006d789ac90000000000000000000000000000000000000000000000000000000067ce09230000000000000000000000000000000000000000000000000000000067ce5ea7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000051d55999c7cd91b17af7276cbecd647dbc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(400), nil).AnyTimes()
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
@@ -300,9 +280,10 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 			},
 		},
 	}, nil)
-	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockPricer.EXPECT().TokenPrice("USDC").Return(0.99, nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), uint64(1), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockWatcher.EXPECT().TokenConfig(gomock.Any(), gomock.Any()).Return("USDC", evm.TokenConfig{}, nil)
 	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
+	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
 	ad := message.AcrossData{
