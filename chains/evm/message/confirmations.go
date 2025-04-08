@@ -25,6 +25,22 @@ type Watcher struct {
 	tokenPricer   TokenPricer
 }
 
+func NewWatcher(
+	client EventFilterer,
+	tokenPricer TokenPricer,
+	tokens map[string]evm.TokenConfig,
+	confirmations map[uint64]uint64,
+	blocktime time.Duration,
+) *Watcher {
+	return &Watcher{
+		client:        client,
+		tokens:        tokens,
+		confirmations: confirmations,
+		blocktime:     blocktime,
+		tokenPricer:   tokenPricer,
+	}
+}
+
 // WaitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
 func (w *Watcher) WaitForConfirmations(
 	ctx context.Context,
