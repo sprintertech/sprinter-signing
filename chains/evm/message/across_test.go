@@ -230,7 +230,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 			},
 		},
 	}, nil)
-	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), uint64(1), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
@@ -280,8 +280,8 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 			},
 		},
 	}, nil)
-	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), uint64(1), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockWatcher.EXPECT().TokenConfig(gomock.Any(), gomock.Any()).Return("USDC", evm.TokenConfig{}, nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockWatcher.EXPECT().TokenConfig(gomock.Any()).Return("USDC", evm.TokenConfig{}, nil)
 	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 

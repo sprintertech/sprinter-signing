@@ -44,12 +44,10 @@ type TokenMatcher interface {
 type ConfirmationWatcher interface {
 	WaitForConfirmations(
 		ctx context.Context,
-		sourceChainId uint64,
-		client EventFilterer,
 		txHash common.Hash,
 		token common.Address,
 		amount *big.Int) error
-	TokenConfig(chain uint64, token common.Address) (string, evm.TokenConfig, error)
+	TokenConfig(token common.Address) (string, evm.TokenConfig, error)
 }
 
 type AcrossMessageHandler struct {
@@ -156,8 +154,6 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
-		h.chainID,
-		h.client,
 		txHash,
 		common.BytesToAddress(d.InputToken[12:]),
 		d.InputAmount)
@@ -284,7 +280,7 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	copy(d.Depositor[:], l.Topics[3].Bytes())
 
 	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
-		symbol, _, err := h.confirmationWatcher.TokenConfig(h.chainID, common.BytesToAddress(d.InputToken[12:]))
+		symbol, _, err := h.confirmationWatcher.TokenConfig(common.BytesToAddress(d.InputToken[12:]))
 		if err != nil {
 			return nil, err
 		}

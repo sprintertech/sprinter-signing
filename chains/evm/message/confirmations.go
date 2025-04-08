@@ -18,20 +18,16 @@ type TokenPricer interface {
 }
 
 type Watcher struct {
-	// chainId -> symbol -> config
-	tokens map[uint64]map[string]evm.TokenConfig
-	// chainId -> order value usd -> confirmations
-	confirmations map[uint64]map[uint64]uint64
-	// chainId -> block time
-	blocktime   map[uint64]time.Duration
-	tokenPricer TokenPricer
+	client        EventFilterer
+	tokens        map[string]evm.TokenConfig
+	confirmations map[uint64]uint64
+	blocktime     time.Duration
+	tokenPricer   TokenPricer
 }
 
 // WaitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
 func (w *Watcher) WaitForConfirmations(
 	ctx context.Context,
-	sourceChainId uint64,
-	client EventFilterer,
 	txHash common.Hash,
 	token common.Address,
 	amount *big.Int,
@@ -39,14 +35,9 @@ func (w *Watcher) WaitForConfirmations(
 	ctx, cancel := context.WithTimeout(ctx, TIMEOUT)
 	defer cancel()
 
-	requiredConfirmations, err := w.minimalConfirmations(sourceChainId, token, amount)
+	requiredConfirmations, err := w.minimalConfirmations(token, amount)
 	if err != nil {
 		return err
-	}
-
-	blocktime, ok := w.blocktime[sourceChainId]
-	if !ok {
-		return fmt.Errorf("no blocktime configured for chain %d", sourceChainId)
 	}
 
 	for {
@@ -54,22 +45,22 @@ func (w *Watcher) WaitForConfirmations(
 		case <-ctx.Done():
 			return fmt.Errorf("timed out waiting for confirmations")
 		default:
-			txReceipt, err := client.TransactionReceipt(ctx, txHash)
+			txReceipt, err := w.client.TransactionReceipt(ctx, txHash)
 			if err != nil {
 				log.Warn().Msgf("Error fetching transaction receipt: %v\n", err)
-				time.Sleep(blocktime)
+				time.Sleep(w.blocktime)
 				continue
 			}
 
 			if txReceipt == nil {
-				time.Sleep(blocktime)
+				time.Sleep(w.blocktime)
 				continue
 			}
 
-			currentBlock, err := client.LatestBlock()
+			currentBlock, err := w.client.LatestBlock()
 			if err != nil {
 				log.Warn().Msgf("Error fetching current block: %v\n", err)
-				time.Sleep(blocktime)
+				time.Sleep(w.blocktime)
 				continue
 			}
 
@@ -79,7 +70,7 @@ func (w *Watcher) WaitForConfirmations(
 			}
 
 			// nolint:gosec
-			duration := time.Duration(uint64(blocktime) * (requiredConfirmations - confirmations.Uint64()))
+			duration := time.Duration(uint64(w.blocktime) * (requiredConfirmations - confirmations.Uint64()))
 			log.Debug().Msgf("Waiting for tx %s for %s", txHash, duration)
 			time.Sleep(duration)
 		}
@@ -87,13 +78,8 @@ func (w *Watcher) WaitForConfirmations(
 }
 
 // TokenConfig fetches the token configuration and symbol for the given chain
-func (w *Watcher) TokenConfig(chain uint64, token common.Address) (string, evm.TokenConfig, error) {
-	tokens, ok := w.tokens[chain]
-	if !ok {
-		return "", evm.TokenConfig{}, fmt.Errorf("no token config for chain %d", chain)
-	}
-
-	for symbol, c := range tokens {
+func (w *Watcher) TokenConfig(token common.Address) (string, evm.TokenConfig, error) {
+	for symbol, c := range w.tokens {
 		if c.Address == token {
 			return symbol, c, nil
 		}
@@ -104,8 +90,8 @@ func (w *Watcher) TokenConfig(chain uint64, token common.Address) (string, evm.T
 
 // minimalConfirmations calculates the minimal confirmations needed to wait for execution
 // of an order based on order size
-func (w *Watcher) minimalConfirmations(sourceChainId uint64, token common.Address, amount *big.Int) (uint64, error) {
-	symbol, c, err := w.TokenConfig(sourceChainId, token)
+func (w *Watcher) minimalConfirmations(token common.Address, amount *big.Int) (uint64, error) {
+	symbol, c, err := w.TokenConfig(token)
 	if err != nil {
 		return 0, err
 	}
@@ -121,15 +107,11 @@ func (w *Watcher) minimalConfirmations(sourceChainId uint64, token common.Addres
 		new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(c.Decimals)), nil)),
 	).Int(orderValueInt)
 
-	confirmations, ok := w.confirmations[sourceChainId]
-	if !ok {
-		return 0, fmt.Errorf("no confirmations for chain %d configured", sourceChainId)
-	}
-	buckets := slices.Collect(maps.Keys(confirmations))
+	buckets := slices.Collect(maps.Keys(w.confirmations))
 	slices.Sort(buckets)
 	for _, bucket := range buckets {
 		if orderValueInt.Cmp(new(big.Int).SetUint64(bucket)) < 0 {
-			return confirmations[bucket], nil
+			return w.confirmations[bucket], nil
 		}
 	}
 

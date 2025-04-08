@@ -19,7 +19,6 @@ import (
 	types "github.com/ethereum/go-ethereum/core/types"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 	evm "github.com/sprintertech/sprinter-signing/chains/evm"
-	message "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	tss "github.com/sprintertech/sprinter-signing/tss"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -195,9 +194,9 @@ func (m *MockConfirmationWatcher) EXPECT() *MockConfirmationWatcherMockRecorder 
 }
 
 // TokenConfig mocks base method.
-func (m *MockConfirmationWatcher) TokenConfig(chain uint64, token common.Address) (string, evm.TokenConfig, error) {
+func (m *MockConfirmationWatcher) TokenConfig(token common.Address) (string, evm.TokenConfig, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TokenConfig", chain, token)
+	ret := m.ctrl.Call(m, "TokenConfig", token)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(evm.TokenConfig)
 	ret2, _ := ret[2].(error)
@@ -205,21 +204,21 @@ func (m *MockConfirmationWatcher) TokenConfig(chain uint64, token common.Address
 }
 
 // TokenConfig indicates an expected call of TokenConfig.
-func (mr *MockConfirmationWatcherMockRecorder) TokenConfig(chain, token any) *gomock.Call {
+func (mr *MockConfirmationWatcherMockRecorder) TokenConfig(token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenConfig", reflect.TypeOf((*MockConfirmationWatcher)(nil).TokenConfig), chain, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenConfig", reflect.TypeOf((*MockConfirmationWatcher)(nil).TokenConfig), token)
 }
 
 // WaitForConfirmations mocks base method.
-func (m *MockConfirmationWatcher) WaitForConfirmations(ctx context.Context, sourceChainId uint64, client message.EventFilterer, txHash common.Hash, token common.Address, amount *big.Int) error {
+func (m *MockConfirmationWatcher) WaitForConfirmations(ctx context.Context, txHash common.Hash, token common.Address, amount *big.Int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForConfirmations", ctx, sourceChainId, client, txHash, token, amount)
+	ret := m.ctrl.Call(m, "WaitForConfirmations", ctx, txHash, token, amount)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WaitForConfirmations indicates an expected call of WaitForConfirmations.
-func (mr *MockConfirmationWatcherMockRecorder) WaitForConfirmations(ctx, sourceChainId, client, txHash, token, amount any) *gomock.Call {
+func (mr *MockConfirmationWatcherMockRecorder) WaitForConfirmations(ctx, txHash, token, amount any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForConfirmations), ctx, sourceChainId, client, txHash, token, amount)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForConfirmations), ctx, txHash, token, amount)
 }
