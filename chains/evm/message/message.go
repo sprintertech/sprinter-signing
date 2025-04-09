@@ -44,8 +44,13 @@ func NewAcrossMessage(source, destination uint64, acrossData AcrossData) *messag
 }
 
 type MayanData struct {
-	Coordinator peer.ID
-	ErrChn      chan error
+	Coordinator   peer.ID
+	ErrChn        chan error
+	LiquidityPool common.Address
+	Caller        common.Address
+	DepositTxHash string
+	Calldata      []byte
+	Nonce         *big.Int
 }
 
 func NewMayanMessage(source, destination uint64, mayanData MayanData) *message.Message {

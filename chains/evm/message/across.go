@@ -137,13 +137,9 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	log.Info().Str("depositId", data.DepositId.String()).Msgf("Handling across message %+v", data)
 
 	sourceChainID := h.chainID
-	if data.Coordinator == peer.ID("") {
-		data.Coordinator = h.host.ID()
-
-		err := h.notify(m, data)
-		if err != nil {
-			log.Warn().Msgf("Failed to notify relayers because of %s", err)
-		}
+	err := h.notify(m, data)
+	if err != nil {
+		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
 	txHash, d, err := h.deposit(data.DepositId)
@@ -205,6 +201,11 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 }
 
 func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
+	if data.Coordinator != peer.ID("") {
+		return nil
+	}
+
+	data.Coordinator = h.host.ID()
 	msgBytes, err := tssMessage.MarshalAcrossMessage(
 		data.DepositId,
 		data.Nonce,

@@ -22,6 +22,7 @@ const (
 	KeyRefreshSig  EventSig = "KeyRefresh(string)"
 
 	AcrossDepositSig EventSig = "FundsDeposited(bytes32,bytes32,uint256,uint256,uint256,uint256,uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes)"
+	MayanDepositSig  EventSig = "OrderCreated(bytes32)"
 )
 
 // Refresh struct holds key refresh event data
@@ -85,4 +86,8 @@ func (a *AcrossV3RelayData) Calldata(repaymentChainID *big.Int, repaymentAddress
 	}
 
 	return input, nil
+}
+
+type MayanOrderCreated struct {
+	Key [32]byte
 }
