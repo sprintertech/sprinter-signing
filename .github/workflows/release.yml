@@ -22,3 +22,4 @@ jobs:
           release-type: go
           package-name: release-please-action
           changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"chore","section":"Miscellaneous","hidden":false},{"type":"revert","hidden":true}]'
+          bootstrap-sha: '05467cdc656e48a5d34989dd57a30a3a93099cfc'
