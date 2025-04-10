@@ -131,17 +131,21 @@ func UnmarshalAcrossMessage(msgBytes []byte) (*AcrossMessage, error) {
 }
 
 type MayanMessage struct {
-	Caller        string `json:"caller"`
-	Source        uint64 `json:"source"`
-	Destination   uint64 `json:"destination"`
-	LiquidityPool string `json:"liquidityPool"`
+	Caller        string   `json:"caller"`
+	Source        uint64   `json:"source"`
+	Destination   uint64   `json:"destination"`
+	LiquidityPool string   `json:"liquidityPool"`
+	Calldata      string   `json:"calldata"`
+	Nonce         *big.Int `json:"nonce"`
 }
 
-func MarshalMayanMessage(caller string, source, destination uint64) ([]byte, error) {
-	signatureMessage := &AcrossMessage{
+func MarshalMayanMessage(caller, calldata string, nonce *big.Int, source, destination uint64) ([]byte, error) {
+	signatureMessage := &MayanMessage{
 		Caller:      caller,
 		Source:      source,
 		Destination: destination,
+		Nonce:       nonce,
+		Calldata:    calldata,
 	}
 
 	msgBytes, err := json.Marshal(signatureMessage)

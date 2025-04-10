@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/client"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/contracts"
@@ -76,7 +78,7 @@ func NewMayanSwiftContract(
 	address common.Address,
 ) *MayanSwiftContract {
 	return &MayanSwiftContract{
-		Contract: contracts.NewContract(address, abi.ABI{}, nil, client, nil),
+		Contract: contracts.NewContract(address, consts.MayanSwiftABI, nil, client, nil),
 		client:   client,
 	}
 }
@@ -116,6 +118,9 @@ func (c *MayanSwiftContract) GetOrder(
 		return nil, err
 	}
 
+	fmt.Println("RESULT")
+	fmt.Printf("%+v", res[0])
+
 	o, ok := res[0].(*MayanOrder)
 	if !ok {
 		return nil, fmt.Errorf("cannot convert fullfill payload to msg")
@@ -124,21 +129,24 @@ func (c *MayanSwiftContract) GetOrder(
 }
 
 func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillMsg, error) {
-	method, ok := c.ABI.Methods["fullfillOrder"]
+	fmt.Println("DECODING CALL")
+	method, ok := c.ABI.Methods["fulfillOrder"]
 	if !ok {
 		return nil, fmt.Errorf("no method fulfillOrder")
 	}
 
 	params := make(map[string]interface{})
-	err := method.Inputs.UnpackIntoMap(params, calldata)
+	err := method.Inputs.UnpackIntoMap(params, calldata[4:])
 	if err != nil {
 		return nil, err
 	}
 
-	encodedVM, ok := params["encodedVM"].([]byte)
+	encodedVM, ok := params["encodedVm"].([]byte)
 	if !ok {
 		return nil, fmt.Errorf("failed decoding VM data")
 	}
+
+	fmt.Printf("%+v \n", encodedVM)
 
 	return c.ParseFulfillPayload(encodedVM)
 }
@@ -149,20 +157,20 @@ func (c *MayanSwiftContract) ParseFulfillPayload(calldata []byte) (*MayanFulfill
 		return nil, err
 	}
 
-	msg, ok := res[0].(*MayanFulfillMsg)
-	if !ok {
-		return nil, fmt.Errorf("cannot convert fullfill payload to msg")
-	}
+	fmt.Println("RESULT 0")
+	fmt.Printf("%+v", res[0])
 
-	return msg, nil
+	out := abi.ConvertType(res[0], new(MayanFulfillMsg)).(*MayanFulfillMsg)
+	return out, nil
 }
 
-func convertFloatToUint(amount float64, decimals uint8) uint64 {
+func convertFloatToUint(amount string, decimals uint8) uint64 {
+	floatAmount, _ := strconv.ParseFloat(amount, 64)
 	minDecimals := uint8(math.Min(float64(decimals), float64(WORMHOLE_DECIMALS)))
 
 	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minDecimals)), nil)
 
-	amountBigFloat := new(big.Float).SetFloat64(amount)
+	amountBigFloat := new(big.Float).SetFloat64(floatAmount)
 
 	multiplierBigFloat := new(big.Float).SetInt(multiplier)
 	scaledAmountBigFloat := new(big.Float).Mul(amountBigFloat, multiplierBigFloat)

@@ -10,7 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
-	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
@@ -18,15 +18,18 @@ type ProtocolType string
 
 const (
 	AcrossProtocol ProtocolType = "across"
+	MayanProtocol  ProtocolType = "mayan"
 )
 
 type SigningBody struct {
 	ChainId       uint64
-	DepositId     *BigInt      `json:"depositId"`
+	DepositId     string       `json:"depositId"`
 	Nonce         *BigInt      `json:"nonce"`
 	Protocol      ProtocolType `json:"protocol"`
 	LiquidityPool string       `json:"liquidityPool"`
 	Caller        string       `json:"caller"`
+	Calldata      string       `json:"calldata"`
+	DepositTxHash string       `json:"depositTxHash"`
 }
 
 type SigningHandler struct {
@@ -64,12 +67,24 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	switch b.Protocol {
 	case AcrossProtocol:
 		{
-			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-				DepositId:     b.DepositId.Int,
+			depositId, _ := new(big.Int).SetString(b.DepositId, 10)
+			m = evmMessage.NewAcrossMessage(0, b.ChainId, evmMessage.AcrossData{
+				DepositId:     depositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
 				ErrChn:        errChn,
+			})
+		}
+	case MayanProtocol:
+		{
+			m = evmMessage.NewMayanMessage(0, b.ChainId, &evmMessage.MayanData{
+				Nonce:         b.Nonce.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				ErrChn:        errChn,
+				Calldata:      b.Calldata,
+				DepositTxHash: b.DepositTxHash,
 			})
 		}
 	default:
@@ -94,7 +109,7 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	}
 	b.ChainId = chainId.Uint64()
 
-	if b.DepositId == nil {
+	if b.DepositId == "" {
 		return fmt.Errorf("missing field 'depositId'")
 	}
 

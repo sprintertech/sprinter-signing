@@ -49,7 +49,7 @@ type MayanData struct {
 	LiquidityPool common.Address
 	Caller        common.Address
 	DepositTxHash string
-	Calldata      []byte
+	Calldata      string
 	Nonce         *big.Int
 }
 

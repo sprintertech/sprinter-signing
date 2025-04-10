@@ -96,6 +96,8 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 					Coordinator:   wMsg.From,
 					LiquidityPool: common.HexToAddress(mayanMsg.LiquidityPool),
 					Caller:        common.HexToAddress(mayanMsg.Caller),
+					Calldata:      mayanMsg.Calldata,
+					Nonce:         mayanMsg.Nonce,
 					ErrChn:        make(chan error, 1),
 				})
 				_, err = h.HandleMessage(msg)
@@ -124,7 +126,13 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	msg, err := h.mayanDecoder.DecodeFulfillCall(data.Calldata)
+	calldataBytes, err := hex.DecodeString(data.Calldata)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	msg, err := h.mayanDecoder.DecodeFulfillCall(calldataBytes)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -140,7 +148,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	_, token, err := h.confirmationWatcher.TokenConfig(common.HexToAddress(swap.FromTokenAddress))
+	_, token, err := h.confirmationWatcher.TokenConfig(common.BytesToAddress(msg.TokenIn[12:]))
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -171,7 +179,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	destChainId := new(big.Int).SetUint64(uint64(msg.DestChainId))
 	unlockHash, err := unlockHash(
-		data.Calldata,
+		calldataBytes,
 		new(big.Int).SetUint64(msg.PromisedAmount),
 		common.BytesToAddress(msg.TokenOut[12:]),
 		destChainId,
@@ -212,6 +220,8 @@ func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error 
 	data.Coordinator = h.host.ID()
 	msgBytes, err := tssMessage.MarshalMayanMessage(
 		data.Caller.Hex(),
+		data.Calldata,
+		data.Nonce,
 		m.Source,
 		m.Destination)
 	if err != nil {

@@ -143,6 +143,7 @@ func Run() error {
 	domains := make(map[uint64]relayer.RelayedChain)
 
 	var hubPoolContract evmMessage.TokenMatcher
+	var mayanSwiftContract *contracts.MayanSwiftContract
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
 	for _, chainConfig := range configuration.ChainConfigs {
@@ -150,6 +151,9 @@ func Run() error {
 		case "evm":
 			{
 				config, err := evm.NewEVMConfig(chainConfig)
+				panicOnError(err)
+				kp, _ := secp256k1.GenerateKeypair()
+				client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, kp)
 				panicOnError(err)
 
 				if config.AcrossPool != "" {
@@ -160,12 +164,10 @@ func Run() error {
 				if config.MayanSwift != "" {
 					poolAddress := common.HexToAddress(config.MayanSwift)
 					mayanPools[*config.GeneralChainConfig.Id] = poolAddress
+					mayanSwiftContract = contracts.NewMayanSwiftContract(client, common.HexToAddress(config.MayanSwift))
 				}
 
 				if config.HubPool != "" {
-					kp, _ := secp256k1.GenerateKeypair()
-					client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, kp)
-					panicOnError(err)
 
 					hubPoolAddress := common.HexToAddress(config.HubPool)
 					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, config.Tokens)
@@ -220,7 +222,6 @@ func Run() error {
 				}
 
 				if config.MayanSwift != "" {
-					mayanContract := contracts.NewMayanSwiftContract(client, common.HexToAddress(config.MayanSwift))
 					mayanApi := mayan.NewMayanClient()
 					mayanMh := evmMessage.NewMayanMessageHandler(
 						*config.GeneralChainConfig.Id,
@@ -231,7 +232,7 @@ func Run() error {
 						communication,
 						keyshareStore,
 						watcher,
-						mayanContract,
+						mayanSwiftContract,
 						mayanApi,
 						sigChn)
 					go mayanMh.Listen(ctx)

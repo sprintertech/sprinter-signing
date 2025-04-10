@@ -14,19 +14,10 @@ type MayanSwap struct {
 	OrderHash        string
 	RandomKey        string
 	MayanBps         uint8
-	ReferrerBps      uint8
 	AuctionMode      uint8
-	RedeemRelayerFee float64
-	RefundRelayerFee float64
-	GasDrop64        uint64
+	RedeemRelayerFee string
+	RefundRelayerFee string
 	Trader           string
-	SourceChain      uint16
-	DestChain        uint16
-	ToTokenAddress   string
-	FromTokenAddress string
-	MinAmount64      uint64
-	DestAddr         string
-	ReferrerAddress  string
 }
 
 type MayanSwapClient struct {
