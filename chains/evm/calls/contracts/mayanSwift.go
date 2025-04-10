@@ -5,13 +5,31 @@ package contracts
 
 import (
 	"fmt"
+	"math"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sprintertech/sprinter-signing/chains/evm"
+	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/client"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/contracts"
 )
+
+type OrderStatus uint8
+
+const (
+	OrderCreated OrderStatus = 1
+
+	WORMHOLE_DECIMALS = 8
+)
+
+type MayanOrder struct {
+	Status      OrderStatus
+	AmountIn    uint64
+	DestChainId uint16
+}
 
 type MayanKey struct {
 	Trader       common.Hash
@@ -67,6 +85,48 @@ func NewMayanSwiftContract(
 	}
 }
 
+func (c *MayanSwiftContract) GetOrder(
+	msg *MayanFulfillMsg,
+	swap *mayan.MayanSwap,
+	srcTokenDecimals uint8) (*MayanOrder, error) {
+	res, err := c.CallContract("encodeKey", &MayanKey{
+		Trader:       common.HexToHash(swap.Trader),
+		SrcChainId:   msg.SrcChainId,
+		TokenIn:      msg.TokenIn,
+		DestAddr:     msg.DestAddr,
+		DestChainId:  msg.DestChainId,
+		TokenOut:     msg.TokenOut,
+		MinAmountOut: msg.PromisedAmount,
+		GasDrop:      msg.GasDrop,
+		CancelFee:    convertFloatToUint(swap.RedeemRelayerFee, srcTokenDecimals),
+		RefundFee:    convertFloatToUint(swap.RefundRelayerFee, srcTokenDecimals),
+		Deadline:     msg.Deadline,
+		ReferrerAddr: msg.ReferrerAddr,
+		ReferrerBps:  msg.ReferrerBps,
+		ProtocolBps:  swap.MayanBps,
+		AuctionMode:  swap.AuctionMode,
+		Random:       common.HexToHash(swap.RandomKey),
+	})
+	if err != nil {
+		return nil, err
+	}
+	key, ok := res[0].([32]byte)
+	if !ok {
+		return nil, fmt.Errorf("cannot convert key to [32]byte")
+	}
+
+	res, err = c.CallContract("orders", crypto.Keccak256(key[:]))
+	if err != nil {
+		return nil, err
+	}
+
+	o, ok := res[0].(*MayanOrder)
+	if !ok {
+		return nil, fmt.Errorf("cannot convert fullfill payload to msg")
+	}
+	return o, nil
+}
+
 func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillMsg, error) {
 	method, ok := c.ABI.Methods["fullfillOrder"]
 	if !ok {
@@ -99,4 +159,20 @@ func (c *MayanSwiftContract) ParseFulfillPayload(calldata []byte) (*MayanFulfill
 	}
 
 	return msg, nil
+}
+
+func convertFloatToUint(amount float64, decimals uint8) uint64 {
+	minDecimals := uint8(math.Min(float64(decimals), float64(WORMHOLE_DECIMALS)))
+
+	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minDecimals)), nil)
+
+	amountBigFloat := new(big.Float).SetFloat64(amount)
+
+	multiplierBigFloat := new(big.Float).SetInt(multiplier)
+	scaledAmountBigFloat := new(big.Float).Mul(amountBigFloat, multiplierBigFloat)
+
+	scaledAmountBigInt := new(big.Int)
+	scaledAmountBigFloat.Int(scaledAmountBigInt)
+
+	return scaledAmountBigInt.Uint64()
 }

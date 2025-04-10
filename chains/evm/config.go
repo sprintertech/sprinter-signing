@@ -26,6 +26,7 @@ type EVMConfig struct {
 	Admin              string
 	AcrossPool         string
 	HubPool            string
+	MayanSwift         string
 	LiqudityPool       string
 	Tokens             map[string]TokenConfig
 	// usd bucket -> confirmations
@@ -39,6 +40,7 @@ type RawEVMConfig struct {
 	Admin                    string                 `mapstructure:"admin"`
 	LiqudityPool             string                 `mapstructure:"liquidityPool"`
 	AcrossPool               string                 `mapstructure:"acrossPool"`
+	MayanSwift               string                 `mapstructure:"mayanSwift"`
 	HubPool                  string                 `mapstructure:"hubPool"`
 	Tokens                   map[string]interface{} `mapstructure:"tokens"`
 	ConfirmationsByValue     map[string]interface{} `mapstructure:"confirmationsByValue"`
@@ -114,6 +116,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		LiqudityPool:       c.LiqudityPool,
 		AcrossPool:         c.AcrossPool,
 		HubPool:            c.HubPool,
+		MayanSwift:         c.MayanSwift,
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
 		BlockInterval:      big.NewInt(c.BlockInterval),

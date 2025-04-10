@@ -143,6 +143,7 @@ func Run() error {
 
 	var hubPoolContract evmMessage.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
+	mayanPools := make(map[uint64]common.Address)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
@@ -153,6 +154,11 @@ func Run() error {
 				if config.AcrossPool != "" {
 					poolAddress := common.HexToAddress(config.AcrossPool)
 					acrossPools[*config.GeneralChainConfig.Id] = poolAddress
+				}
+
+				if config.MayanSwift != "" {
+					poolAddress := common.HexToAddress(config.MayanSwift)
+					mayanPools[*config.GeneralChainConfig.Id] = poolAddress
 				}
 
 				if config.HubPool != "" {
@@ -183,6 +189,15 @@ func Run() error {
 
 				l := log.With().Str("chain", fmt.Sprintf("%v", config.GeneralChainConfig.Name)).Uint64("domainID", *config.GeneralChainConfig.Id)
 
+				watcher := evmMessage.NewWatcher(
+					client,
+					priceAPI,
+					config.Tokens,
+					config.ConfirmationsByValue,
+					// nolint:gosec
+					time.Duration(config.GeneralChainConfig.Blocktime)*time.Second,
+				)
+
 				mh := message.NewMessageHandler()
 				if config.AcrossPool != "" {
 					acrossMh := evmMessage.NewAcrossMessageHandler(
@@ -193,13 +208,47 @@ func Run() error {
 						host,
 						communication,
 						keyshareStore,
-						priceAPI,
 						hubPoolContract,
-						sigChn,
-						config.Tokens,
-						config.ConfirmationsByValue,
-						// nolint:gosec
-						time.Duration(config.GeneralChainConfig.Blocktime)*time.Second)
+						watcher,
+						sigChn)
+					go acrossMh.Listen(ctx)
+
+					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
+					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
+				}
+
+				if config.MayanSwift != "" {
+					mayanMh := evmMessage.NewMayanMessageHandler(
+						*config.GeneralChainConfig.Id,
+						client,
+						mayanPools,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						watcher,
+						sigChn)
+					go mayanMh.Listen(ctx)
+
+					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
+					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
+
+				}
+
+				if config.Na != "" {
+					acrossMh := evmMessage.NewAcrossMessageHandler(
+						*config.GeneralChainConfig.Id,
+						client,
+						acrossPools,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						hubPoolContract,
+						watcher,
+						sigChn)
 					go acrossMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)

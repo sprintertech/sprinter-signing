@@ -110,6 +110,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"liquidityPool":         "pool",
 		"acrossPool":            "acrossPool",
 		"hubPool":               "hubPool",
+		"mayanSwift":            "mayanSwift",
 		"maxGasPrice":           1000,
 		"gasMultiplier":         1000,
 		"gasIncreasePercentage": 20,
@@ -160,6 +161,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		LiqudityPool:         "pool",
 		AcrossPool:           "acrossPool",
 		HubPool:              "hubPool",
+		MayanSwift:           "mayanSwift",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
 	})

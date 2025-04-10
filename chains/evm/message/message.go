@@ -53,7 +53,7 @@ type MayanData struct {
 	Nonce         *big.Int
 }
 
-func NewMayanMessage(source, destination uint64, mayanData MayanData) *message.Message {
+func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.Message {
 	return &message.Message{
 		Source:      source,
 		Destination: destination,

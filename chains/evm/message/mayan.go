@@ -7,14 +7,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
-	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	tssMessage "github.com/sprintertech/sprinter-signing/tss/message"
@@ -22,8 +20,17 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
 
-type MayanDecoder interface {
+type MayanContract interface {
 	DecodeFulfillCall(calldata []byte) (*contracts.MayanFulfillMsg, error)
+	GetOrder(
+		msg *contracts.MayanFulfillMsg,
+		swap *mayan.MayanSwap,
+		srcTokenDecimals uint8,
+	) (*contracts.MayanOrder, error)
+}
+
+type SwapFetcher interface {
+	GetSwap(hash string) (*mayan.MayanSwap, error)
 }
 
 type MayanMessageHandler struct {
@@ -32,7 +39,8 @@ type MayanMessageHandler struct {
 
 	pools               map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
-	mayanDecoder        MayanDecoder
+	mayanDecoder        MayanContract
+	swapFetcher         SwapFetcher
 
 	coordinator Coordinator
 	host        host.Host
@@ -80,7 +88,7 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 					continue
 				}
 
-				msg := NewMayanMessage(mayanMsg.Source, mayanMsg.Destination, MayanData{
+				msg := NewMayanMessage(mayanMsg.Source, mayanMsg.Destination, &MayanData{
 					Coordinator:   wMsg.From,
 					LiquidityPool: common.HexToAddress(mayanMsg.LiquidityPool),
 					Caller:        common.HexToAddress(mayanMsg.Caller),
@@ -104,23 +112,12 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 // the MPC signature process for it. The result will be saved into the signature
 // cache through the result channel.
 func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
-	data := m.Data.(MayanData)
-
-	sourceChainID := h.chainID
-	if data.Coordinator == peer.ID("") {
-		data.Coordinator = h.host.ID()
-
-		err := h.notify(m, data)
-		if err != nil {
-			log.Warn().Msgf("Failed to notify relayers because of %s", err)
-		}
-	}
-
+	data := m.Data.(*MayanData)
 	txHash := common.HexToHash(data.DepositTxHash)
-	o, err := h.order(txHash)
+
+	err := h.notify(m, data)
 	if err != nil {
-		data.ErrChn <- err
-		return nil, err
+		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
 	msg, err := h.mayanDecoder.DecodeFulfillCall(data.Calldata)
@@ -128,12 +125,33 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
+	swap, err := h.swapFetcher.GetSwap(txHash.Hex())
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+	if swap.OrderHash != hex.EncodeToString(msg.OrderHash[:]) {
+		err = fmt.Errorf("swap and msg hash not matching")
+		data.ErrChn <- err
+		return nil, err
+	}
 
-	if o.Key != msg.OrderHash {
-		return nil, fmt.Errorf(
-			"transaction and calldata hash not matching %s : %s",
-			hex.EncodeToString(o.Key[:]),
-			hex.EncodeToString(msg.OrderHash[:]))
+	_, token, err := h.confirmationWatcher.TokenConfig(common.HexToAddress(swap.FromTokenAddress))
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	// TODO: use calldata to verify it is correct
+	order, err := h.mayanDecoder.GetOrder(msg, swap, token.Decimals)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+	if order.Status != contracts.OrderCreated {
+		err = fmt.Errorf("invalid order status %d", order.Status)
+		data.ErrChn <- err
+		return nil, err
 	}
 
 	err = h.confirmationWatcher.WaitForConfirmations(
@@ -163,7 +181,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("%d-%s", sourceChainID, hex.EncodeToString(o.Key[:]))
+	sessionID := fmt.Sprintf("%d-%s", h.chainID, swap.OrderHash)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,
@@ -182,7 +200,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 	return nil, nil
 }
 
-func (h *MayanMessageHandler) notify(m *message.Message, data MayanData) error {
+func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error {
 	if data.Coordinator != peer.ID("") {
 		return nil
 	}
@@ -197,40 +215,4 @@ func (h *MayanMessageHandler) notify(m *message.Message, data MayanData) error {
 	}
 
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.MayanMsg, fmt.Sprintf("%d-%s", h.chainID, comm.MayanSessionID))
-}
-
-func (h *MayanMessageHandler) order(txHash common.Hash) (*events.MayanOrderCreated, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), FILTER_LOGS_TIMEOUT)
-	defer cancel()
-
-	receipt, err := h.client.TransactionReceipt(ctx, txHash)
-	if err != nil {
-		return nil, err
-	}
-
-	var log *types.Log
-	for _, l := range receipt.Logs {
-		for _, topic := range l.Topics {
-			if topic == events.MayanDepositSig.GetTopic() {
-				log = l
-			}
-		}
-	}
-
-	o, err := h.parseEvent(log)
-	if err != nil {
-		return nil, err
-	}
-
-	return o, nil
-}
-
-func (h *MayanMessageHandler) parseEvent(log *types.Log) (*events.MayanOrderCreated, error) {
-	o := &events.MayanOrderCreated{}
-	err := consts.SpokePoolABI.UnpackIntoInterface(o, "OrderCreated", log.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	return o, nil
 }
