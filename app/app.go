@@ -34,6 +34,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
+	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
 	coreEvm "github.com/sygmaprotocol/sygma-core/chains/evm"
@@ -219,6 +220,8 @@ func Run() error {
 				}
 
 				if config.MayanSwift != "" {
+					mayanContract := contracts.NewMayanSwiftContract(client, common.HexToAddress(config.MayanSwift))
+					mayanApi := mayan.NewMayanClient()
 					mayanMh := evmMessage.NewMayanMessageHandler(
 						*config.GeneralChainConfig.Id,
 						client,
@@ -228,6 +231,8 @@ func Run() error {
 						communication,
 						keyshareStore,
 						watcher,
+						mayanContract,
+						mayanApi,
 						sigChn)
 					go mayanMh.Listen(ctx)
 
@@ -235,25 +240,6 @@ func Run() error {
 					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
 
-				}
-
-				if config.Na != "" {
-					acrossMh := evmMessage.NewAcrossMessageHandler(
-						*config.GeneralChainConfig.Id,
-						client,
-						acrossPools,
-						coordinator,
-						host,
-						communication,
-						keyshareStore,
-						hubPoolContract,
-						watcher,
-						sigChn)
-					go acrossMh.Listen(ctx)
-
-					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
-					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
-					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
 				}
 
 				var startBlock *big.Int

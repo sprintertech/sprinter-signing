@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/client"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/contracts"
@@ -70,18 +69,15 @@ type MayanFulfillMsg struct {
 type MayanSwiftContract struct {
 	contracts.Contract
 	client client.Client
-	tokens map[string]evm.TokenConfig
 }
 
 func NewMayanSwiftContract(
 	client client.Client,
 	address common.Address,
-	l1Tokens map[string]evm.TokenConfig,
 ) *MayanSwiftContract {
 	return &MayanSwiftContract{
 		Contract: contracts.NewContract(address, abi.ABI{}, nil, client, nil),
 		client:   client,
-		tokens:   l1Tokens,
 	}
 }
 

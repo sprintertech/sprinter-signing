@@ -59,6 +59,8 @@ func NewMayanMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	confirmationWatcher ConfirmationWatcher,
+	mayanDecoder MayanContract,
+	swapFetcher SwapFetcher,
 	sigChn chan any,
 ) *MayanMessageHandler {
 	return &MayanMessageHandler{
@@ -71,6 +73,8 @@ func NewMayanMessageHandler(
 		fetcher:             fetcher,
 		sigChn:              sigChn,
 		confirmationWatcher: confirmationWatcher,
+		mayanDecoder:        mayanDecoder,
+		swapFetcher:         swapFetcher,
 	}
 }
 
