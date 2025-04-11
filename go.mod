@@ -20,7 +20,6 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
-	github.com/taurusgroup/multi-party-sig v0.6.0-alpha-2021-09-21.0.20230619131919-9c7c6ffd7217
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/metric v1.16.0
 	go.uber.org/mock v0.5.0
@@ -36,11 +35,9 @@ require (
 	github.com/consensys/gnark-crypto v0.14.0 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a // indirect
 	github.com/crate-crypto/go-kzg-4844 v1.1.0 // indirect
-	github.com/cronokirby/saferith v0.33.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
-	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
@@ -75,8 +72,6 @@ require (
 	github.com/supranational/blst v0.3.14 // indirect
 	github.com/vedhavyas/go-subkey/v2 v2.0.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
-	github.com/x448/float16 v0.8.4 // indirect
-	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
