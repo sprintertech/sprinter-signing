@@ -59,7 +59,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -90,7 +90,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingCaller() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -121,7 +121,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingLiquidityPool() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -153,7 +153,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -185,7 +185,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -217,7 +217,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -249,7 +249,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
@@ -281,7 +281,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(across.AcrossData)
+		ad := msg[0].Data.(*across.AcrossData)
 		ad.ErrChn <- nil
 	}()
 
@@ -301,6 +301,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MayanSuccess() {
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
 	}
 	body, _ := json.Marshal(input)
 
