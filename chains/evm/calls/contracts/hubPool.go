@@ -9,8 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/client"
 	"github.com/sygmaprotocol/sygma-core/chains/evm/contracts"
 )
@@ -18,13 +18,13 @@ import (
 type HubPoolContract struct {
 	contracts.Contract
 	client client.Client
-	tokens map[string]evm.TokenConfig
+	tokens map[string]config.TokenConfig
 }
 
 func NewHubPoolContract(
 	client client.Client,
 	address common.Address,
-	l1Tokens map[string]evm.TokenConfig,
+	l1Tokens map[string]config.TokenConfig,
 ) *HubPoolContract {
 	return &HubPoolContract{
 		Contract: contracts.NewContract(address, consts.HubPoolABI, nil, client, nil),

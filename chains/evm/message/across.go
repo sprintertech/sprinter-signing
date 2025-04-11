@@ -2,42 +2,29 @@ package message
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"maps"
 	"math/big"
-	"slices"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
-	tssMessage "github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
 
 const (
-	AcrossMessage = "AcrossMessage"
-
-	ZERO_HASH   = "0000000000000000000000000000000000000000000000000000000000000000"
-	DOMAIN_NAME = "LiquidityPool"
-	VERSION     = "1.0.0"
-	PROTOCOL_ID = 1
-	BLOCK_RANGE = 1000
-
-	TIMEOUT = 10 * time.Minute
+	FILTER_LOGS_TIMEOUT = 30 * time.Second
 )
 
 type EventFilterer interface {
@@ -46,47 +33,31 @@ type EventFilterer interface {
 	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 }
 
-type AcrossData struct {
-	DepositId     *big.Int
-	Nonce         *big.Int
-	LiquidityPool common.Address
-	Caller        common.Address
-	Coordinator   peer.ID
-	ErrChn        chan error
-}
-
-func NewAcrossMessage(source, destination uint64, acrossData AcrossData) *message.Message {
-	return &message.Message{
-		Source:      source,
-		Destination: destination,
-		Data:        acrossData,
-		Type:        AcrossMessage,
-		Timestamp:   time.Now(),
-	}
-}
-
 type Coordinator interface {
 	Execute(ctx context.Context, tssProcesses []tss.TssProcess, resultChn chan interface{}, coordinator peer.ID) error
-}
-
-type TokenPricer interface {
-	TokenPrice(symbol string) (float64, error)
 }
 
 type TokenMatcher interface {
 	DestinationToken(destinationChainId *big.Int, symbol string) (common.Address, error)
 }
 
+type ConfirmationWatcher interface {
+	WaitForConfirmations(
+		ctx context.Context,
+		chainID uint64,
+		txHash common.Hash,
+		token common.Address,
+		amount *big.Int) error
+}
+
 type AcrossMessageHandler struct {
 	client  EventFilterer
 	chainID uint64
 
-	tokens        map[string]evm.TokenConfig
-	confirmations map[uint64]uint64
-	blocktime     time.Duration
-	tokenMatcher  TokenMatcher
-	tokenPricer   TokenPricer
-	pools         map[uint64]common.Address
+	pools               map[uint64]common.Address
+	confirmationWatcher ConfirmationWatcher
+	tokenMatcher        TokenMatcher
+	tokenStore          config.TokenStore
 
 	coordinator Coordinator
 	host        host.Host
@@ -104,63 +75,23 @@ func NewAcrossMessageHandler(
 	host host.Host,
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
-	tokenPricer TokenPricer,
 	tokenMatcher TokenMatcher,
+	tokenStore config.TokenStore,
+	confirmationWatcher ConfirmationWatcher,
 	sigChn chan any,
-	tokens map[string]evm.TokenConfig,
-	confirmations map[uint64]uint64,
-	blocktime time.Duration,
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
-		chainID:       chainID,
-		client:        client,
-		pools:         pools,
-		coordinator:   coordinator,
-		host:          host,
-		comm:          comm,
-		fetcher:       fetcher,
-		sigChn:        sigChn,
-		tokens:        tokens,
-		confirmations: confirmations,
-		blocktime:     blocktime,
-		tokenPricer:   tokenPricer,
-		tokenMatcher:  tokenMatcher,
-	}
-}
-
-func (h *AcrossMessageHandler) Listen(ctx context.Context) {
-	msgChn := make(chan *comm.WrappedMessage)
-	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID), comm.AcrossMsg, msgChn)
-
-	for {
-		select {
-		case wMsg := <-msgChn:
-			{
-				acrossMsg, err := tssMessage.UnmarshalAcrossMessage(wMsg.Payload)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
-					continue
-				}
-
-				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, AcrossData{
-					DepositId:     acrossMsg.DepositId,
-					Nonce:         acrossMsg.Nonce,
-					Coordinator:   wMsg.From,
-					LiquidityPool: common.HexToAddress(acrossMsg.LiqudityPool),
-					Caller:        common.HexToAddress(acrossMsg.Caller),
-					ErrChn:        make(chan error, 1),
-				})
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling across message %+v because of: %s", acrossMsg, err)
-				}
-			}
-		case <-ctx.Done():
-			{
-				h.comm.UnSubscribe(subID)
-				return
-			}
-		}
+		chainID:             chainID,
+		client:              client,
+		pools:               pools,
+		coordinator:         coordinator,
+		host:                host,
+		comm:                comm,
+		fetcher:             fetcher,
+		sigChn:              sigChn,
+		confirmationWatcher: confirmationWatcher,
+		tokenMatcher:        tokenMatcher,
+		tokenStore:          tokenStore,
 	}
 }
 
@@ -168,18 +99,14 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 // the MPC signature process for it. The result will be saved into the signature
 // cache through the result channel.
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
-	data := m.Data.(AcrossData)
+	data := m.Data.(*AcrossData)
 
 	log.Info().Str("depositId", data.DepositId.String()).Msgf("Handling across message %+v", data)
 
 	sourceChainID := h.chainID
-	if data.Coordinator == peer.ID("") {
-		data.Coordinator = h.host.ID()
-
-		err := h.notify(m, data)
-		if err != nil {
-			log.Warn().Msgf("Failed to notify relayers because of %s", err)
-		}
+	err := h.notify(data)
+	if err != nil {
+		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
 	txHash, d, err := h.deposit(data.DepositId)
@@ -188,19 +115,36 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	confirmations, err := h.minimalConfirmations(d)
+	err = h.confirmationWatcher.WaitForConfirmations(
+		context.Background(),
+		h.chainID,
+		txHash,
+		common.BytesToAddress(d.InputToken[12:]),
+		d.InputAmount)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
 	data.ErrChn <- nil
 
-	err = h.waitForConfirmations(txHash, confirmations)
+	calldata, err := d.ToV3RelayData(
+		new(big.Int).SetUint64(sourceChainID),
+	).Calldata(d.DestinationChainId, data.LiquidityPool)
 	if err != nil {
 		return nil, err
 	}
 
-	unlockHash, err := h.unlockHash(d, sourceChainID, data)
+	unlockHash, err := unlockHash(
+		calldata,
+		d.OutputAmount,
+		common.BytesToAddress(d.OutputToken[12:]),
+		d.DestinationChainId,
+		h.pools[d.DestinationChainId.Uint64()],
+		uint64(d.FillDeadline),
+		data.Caller,
+		data.LiquidityPool,
+		data.Nonce,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -224,110 +168,49 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	return nil, nil
 }
 
-func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
-	msgBytes, err := tssMessage.MarshalAcrossMessage(
-		data.DepositId,
-		data.Nonce,
-		data.LiquidityPool.Hex(),
-		data.Caller.Hex(),
-		m.Source,
-		m.Destination)
+func (h *AcrossMessageHandler) Listen(ctx context.Context) {
+	msgChn := make(chan *comm.WrappedMessage)
+	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID), comm.AcrossMsg, msgChn)
+
+	for {
+		select {
+		case wMsg := <-msgChn:
+			{
+				d := &AcrossData{}
+				err := json.Unmarshal(wMsg.Payload, d)
+				if err != nil {
+					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
+					continue
+				}
+
+				d.ErrChn = make(chan error, 1)
+				msg := NewAcrossMessage(d.Source, d.Destination, d)
+				_, err = h.HandleMessage(msg)
+				if err != nil {
+					log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
+				}
+			}
+		case <-ctx.Done():
+			{
+				h.comm.UnSubscribe(subID)
+				return
+			}
+		}
+	}
+}
+
+func (h *AcrossMessageHandler) notify(data *AcrossData) error {
+	if data.Coordinator != peer.ID("") {
+		return nil
+	}
+
+	data.Coordinator = h.host.ID()
+	msgBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID))
-}
-
-func (h *AcrossMessageHandler) minimalConfirmations(d *events.AcrossDeposit) (uint64, error) {
-	symbol, c, err := h.tokenConfig(d)
-	if err != nil {
-		return 0, err
-	}
-
-	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
-		address, err := h.tokenMatcher.DestinationToken(d.DestinationChainId, symbol)
-		if err != nil {
-			return 0, err
-		}
-
-		d.OutputToken = common.BytesToHash(address.Bytes())
-	}
-
-	price, err := h.tokenPricer.TokenPrice(symbol)
-	if err != nil {
-		return 0, err
-	}
-
-	orderValueInt := new(big.Int)
-	orderValueInt, _ = new(big.Float).Quo(
-		new(big.Float).Mul(big.NewFloat(price), new(big.Float).SetInt(d.InputAmount)),
-		new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(c.Decimals)), nil)),
-	).Int(orderValueInt)
-
-	buckets := slices.Collect(maps.Keys(h.confirmations))
-	slices.Sort(buckets)
-	for _, bucket := range buckets {
-		if orderValueInt.Cmp(new(big.Int).SetUint64(bucket)) < 0 {
-			return h.confirmations[bucket], nil
-		}
-	}
-
-	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValueInt)
-}
-
-func (h *AcrossMessageHandler) waitForConfirmations(
-	txHash common.Hash,
-	requiredConfirmations uint64,
-) error {
-	ctx, cancel := context.WithTimeout(context.Background(), TIMEOUT)
-	defer cancel()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timed out waiting for confirmations")
-		default:
-			txReceipt, err := h.client.TransactionReceipt(ctx, txHash)
-			if err != nil {
-				log.Warn().Msgf("Error fetching transaction receipt: %v\n", err)
-				time.Sleep(h.blocktime)
-				continue
-			}
-
-			if txReceipt == nil {
-				time.Sleep(h.blocktime)
-				continue
-			}
-
-			currentBlock, err := h.client.LatestBlock()
-			if err != nil {
-				log.Warn().Msgf("Error fetching current block: %v\n", err)
-				time.Sleep(h.blocktime)
-				continue
-			}
-
-			confirmations := new(big.Int).Sub(currentBlock, txReceipt.BlockNumber)
-			if confirmations.Cmp(new(big.Int).SetUint64(requiredConfirmations)) != -1 {
-				return nil
-			}
-
-			// nolint:gosec
-			duration := time.Duration(uint64(h.blocktime) * (requiredConfirmations - confirmations.Uint64()))
-			log.Debug().Msgf("Waiting for tx %s for %s", txHash, duration)
-			time.Sleep(duration)
-		}
-	}
-}
-
-func (h *AcrossMessageHandler) tokenConfig(d *events.AcrossDeposit) (string, evm.TokenConfig, error) {
-	for symbol, c := range h.tokens {
-		if c.Address == common.BytesToAddress(d.InputToken[12:]) {
-			return symbol, c, nil
-		}
-	}
-
-	return "", evm.TokenConfig{}, fmt.Errorf("token %s not supported", common.Bytes2Hex(d.InputToken[:]))
 }
 
 func (h *AcrossMessageHandler) deposit(depositId *big.Int) (common.Hash, *events.AcrossDeposit, error) {
@@ -352,7 +235,11 @@ func (h *AcrossMessageHandler) deposit(depositId *big.Int) (common.Hash, *events
 			},
 		},
 	}
-	logs, err := h.client.FilterLogs(context.Background(), q)
+
+	ctx, cancel := context.WithTimeout(context.Background(), FILTER_LOGS_TIMEOUT)
+	defer cancel()
+
+	logs, err := h.client.FilterLogs(ctx, q)
 	if err != nil {
 		return common.Hash{}, nil, err
 	}
@@ -385,69 +272,20 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	d.DestinationChainId = new(big.Int).SetBytes(l.Topics[1].Bytes())
 	d.DepositId = new(big.Int).SetBytes(l.Topics[2].Bytes())
 	copy(d.Depositor[:], l.Topics[3].Bytes())
+
+	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
+		symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(d.InputToken[12:]))
+		if err != nil {
+			return nil, err
+		}
+
+		address, err := h.tokenMatcher.DestinationToken(d.DestinationChainId, symbol)
+		if err != nil {
+			return nil, err
+		}
+
+		d.OutputToken = common.BytesToHash(address.Bytes())
+	}
+
 	return d, err
-}
-
-func (h *AcrossMessageHandler) unlockHash(
-	deposit *events.AcrossDeposit,
-	sourceChainId uint64,
-	data AcrossData,
-) ([]byte, error) {
-	calldata, err := deposit.ToV3RelayData(
-		new(big.Int).SetUint64(sourceChainId),
-	).Calldata(deposit.DestinationChainId, data.LiquidityPool)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	msg := apitypes.TypedDataMessage{
-		"caller":         data.Caller.Hex(),
-		"borrowToken":    common.BytesToAddress(deposit.OutputToken[12:]).Hex(),
-		"amount":         deposit.OutputAmount,
-		"target":         h.pools[deposit.DestinationChainId.Uint64()].Hex(),
-		"targetCallData": calldata,
-		"nonce":          data.Nonce,
-		"deadline":       new(big.Int).SetUint64(uint64(deposit.FillDeadline)),
-	}
-
-	typedData := apitypes.TypedData{
-		Types: apitypes.Types{
-			"EIP712Domain": []apitypes.Type{
-				{Name: "name", Type: "string"},
-				{Name: "version", Type: "string"},
-				{Name: "chainId", Type: "uint256"},
-				{Name: "verifyingContract", Type: "address"},
-			},
-			"Borrow": []apitypes.Type{
-				{Name: "caller", Type: "address"},
-				{Name: "borrowToken", Type: "address"},
-				{Name: "amount", Type: "uint256"},
-				{Name: "target", Type: "address"},
-				{Name: "targetCallData", Type: "bytes"},
-				{Name: "nonce", Type: "uint256"},
-				{Name: "deadline", Type: "uint256"},
-			},
-		},
-		PrimaryType: "Borrow",
-		Domain: apitypes.TypedDataDomain{
-			Name:              DOMAIN_NAME,
-			ChainId:           math.NewHexOrDecimal256(deposit.DestinationChainId.Int64()),
-			Version:           VERSION,
-			VerifyingContract: data.LiquidityPool.Hex(),
-		},
-		Message: msg,
-	}
-
-	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
-	if err != nil {
-		return []byte{}, err
-	}
-
-	messageHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(messageHash)))
-	return crypto.Keccak256(rawData), nil
 }

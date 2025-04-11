@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sprintertech/sprinter-signing/chains/evm"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/config/chain"
 	"github.com/stretchr/testify/suite"
 )
@@ -96,7 +97,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		Admin:                "adminAddress",
 		AcrossPool:           "acrossPool",
 		ConfirmationsByValue: make(map[uint64]uint64),
-		Tokens:               make(map[string]evm.TokenConfig),
+		Tokens:               make(map[string]config.TokenConfig),
 	})
 }
 
@@ -107,9 +108,9 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"name":                  "evm1",
 		"from":                  "address",
 		"admin":                 "adminAddress",
-		"liquidityPool":         "pool",
 		"acrossPool":            "acrossPool",
 		"hubPool":               "hubPool",
+		"mayanSwift":            "mayanSwift",
 		"maxGasPrice":           1000,
 		"gasMultiplier":         1000,
 		"gasIncreasePercentage": 20,
@@ -135,8 +136,8 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 	expectedBlockConfirmations[1000] = 5
 	expectedBlockConfirmations[2000] = 10
 
-	expectedTokens := make(map[string]evm.TokenConfig)
-	expectedTokens["usdc"] = evm.TokenConfig{
+	expectedTokens := make(map[string]config.TokenConfig)
+	expectedTokens["usdc"] = config.TokenConfig{
 		Address:  common.HexToAddress("0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29"),
 		Decimals: 8,
 	}
@@ -157,9 +158,9 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		BlockInterval:        big.NewInt(2),
 		BlockRetryInterval:   time.Duration(10) * time.Second,
 		Admin:                "adminAddress",
-		LiqudityPool:         "pool",
 		AcrossPool:           "acrossPool",
 		HubPool:              "hubPool",
+		MayanSwift:           "mayanSwift",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
 	})
