@@ -137,10 +137,11 @@ type MayanMessage struct {
 	LiquidityPool string   `json:"liquidityPool"`
 	Calldata      string   `json:"calldata"`
 	Nonce         *big.Int `json:"nonce"`
+	BorrowAmount  *big.Int `json:"borrowAmount"`
 	DepositTxHash string   `json:"depositTxHash"`
 }
 
-func MarshalMayanMessage(caller, calldata, liquidityPool, txhash string, nonce *big.Int, source, destination uint64) ([]byte, error) {
+func MarshalMayanMessage(caller, calldata, liquidityPool, txhash string, nonce, borrowAmount *big.Int, source, destination uint64) ([]byte, error) {
 	signatureMessage := &MayanMessage{
 		Caller:        caller,
 		Source:        source,
@@ -148,6 +149,7 @@ func MarshalMayanMessage(caller, calldata, liquidityPool, txhash string, nonce *
 		Nonce:         nonce,
 		Calldata:      calldata,
 		DepositTxHash: txhash,
+		BorrowAmount:  borrowAmount,
 		LiquidityPool: liquidityPool,
 	}
 

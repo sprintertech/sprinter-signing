@@ -70,7 +70,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		return nil, err
 	}
 
-	tokens := make(map[string]TokenConfig)
+	tokens := make(map[string]config.TokenConfig)
 	for s, c := range c.Tokens {
 		c := c.(map[string]interface{})
 
@@ -79,7 +79,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 			return nil, err
 		}
 
-		tc := TokenConfig{
+		tc := config.TokenConfig{
 			Address:  common.HexToAddress(c["address"].(string)),
 			Decimals: uint8(decimals),
 		}

@@ -150,27 +150,27 @@ func Run() error {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				config, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig)
 				panicOnError(err)
 				kp, _ := secp256k1.GenerateKeypair()
-				client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, kp)
+				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, kp)
 				panicOnError(err)
 
-				if config.AcrossPool != "" {
-					poolAddress := common.HexToAddress(config.AcrossPool)
-					acrossPools[*config.GeneralChainConfig.Id] = poolAddress
+				if c.AcrossPool != "" {
+					poolAddress := common.HexToAddress(c.AcrossPool)
+					acrossPools[*c.GeneralChainConfig.Id] = poolAddress
 				}
 
-				if config.MayanSwift != "" {
-					poolAddress := common.HexToAddress(config.MayanSwift)
-					mayanPools[*config.GeneralChainConfig.Id] = poolAddress
-					mayanSwiftContract = contracts.NewMayanSwiftContract(client, common.HexToAddress(config.MayanSwift))
+				if c.MayanSwift != "" {
+					poolAddress := common.HexToAddress(c.MayanSwift)
+					mayanPools[*c.GeneralChainConfig.Id] = poolAddress
+					mayanSwiftContract = contracts.NewMayanSwiftContract(client, common.HexToAddress(c.MayanSwift))
 				}
 
-				if config.HubPool != "" {
+				if c.HubPool != "" {
 
-					hubPoolAddress := common.HexToAddress(config.HubPool)
-					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, config.Tokens)
+					hubPoolAddress := common.HexToAddress(c.HubPool)
+					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, c.Tokens)
 				}
 			}
 		default:
@@ -182,29 +182,29 @@ func Run() error {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				config, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig)
 				panicOnError(err)
 
-				client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, nil)
+				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, nil)
 				panicOnError(err)
 
-				log.Info().Uint64("chain", *config.GeneralChainConfig.Id).Msgf("Registering EVM domain")
+				log.Info().Uint64("chain", *c.GeneralChainConfig.Id).Msgf("Registering EVM domain")
 
-				l := log.With().Str("chain", fmt.Sprintf("%v", config.GeneralChainConfig.Name)).Uint64("domainID", *config.GeneralChainConfig.Id)
+				l := log.With().Str("chain", fmt.Sprintf("%v", c.GeneralChainConfig.Name)).Uint64("domainID", *c.GeneralChainConfig.Id)
 
 				watcher := evmMessage.NewWatcher(
 					client,
 					priceAPI,
-					config.Tokens,
-					config.ConfirmationsByValue,
+					config.TokenStore{},
+					c.ConfirmationsByValue,
 					// nolint:gosec
-					time.Duration(config.GeneralChainConfig.Blocktime)*time.Second,
+					time.Duration(c.GeneralChainConfig.Blocktime)*time.Second,
 				)
 
 				mh := message.NewMessageHandler()
-				if config.AcrossPool != "" {
+				if c.AcrossPool != "" {
 					acrossMh := evmMessage.NewAcrossMessageHandler(
-						*config.GeneralChainConfig.Id,
+						*c.GeneralChainConfig.Id,
 						client,
 						acrossPools,
 						coordinator,
@@ -217,14 +217,14 @@ func Run() error {
 					go acrossMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
-					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
-					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
+					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
 
-				if config.MayanSwift != "" {
+				if c.MayanSwift != "" {
 					mayanApi := mayan.NewMayanExplorer()
 					mayanMh := evmMessage.NewMayanMessageHandler(
-						*config.GeneralChainConfig.Id,
+						*c.GeneralChainConfig.Id,
 						client,
 						mayanPools,
 						coordinator,
@@ -238,29 +238,29 @@ func Run() error {
 					go mayanMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
-					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
-					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
+					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 
 				}
 
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener
 				eventHandlers := make([]coreListener.EventHandler, 0)
-				if config.Admin != "" {
+				if c.Admin != "" {
 					head, err := client.LatestBlock()
 					panicOnError(err)
 
 					startBlock = head
 
 					tssListener := events.NewListener(client)
-					adminAddress := common.HexToAddress(config.Admin)
+					adminAddress := common.HexToAddress(c.Admin)
 					eventHandlers = append(eventHandlers, evmListener.NewKeygenEventHandler(l, tssListener, coordinator, host, communication, keyshareStore, adminAddress, networkTopology.Threshold))
 					eventHandlers = append(eventHandlers, evmListener.NewRefreshEventHandler(l, topologyProvider, topologyStore, tssListener, coordinator, host, communication, connectionGate, keyshareStore, adminAddress))
-					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *config.GeneralChainConfig.Id, config.BlockRetryInterval, new(big.Int).SetUint64(config.GeneralChainConfig.BlockConfirmations), config.BlockInterval)
+					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *c.GeneralChainConfig.Id, c.BlockRetryInterval, new(big.Int).SetUint64(c.GeneralChainConfig.BlockConfirmations), c.BlockInterval)
 				}
 
-				chain := coreEvm.NewEVMChain(listener, mh, nil, *config.GeneralChainConfig.Id, startBlock)
-				domains[*config.GeneralChainConfig.Id] = chain
+				chain := coreEvm.NewEVMChain(listener, mh, nil, *c.GeneralChainConfig.Id, startBlock)
+				domains[*c.GeneralChainConfig.Id] = chain
 			}
 		default:
 			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))

@@ -12,11 +12,11 @@ type TokenConfig struct {
 }
 
 type TokenStore struct {
-	tokens map[uint64]map[string]TokenConfig
+	Tokens map[uint64]map[string]TokenConfig
 }
 
 func (s *TokenStore) ConfigByAddress(chainID uint64, address common.Address) (string, TokenConfig, error) {
-	tokens, ok := s.tokens[chainID]
+	tokens, ok := s.Tokens[chainID]
 	if !ok {
 		return "", TokenConfig{}, fmt.Errorf("no tokens for chain %d", chainID)
 	}
@@ -31,7 +31,7 @@ func (s *TokenStore) ConfigByAddress(chainID uint64, address common.Address) (st
 }
 
 func (s *TokenStore) ConfigBySymbol(chainID uint64, symbol string) (TokenConfig, error) {
-	tokens, ok := s.tokens[chainID]
+	tokens, ok := s.Tokens[chainID]
 	if !ok {
 		return TokenConfig{}, fmt.Errorf("no tokens for chain %d", chainID)
 	}

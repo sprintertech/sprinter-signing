@@ -30,6 +30,7 @@ type SigningBody struct {
 	Caller        string       `json:"caller"`
 	Calldata      string       `json:"calldata"`
 	DepositTxHash string       `json:"depositTxHash"`
+	BorrowAmount  *BigInt      `json:"borrowAmount"`
 }
 
 type SigningHandler struct {
@@ -85,6 +86,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				ErrChn:        errChn,
 				Calldata:      b.Calldata,
 				DepositTxHash: b.DepositTxHash,
+				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
 	default:

@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
 	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
@@ -20,8 +21,12 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
 
+var (
+	BPS_DENOMINATOR = big.NewInt(10000)
+)
+
 type MayanContract interface {
-	DecodeFulfillCall(calldata []byte) (*contracts.MayanFulfillMsg, error)
+	DecodeFulfillCall(calldata []byte) (*contracts.MayanFulfillParams, *contracts.MayanFulfillMsg, error)
 	GetOrder(
 		msg *contracts.MayanFulfillMsg,
 		swap *mayan.MayanSwap,
@@ -39,6 +44,7 @@ type MayanMessageHandler struct {
 
 	pools               map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
+	tokenStore          config.TokenStore
 	mayanDecoder        MayanContract
 	swapFetcher         SwapFetcher
 
@@ -59,6 +65,7 @@ func NewMayanMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	confirmationWatcher ConfirmationWatcher,
+	tokenStore config.TokenStore,
 	mayanDecoder MayanContract,
 	swapFetcher SwapFetcher,
 	sigChn chan any,
@@ -75,43 +82,7 @@ func NewMayanMessageHandler(
 		confirmationWatcher: confirmationWatcher,
 		mayanDecoder:        mayanDecoder,
 		swapFetcher:         swapFetcher,
-	}
-}
-
-func (h *MayanMessageHandler) Listen(ctx context.Context) {
-	msgChn := make(chan *comm.WrappedMessage)
-	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.MayanSessionID), comm.MayanMsg, msgChn)
-
-	for {
-		select {
-		case wMsg := <-msgChn:
-			{
-				mayanMsg, err := tssMessage.UnmarshalMayanMessage(wMsg.Payload)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
-					continue
-				}
-
-				msg := NewMayanMessage(mayanMsg.Source, mayanMsg.Destination, &MayanData{
-					Coordinator:   wMsg.From,
-					LiquidityPool: common.HexToAddress(mayanMsg.LiquidityPool),
-					Caller:        common.HexToAddress(mayanMsg.Caller),
-					Calldata:      mayanMsg.Calldata,
-					Nonce:         mayanMsg.Nonce,
-					ErrChn:        make(chan error, 1),
-					DepositTxHash: mayanMsg.DepositTxHash,
-				})
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", mayanMsg, err)
-				}
-			}
-		case <-ctx.Done():
-			{
-				h.comm.UnSubscribe(subID)
-				return
-			}
-		}
+		tokenStore:          tokenStore,
 	}
 }
 
@@ -133,7 +104,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	msg, err := h.mayanDecoder.DecodeFulfillCall(calldataBytes)
+	params, msg, err := h.mayanDecoder.DecodeFulfillCall(calldataBytes)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -144,13 +115,12 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	if swap.OrderHash != "0x"+hex.EncodeToString(msg.OrderHash[:]) {
-		err = fmt.Errorf("swap and msg hash not matching")
+	symbol, token, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(msg.TokenIn[12:]))
+	if err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
-
-	_, token, err := h.confirmationWatcher.TokenConfig(common.BytesToAddress(msg.TokenIn[12:]))
+	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(uint64(msg.DestChainId), symbol)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -161,14 +131,12 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
-	/*
-		if order.Status != contracts.OrderCreated {
-			err = fmt.Errorf("invalid order status %d", order.Status)
-			data.ErrChn <- err
-			return nil, err
-		}
-	*/
-	fmt.Printf("%+v \n", order)
+
+	err = h.verifyOrder(msg, params, order, swap, data)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
 
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
@@ -180,21 +148,20 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
+
+	destChainId, err := mayan.WormholeToEVMChainID(msg.DestChainId)
+	if err != nil {
+		return nil, err
+	}
+
 	data.ErrChn <- nil
 
-	// TODO - check fulfill message
-	// TODO - check caller is auction winner
-	// TODO - check wormhole chain ids
-
-	// TODO provjeri order vrijednosti + chainIDeve
-	destChainId := new(big.Int).SetUint64(uint64(msg.DestChainId))
 	unlockHash, err := unlockHash(
 		calldataBytes,
-		// TODO: amount in based on profit
-		new(big.Int).SetUint64(msg.PromisedAmount),
-		common.BytesToAddress(msg.TokenOut[12:]),
-		destChainId,
-		h.pools[destChainId.Uint64()],
+		data.BorrowAmount,
+		destinationBorrowToken.Address,
+		new(big.Int).SetUint64(destChainId),
+		h.pools[destChainId],
 		msg.Deadline,
 		data.Caller,
 		data.LiquidityPool,
@@ -223,6 +190,101 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 	return nil, nil
 }
 
+func (h *MayanMessageHandler) Listen(ctx context.Context) {
+	msgChn := make(chan *comm.WrappedMessage)
+	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.MayanSessionID), comm.MayanMsg, msgChn)
+
+	for {
+		select {
+		case wMsg := <-msgChn:
+			{
+				mayanMsg, err := tssMessage.UnmarshalMayanMessage(wMsg.Payload)
+				if err != nil {
+					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
+					continue
+				}
+
+				msg := NewMayanMessage(mayanMsg.Source, mayanMsg.Destination, &MayanData{
+					Coordinator:   wMsg.From,
+					LiquidityPool: common.HexToAddress(mayanMsg.LiquidityPool),
+					Caller:        common.HexToAddress(mayanMsg.Caller),
+					Calldata:      mayanMsg.Calldata,
+					Nonce:         mayanMsg.Nonce,
+					ErrChn:        make(chan error, 1),
+					DepositTxHash: mayanMsg.DepositTxHash,
+					BorrowAmount:  mayanMsg.BorrowAmount,
+				})
+				_, err = h.HandleMessage(msg)
+				if err != nil {
+					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", mayanMsg, err)
+				}
+			}
+		case <-ctx.Done():
+			{
+				h.comm.UnSubscribe(subID)
+				return
+			}
+		}
+	}
+}
+
+func (h *MayanMessageHandler) verifyOrder(
+	msg *contracts.MayanFulfillMsg,
+	params *contracts.MayanFulfillParams,
+	order *contracts.MayanOrder,
+	swap *mayan.MayanSwap,
+	data *MayanData) error {
+	srcChainId, err := mayan.WormholeToEVMChainID(msg.SrcChainId)
+	if err != nil {
+		return err
+	}
+
+	if srcChainId != h.chainID {
+		return fmt.Errorf("msg and handler chainID not matching")
+	}
+
+	if swap.OrderHash != "0x"+hex.EncodeToString(msg.OrderHash[:]) {
+		return fmt.Errorf("swap and msg hash not matching")
+	}
+
+	if common.BytesToAddress(msg.ReferrerAddr[12:]) != data.Caller {
+		return fmt.Errorf("referrer and caller address is not the same")
+	}
+
+	if order.Status != contracts.OrderCreated {
+		return fmt.Errorf("invalid order status %d", order.Status)
+	}
+
+	// TODO
+	if common.BytesToAddress(params.Recipient[12:]) != data.Caller {
+		return fmt.Errorf("invalid recipient")
+	}
+
+	_, tc, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(msg.TokenIn[12:]))
+	if err != nil {
+		return err
+	}
+
+	promisedAmount := contracts.DenormalizeAmount(
+		new(big.Int).SetUint64(msg.PromisedAmount),
+		tc.Decimals)
+	netAmount, err := calculateNetAmount(
+		params.FulfillAmount,
+		msg.ReferrerBps,
+		msg.ProtocolBps)
+	if err != nil {
+		return err
+	}
+	if netAmount.Cmp(promisedAmount) == -1 {
+		return fmt.Errorf(
+			"net amount %s smaller than promised amount %s",
+			netAmount,
+			promisedAmount)
+	}
+
+	return nil
+}
+
 func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error {
 	if data.Coordinator != peer.ID("") {
 		return nil
@@ -235,6 +297,7 @@ func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error 
 		data.LiquidityPool.Hex(),
 		data.DepositTxHash,
 		data.Nonce,
+		data.BorrowAmount,
 		m.Source,
 		m.Destination)
 	if err != nil {
@@ -242,4 +305,26 @@ func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error 
 	}
 
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.MayanMsg, fmt.Sprintf("%d-%s", h.chainID, comm.MayanSessionID))
+}
+
+func calculateNetAmount(
+	fulfillAmount *big.Int,
+	referrerBps uint8,
+	protocolBps uint8,
+) (*big.Int, error) {
+	referrerAmount := new(big.Int).Div(
+		new(big.Int).Mul(fulfillAmount, big.NewInt(int64(referrerBps))),
+		BPS_DENOMINATOR,
+	)
+
+	protocolAmount := new(big.Int).Div(
+		new(big.Int).Mul(fulfillAmount, big.NewInt(int64(protocolBps))),
+		BPS_DENOMINATOR,
+	)
+
+	// Calculate net amount
+	netAmount := new(big.Int).Sub(fulfillAmount, referrerAmount)
+	netAmount.Sub(netAmount, protocolAmount)
+
+	return netAmount, nil
 }

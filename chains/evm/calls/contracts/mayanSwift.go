@@ -68,6 +68,13 @@ type MayanFulfillMsg struct {
 	TokenIn        [32]byte
 }
 
+type MayanFulfillParams struct {
+	FulfillAmount *big.Int
+	EncodedVm     []byte
+	Recipient     [32]byte
+	Batch         bool
+}
+
 type MayanSwiftContract struct {
 	contracts.Contract
 	client client.Client
@@ -100,8 +107,8 @@ func (c *MayanSwiftContract) GetOrder(
 		TokenOut:     msg.TokenOut,
 		MinAmountOut: amountOut,
 		GasDrop:      msg.GasDrop,
-		CancelFee:    convertFloatToUint(swap.RedeemRelayerFee, srcTokenDecimals),
-		RefundFee:    convertFloatToUint(swap.RefundRelayerFee, srcTokenDecimals),
+		CancelFee:    ConvertFloatToUint(swap.RedeemRelayerFee, srcTokenDecimals),
+		RefundFee:    ConvertFloatToUint(swap.RefundRelayerFee, srcTokenDecimals),
 		Deadline:     msg.Deadline,
 		ReferrerAddr: msg.ReferrerAddr,
 		ReferrerBps:  msg.ReferrerBps,
@@ -125,24 +132,35 @@ func (c *MayanSwiftContract) GetOrder(
 	}, nil
 }
 
-func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillMsg, error) {
+func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillParams, *MayanFulfillMsg, error) {
 	method, ok := c.ABI.Methods["fulfillOrder"]
 	if !ok {
-		return nil, fmt.Errorf("no method fulfillOrder")
+		return nil, nil, fmt.Errorf("no method fulfillOrder")
 	}
 
-	params := make(map[string]interface{})
-	err := method.Inputs.UnpackIntoMap(params, calldata[4:])
+	res, err := method.Inputs.Unpack(calldata[4:])
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	encodedVM, ok := params["encodedVm"].([]byte)
-	if !ok {
-		return nil, fmt.Errorf("failed decoding VM data")
+	amount := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
+	vm := abi.ConvertType(res[1], new([]byte)).([]byte)
+	recipient := abi.ConvertType(res[2], new([32]byte)).([32]byte)
+	batch := abi.ConvertType(res[3], new(bool)).(bool)
+
+	params := &MayanFulfillParams{
+		FulfillAmount: amount,
+		EncodedVm:     vm,
+		Recipient:     recipient,
+		Batch:         batch,
 	}
 
-	return c.ParseFulfillPayload(extractWormholeVMPayload(encodedVM))
+	msg, err := c.ParseFulfillPayload(extractWormholeVMPayload(params.EncodedVm))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return params, msg, nil
 }
 
 func (c *MayanSwiftContract) ParseFulfillPayload(calldata []byte) (*MayanFulfillMsg, error) {
@@ -153,20 +171,6 @@ func (c *MayanSwiftContract) ParseFulfillPayload(calldata []byte) (*MayanFulfill
 
 	out := abi.ConvertType(res[0], new(MayanFulfillMsg)).(*MayanFulfillMsg)
 	return out, nil
-}
-
-func convertFloatToUint(amount string, decimals uint8) uint64 {
-	f, _, _ := big.ParseFloat(amount, 10, 256, big.ToNearestEven)
-
-	minDecimals := min(WORMHOLE_DECIMALS, decimals)
-	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minDecimals)), nil)
-
-	scaled := new(big.Float).Mul(f, new(big.Float).SetInt(multiplier))
-	scaled.Add(scaled, big.NewFloat(0.5)) // Rounding adjustment
-
-	result := new(big.Int)
-	scaled.Int(result)
-	return result.Uint64()
 }
 
 func extractWormholeVMPayload(encodedVM []byte) []byte {
@@ -224,4 +228,32 @@ func encodeKey(key *MayanKey) []byte {
 	copy(data[offset:], key.Random[:]) // 207-238 (32 bytes)
 
 	return data
+}
+
+// DenormalizeAmount converts a normalized amount back to its original precision
+func DenormalizeAmount(amount *big.Int, decimals uint8) *big.Int {
+	if decimals > WORMHOLE_DECIMALS {
+		exponent := new(big.Int).Exp(
+			big.NewInt(10),
+			big.NewInt(int64(decimals-WORMHOLE_DECIMALS)),
+			nil,
+		)
+		return new(big.Int).Mul(amount, exponent)
+	}
+	return new(big.Int).Set(amount)
+}
+
+// ConvertFloatToUint convert mayan float amount to the nomalized uint64 amount
+func ConvertFloatToUint(amount string, decimals uint8) uint64 {
+	f, _, _ := big.ParseFloat(amount, 10, 256, big.ToNearestEven)
+
+	minDecimals := min(WORMHOLE_DECIMALS, decimals)
+	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minDecimals)), nil)
+
+	scaled := new(big.Float).Mul(f, new(big.Float).SetInt(multiplier))
+	scaled.Add(scaled, big.NewFloat(0.5)) // Rounding adjustment
+
+	result := new(big.Int)
+	scaled.Int(result)
+	return result.Uint64()
 }

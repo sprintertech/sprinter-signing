@@ -51,6 +51,7 @@ type MayanData struct {
 	DepositTxHash string
 	Calldata      string
 	Nonce         *big.Int
+	BorrowAmount  *big.Int
 }
 
 func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.Message {

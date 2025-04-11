@@ -46,11 +46,14 @@ func (s *WatcherTestSuite) SetupTest() {
 		Decimals: 6,
 		Address:  s.usdcToken,
 	}
+	tokenStore := config.TokenStore{
+		Tokens: tokens,
+	}
 
 	s.watcher = message.NewWatcher(
 		s.mockClient,
 		s.mockPricer,
-		tokens,
+		tokenStore,
 		confirmations,
 		time.Millisecond,
 	)
