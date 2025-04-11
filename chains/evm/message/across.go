@@ -109,7 +109,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 					continue
 				}
 
-				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, AcrossData{
+				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, &AcrossData{
 					DepositId:     acrossMsg.DepositId,
 					Nonce:         acrossMsg.Nonce,
 					Coordinator:   wMsg.From,
@@ -135,7 +135,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 // the MPC signature process for it. The result will be saved into the signature
 // cache through the result channel.
 func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
-	data := m.Data.(AcrossData)
+	data := m.Data.(*AcrossData)
 
 	log.Info().Str("depositId", data.DepositId.String()).Msgf("Handling across message %+v", data)
 
@@ -204,7 +204,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	return nil, nil
 }
 
-func (h *AcrossMessageHandler) notify(m *message.Message, data AcrossData) error {
+func (h *AcrossMessageHandler) notify(m *message.Message, data *AcrossData) error {
 	if data.Coordinator != peer.ID("") {
 		return nil
 	}

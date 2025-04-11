@@ -87,7 +87,3 @@ func (a *AcrossV3RelayData) Calldata(repaymentChainID *big.Int, repaymentAddress
 
 	return input, nil
 }
-
-type MayanOrderCreated struct {
-	Key [32]byte
-}

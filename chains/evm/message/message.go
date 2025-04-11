@@ -33,7 +33,7 @@ type AcrossData struct {
 	ErrChn        chan error
 }
 
-func NewAcrossMessage(source, destination uint64, acrossData AcrossData) *message.Message {
+func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *message.Message {
 	return &message.Message{
 		Source:      source,
 		Destination: destination,

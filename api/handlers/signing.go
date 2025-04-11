@@ -69,7 +69,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	case AcrossProtocol:
 		{
 			depositId, _ := new(big.Int).SetString(b.DepositId, 10)
-			m = evmMessage.NewAcrossMessage(0, b.ChainId, evmMessage.AcrossData{
+			m = evmMessage.NewAcrossMessage(0, b.ChainId, &evmMessage.AcrossData{
 				DepositId:     depositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
