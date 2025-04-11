@@ -123,7 +123,12 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
-	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(uint64(msg.DestChainId), symbol)
+
+	destChainId, err := mayan.WormholeToEVMChainID(msg.DestChainId)
+	if err != nil {
+		return nil, err
+	}
+	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainId, symbol)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -149,11 +154,6 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		new(big.Int).SetUint64(msg.PromisedAmount))
 	if err != nil {
 		data.ErrChn <- err
-		return nil, err
-	}
-
-	destChainId, err := mayan.WormholeToEVMChainID(msg.DestChainId)
-	if err != nil {
 		return nil, err
 	}
 
@@ -208,6 +208,7 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 					continue
 				}
 
+				d.ErrChn = make(chan error, 1)
 				msg := NewMayanMessage(d.Source, d.Destination, d)
 				_, err = h.HandleMessage(msg)
 				if err != nil {
@@ -254,6 +255,7 @@ func (h *MayanMessageHandler) verifyOrder(
 	if !ok {
 		return fmt.Errorf("no source liqudity recipient configured")
 	}
+
 	if common.BytesToAddress(params.Recipient[12:]) != srcLiquidityPool {
 		return fmt.Errorf("invalid recipient")
 	}

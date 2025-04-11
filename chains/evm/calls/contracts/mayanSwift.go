@@ -144,15 +144,15 @@ func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillPa
 	}
 
 	amount := abi.ConvertType(res[0], new(big.Int)).(*big.Int)
-	vm := abi.ConvertType(res[1], new([]byte)).([]byte)
-	recipient := abi.ConvertType(res[2], new([32]byte)).([32]byte)
-	batch := abi.ConvertType(res[3], new(bool)).(bool)
+	vm := abi.ConvertType(res[1], new([]byte)).(*[]byte)
+	recipient := abi.ConvertType(res[2], new([32]byte)).(*[32]byte)
+	batch := abi.ConvertType(res[3], new(bool)).(*bool)
 
 	params := &MayanFulfillParams{
 		FulfillAmount: amount,
-		EncodedVm:     vm,
-		Recipient:     recipient,
-		Batch:         batch,
+		EncodedVm:     *vm,
+		Recipient:     *recipient,
+		Batch:         *batch,
 	}
 
 	msg, err := c.ParseFulfillPayload(extractWormholeVMPayload(params.EncodedVm))

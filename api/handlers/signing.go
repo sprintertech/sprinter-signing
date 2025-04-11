@@ -52,14 +52,14 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(b)
 	if err != nil {
-		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("invalid request body: %s", err), http.StatusBadRequest)
 		return
 	}
 
 	vars := mux.Vars(r)
 	err = h.validate(b, vars)
 	if err != nil {
-		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("invalid request body: %s", err), http.StatusBadRequest)
 		return
 	}
 	errChn := make(chan error, 1)
@@ -94,14 +94,14 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	default:
-		JSONError(w, fmt.Sprintf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
 		return
 	}
 	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
 	if err != nil {
-		JSONError(w, fmt.Sprintf("Singing failed: %s", err), http.StatusInternalServerError)
+		JSONError(w, fmt.Errorf("Singing failed: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -165,17 +165,17 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	chainId, ok := new(big.Int).SetString(vars["chainId"], 0)
 	if !ok {
-		JSONError(w, "chain id invalid", http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("chain id invalid"), http.StatusBadRequest)
 		return
 	}
 	_, ok = h.chains[chainId.Uint64()]
 	if !ok {
-		JSONError(w, fmt.Sprintf("chain %d not supported", chainId.Int64()), http.StatusNotFound)
+		JSONError(w, fmt.Errorf("chain %d not supported", chainId.Int64()), http.StatusNotFound)
 		return
 	}
 	depositId, ok := vars["depositId"]
 	if !ok {
-		JSONError(w, "missing 'depositId", http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("missing 'depositId"), http.StatusBadRequest)
 		return
 	}
 

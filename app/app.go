@@ -206,7 +206,7 @@ func Run() error {
 				watcher := evmMessage.NewWatcher(
 					client,
 					priceAPI,
-					config.TokenStore{},
+					tokenStore,
 					c.ConfirmationsByValue,
 					// nolint:gosec
 					time.Duration(c.GeneralChainConfig.Blocktime)*time.Second,
