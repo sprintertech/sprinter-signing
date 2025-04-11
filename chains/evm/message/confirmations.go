@@ -10,7 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
+	"github.com/sprintertech/sprinter-signing/config"
 )
 
 type TokenPricer interface {
@@ -18,26 +18,26 @@ type TokenPricer interface {
 }
 
 type Watcher struct {
-	client         EventFilterer
-	tokensPerChain map[uint64]map[string]evm.TokenConfig
-	confirmations  map[uint64]uint64
-	blocktime      time.Duration
-	tokenPricer    TokenPricer
+	client        EventFilterer
+	tokenStore    config.TokenStore
+	confirmations map[uint64]uint64
+	blocktime     time.Duration
+	tokenPricer   TokenPricer
 }
 
 func NewWatcher(
 	client EventFilterer,
 	tokenPricer TokenPricer,
-	tokensPerChain map[uint64]map[string]evm.TokenConfig,
+	tokenStore config.TokenStore,
 	confirmations map[uint64]uint64,
 	blocktime time.Duration,
 ) *Watcher {
 	return &Watcher{
-		client:         client,
-		tokensPerChain: tokensPerChain,
-		confirmations:  confirmations,
-		blocktime:      blocktime,
-		tokenPricer:    tokenPricer,
+		client:        client,
+		tokenStore:    tokenStore,
+		confirmations: confirmations,
+		blocktime:     blocktime,
+		tokenPricer:   tokenPricer,
 	}
 }
 
@@ -94,26 +94,10 @@ func (w *Watcher) WaitForConfirmations(
 	}
 }
 
-// TokenConfig fetches the token configuration and symbol for the given chain
-func (w *Watcher) TokenConfig(chainID uint64, token common.Address) (string, evm.TokenConfig, error) {
-	tokens, ok := w.tokensPerChain[chainID]
-	if !ok {
-		return "", evm.TokenConfig{}, fmt.Errorf("no tokens configured for chain %d", chainID)
-	}
-
-	for symbol, c := range tokens {
-		if c.Address == token {
-			return symbol, c, nil
-		}
-	}
-
-	return "", evm.TokenConfig{}, fmt.Errorf("token %s not supported", token.Hex())
-}
-
 // minimalConfirmations calculates the minimal confirmations needed to wait for execution
 // of an order based on order size
 func (w *Watcher) minimalConfirmations(chainID uint64, token common.Address, amount *big.Int) (uint64, error) {
-	symbol, c, err := w.TokenConfig(chainID, token)
+	symbol, c, err := w.tokenStore.ConfigByAddress(chainID, token)
 	if err != nil {
 		return 0, err
 	}

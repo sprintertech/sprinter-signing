@@ -172,6 +172,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
+		h.chainID,
 		txHash,
 		common.BytesToAddress(msg.TokenIn[12:]),
 		new(big.Int).SetUint64(msg.PromisedAmount))

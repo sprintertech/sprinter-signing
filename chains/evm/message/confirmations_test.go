@@ -9,9 +9,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 )
@@ -41,8 +41,8 @@ func (s *WatcherTestSuite) SetupTest() {
 	confirmations[500] = 2
 
 	s.usdcToken = common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
-	tokens := make(map[uint64]map[string]evm.TokenConfig)
-	tokens[1]["USDC"] = evm.TokenConfig{
+	tokens := make(map[uint64]map[string]config.TokenConfig)
+	tokens[1]["USDC"] = config.TokenConfig{
 		Decimals: 6,
 		Address:  s.usdcToken,
 	}

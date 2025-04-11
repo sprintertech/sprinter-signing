@@ -12,10 +12,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	tssMessage "github.com/sprintertech/sprinter-signing/tss/message"
@@ -48,7 +48,6 @@ type ConfirmationWatcher interface {
 		txHash common.Hash,
 		token common.Address,
 		amount *big.Int) error
-	TokenConfig(chainID uint64, token common.Address) (string, evm.TokenConfig, error)
 }
 
 type AcrossMessageHandler struct {
@@ -58,6 +57,7 @@ type AcrossMessageHandler struct {
 	pools               map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
 	tokenMatcher        TokenMatcher
+	tokenStore          config.TokenStore
 
 	coordinator Coordinator
 	host        host.Host
@@ -76,6 +76,7 @@ func NewAcrossMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	tokenMatcher TokenMatcher,
+	tokenStore config.TokenStore,
 	confirmationWatcher ConfirmationWatcher,
 	sigChn chan any,
 ) *AcrossMessageHandler {
@@ -90,6 +91,7 @@ func NewAcrossMessageHandler(
 		sigChn:              sigChn,
 		confirmationWatcher: confirmationWatcher,
 		tokenMatcher:        tokenMatcher,
+		tokenStore:          tokenStore,
 	}
 }
 
@@ -151,6 +153,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
+		h.chainID,
 		txHash,
 		common.BytesToAddress(d.InputToken[12:]),
 		d.InputAmount)
@@ -282,7 +285,7 @@ func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit,
 	copy(d.Depositor[:], l.Topics[3].Bytes())
 
 	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
-		symbol, _, err := h.confirmationWatcher.TokenConfig(common.BytesToAddress(d.InputToken[12:]))
+		symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(d.InputToken[12:]))
 		if err != nil {
 			return nil, err
 		}

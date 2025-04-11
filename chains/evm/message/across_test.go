@@ -10,12 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
 	"github.com/sprintertech/sprinter-signing/comm"
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
 	"github.com/stretchr/testify/suite"
@@ -70,12 +70,12 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
 	s.validLog, _ = hex.DecodeString("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab100000000000000000000000000000000000000000000000000119baee0ab0400000000000000000000000000000000000000000000000000001199073ea3008d0000000000000000000000000000000000000000000000000000000067bc6e3f0000000000000000000000000000000000000000000000000000000067bc927b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001886a1eb051c10f20c7386576a6a0716b20b2734000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 
-	tokens := make(map[string]evm.TokenConfig)
-	tokens["ETH"] = evm.TokenConfig{
+	tokens := make(map[string]config.TokenConfig)
+	tokens["ETH"] = config.TokenConfig{
 		Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 		Decimals: 18,
 	}
-	tokens["USDC"] = evm.TokenConfig{
+	tokens["USDC"] = config.TokenConfig{
 		Address:  common.HexToAddress("0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4"),
 		Decimals: 6,
 	}
@@ -281,7 +281,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 		},
 	}, nil)
 	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockWatcher.EXPECT().TokenConfig(gomock.Any()).Return("USDC", evm.TokenConfig{}, nil)
+	s.mockWatcher.EXPECT().TokenConfig(gomock.Any()).Return("USDC", config.TokenConfig{}, nil)
 	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 

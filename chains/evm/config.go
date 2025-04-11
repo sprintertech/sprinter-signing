@@ -13,13 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mitchellh/mapstructure"
 
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/config/chain"
 )
-
-type TokenConfig struct {
-	Address  common.Address
-	Decimals uint8
-}
 
 type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
@@ -28,7 +24,7 @@ type EVMConfig struct {
 	HubPool            string
 	MayanSwift         string
 	LiqudityPool       string
-	Tokens             map[string]TokenConfig
+	Tokens             map[string]config.TokenConfig
 	// usd bucket -> confirmations
 	ConfirmationsByValue map[uint64]uint64
 	BlockInterval        *big.Int
