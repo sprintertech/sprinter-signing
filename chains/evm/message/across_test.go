@@ -70,14 +70,18 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
 	s.validLog, _ = hex.DecodeString("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab100000000000000000000000000000000000000000000000000119baee0ab0400000000000000000000000000000000000000000000000000001199073ea3008d0000000000000000000000000000000000000000000000000000000067bc6e3f0000000000000000000000000000000000000000000000000000000067bc927b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001886a1eb051c10f20c7386576a6a0716b20b2734000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 
-	tokens := make(map[string]config.TokenConfig)
-	tokens["ETH"] = config.TokenConfig{
+	tokens := make(map[uint64]map[string]config.TokenConfig)
+	tokens[1] = make(map[string]config.TokenConfig)
+	tokens[1]["ETH"] = config.TokenConfig{
 		Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 		Decimals: 18,
 	}
-	tokens["USDC"] = config.TokenConfig{
+	tokens[1]["USDC"] = config.TokenConfig{
 		Address:  common.HexToAddress("0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4"),
 		Decimals: 6,
+	}
+	tokenStore := config.TokenStore{
+		Tokens: tokens,
 	}
 	confirmations := make(map[uint64]uint64)
 	confirmations[1000] = 100
@@ -92,6 +96,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 		s.mockCommunication,
 		s.mockFetcher,
 		s.mockMatcher,
+		tokenStore,
 		s.mockWatcher,
 		s.sigChn,
 	)
@@ -230,7 +235,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 			},
 		},
 	}, nil)
-	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
@@ -280,8 +285,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 			},
 		},
 	}, nil)
-	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockWatcher.EXPECT().TokenConfig(gomock.Any()).Return("USDC", config.TokenConfig{}, nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 

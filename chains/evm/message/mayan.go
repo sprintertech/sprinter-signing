@@ -42,7 +42,8 @@ type MayanMessageHandler struct {
 	client  EventFilterer
 	chainID uint64
 
-	pools               map[uint64]common.Address
+	mayanPools          map[uint64]common.Address
+	liqudityPools       map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
 	tokenStore          config.TokenStore
 	mayanDecoder        MayanContract
@@ -59,7 +60,8 @@ type MayanMessageHandler struct {
 func NewMayanMessageHandler(
 	chainID uint64,
 	client EventFilterer,
-	pools map[uint64]common.Address,
+	liqudityPools map[uint64]common.Address,
+	mayanPools map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
@@ -73,7 +75,8 @@ func NewMayanMessageHandler(
 	return &MayanMessageHandler{
 		chainID:             chainID,
 		client:              client,
-		pools:               pools,
+		mayanPools:          mayanPools,
+		liqudityPools:       liqudityPools,
 		coordinator:         coordinator,
 		host:                host,
 		comm:                comm,
@@ -161,7 +164,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.BorrowAmount,
 		destinationBorrowToken.Address,
 		new(big.Int).SetUint64(destChainId),
-		h.pools[destChainId],
+		h.mayanPools[destChainId],
 		msg.Deadline,
 		data.Caller,
 		data.LiquidityPool,
@@ -255,8 +258,11 @@ func (h *MayanMessageHandler) verifyOrder(
 		return fmt.Errorf("invalid order status %d", order.Status)
 	}
 
-	// TODO
-	if common.BytesToAddress(params.Recipient[12:]) != data.Caller {
+	srcLiquidityPool, ok := h.liqudityPools[h.chainID]
+	if !ok {
+		return fmt.Errorf("no source liqudity recipient configured")
+	}
+	if common.BytesToAddress(params.Recipient[12:]) != srcLiquidityPool {
 		return fmt.Errorf("invalid recipient")
 	}
 

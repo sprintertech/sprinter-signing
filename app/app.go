@@ -146,6 +146,8 @@ func Run() error {
 	var mayanSwiftContract *contracts.MayanSwiftContract
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
+	liquidityPools := make(map[uint64]common.Address)
+	tokens := make(map[uint64]map[string]config.TokenConfig)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
@@ -168,14 +170,23 @@ func Run() error {
 				}
 
 				if c.HubPool != "" {
-
 					hubPoolAddress := common.HexToAddress(c.HubPool)
 					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, c.Tokens)
 				}
+
+				if c.LiqudityPool != "" {
+					lpAddress := common.HexToAddress(c.LiqudityPool)
+					liquidityPools[*c.GeneralChainConfig.Id] = lpAddress
+				}
+
+				tokens[*c.GeneralChainConfig.Id] = c.Tokens
 			}
 		default:
 			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))
 		}
+	}
+	tokenStore := config.TokenStore{
+		Tokens: tokens,
 	}
 
 	for _, chainConfig := range configuration.ChainConfigs {
@@ -212,6 +223,7 @@ func Run() error {
 						communication,
 						keyshareStore,
 						hubPoolContract,
+						tokenStore,
 						watcher,
 						sigChn)
 					go acrossMh.Listen(ctx)
@@ -226,12 +238,14 @@ func Run() error {
 					mayanMh := evmMessage.NewMayanMessageHandler(
 						*c.GeneralChainConfig.Id,
 						client,
+						liquidityPools,
 						mayanPools,
 						coordinator,
 						host,
 						communication,
 						keyshareStore,
 						watcher,
+						tokenStore,
 						mayanSwiftContract,
 						mayanApi,
 						sigChn)

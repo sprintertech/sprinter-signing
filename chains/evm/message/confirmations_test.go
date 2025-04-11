@@ -60,7 +60,7 @@ func (s *WatcherTestSuite) SetupTest() {
 }
 
 func (s *WatcherTestSuite) Test_WaitForConfirmations_InvalidToken() {
-	err := s.watcher.WaitForConfirmations(context.Background(), common.Hash{}, common.Address{}, big.NewInt(1000))
+	err := s.watcher.WaitForConfirmations(context.Background(), 1, common.Hash{}, common.Address{}, big.NewInt(1000))
 
 	s.NotNil(err)
 }
