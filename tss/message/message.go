@@ -5,7 +5,6 @@ package message
 
 import (
 	"encoding/json"
-	"math/big"
 )
 
 type TssMessage struct {
@@ -85,84 +84,6 @@ func MarshalSignatureMessage(id string, signature []byte) ([]byte, error) {
 
 func UnmarshalSignatureMessage(msgBytes []byte) (*SignatureMessage, error) {
 	msg := &SignatureMessage{}
-	err := json.Unmarshal(msgBytes, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return msg, nil
-}
-
-type AcrossMessage struct {
-	DepositId    *big.Int `json:"depositId"`
-	Nonce        *big.Int `json:"nonce"`
-	LiqudityPool string   `json:"liqudityPool"`
-	Caller       string   `json:"caller"`
-	Source       uint64   `json:"source"`
-	Destination  uint64   `json:"destination"`
-}
-
-func MarshalAcrossMessage(depositId, nonce *big.Int, pool, caller string, source, destination uint64) ([]byte, error) {
-	signatureMessage := &AcrossMessage{
-		LiqudityPool: pool,
-		Nonce:        nonce,
-		Caller:       caller,
-		DepositId:    depositId,
-		Source:       source,
-		Destination:  destination,
-	}
-
-	msgBytes, err := json.Marshal(signatureMessage)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return msgBytes, nil
-}
-
-func UnmarshalAcrossMessage(msgBytes []byte) (*AcrossMessage, error) {
-	msg := &AcrossMessage{}
-	err := json.Unmarshal(msgBytes, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return msg, nil
-}
-
-type MayanMessage struct {
-	Caller        string   `json:"caller"`
-	Source        uint64   `json:"source"`
-	Destination   uint64   `json:"destination"`
-	LiquidityPool string   `json:"liquidityPool"`
-	Calldata      string   `json:"calldata"`
-	Nonce         *big.Int `json:"nonce"`
-	BorrowAmount  *big.Int `json:"borrowAmount"`
-	DepositTxHash string   `json:"depositTxHash"`
-}
-
-func MarshalMayanMessage(caller, calldata, liquidityPool, txhash string, nonce, borrowAmount *big.Int, source, destination uint64) ([]byte, error) {
-	signatureMessage := &MayanMessage{
-		Caller:        caller,
-		Source:        source,
-		Destination:   destination,
-		Nonce:         nonce,
-		Calldata:      calldata,
-		DepositTxHash: txhash,
-		BorrowAmount:  borrowAmount,
-		LiquidityPool: liquidityPool,
-	}
-
-	msgBytes, err := json.Marshal(signatureMessage)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return msgBytes, nil
-}
-
-func UnmarshalMayanMessage(msgBytes []byte) (*MayanMessage, error) {
-	msg := &MayanMessage{}
 	err := json.Unmarshal(msgBytes, msg)
 	if err != nil {
 		return nil, err

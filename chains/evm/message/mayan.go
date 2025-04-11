@@ -16,7 +16,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
-	tssMessage "github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
@@ -96,7 +95,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 	data := m.Data.(*MayanData)
 	txHash := common.HexToHash(data.DepositTxHash)
 
-	err := h.notify(m, data)
+	err := h.notify(data)
 	if err != nil {
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
@@ -201,25 +200,17 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 		select {
 		case wMsg := <-msgChn:
 			{
-				mayanMsg, err := tssMessage.UnmarshalMayanMessage(wMsg.Payload)
+				d := &MayanData{}
+				err := d.UnmarshalJSON(wMsg.Payload)
 				if err != nil {
 					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
 					continue
 				}
 
-				msg := NewMayanMessage(mayanMsg.Source, mayanMsg.Destination, &MayanData{
-					Coordinator:   wMsg.From,
-					LiquidityPool: common.HexToAddress(mayanMsg.LiquidityPool),
-					Caller:        common.HexToAddress(mayanMsg.Caller),
-					Calldata:      mayanMsg.Calldata,
-					Nonce:         mayanMsg.Nonce,
-					ErrChn:        make(chan error, 1),
-					DepositTxHash: mayanMsg.DepositTxHash,
-					BorrowAmount:  mayanMsg.BorrowAmount,
-				})
+				msg := NewMayanMessage(d.Source, d.Destination, d)
 				_, err = h.HandleMessage(msg)
 				if err != nil {
-					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", mayanMsg, err)
+					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", msg, err)
 				}
 			}
 		case <-ctx.Done():
@@ -291,21 +282,13 @@ func (h *MayanMessageHandler) verifyOrder(
 	return nil
 }
 
-func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error {
+func (h *MayanMessageHandler) notify(data *MayanData) error {
 	if data.Coordinator != peer.ID("") {
 		return nil
 	}
 
 	data.Coordinator = h.host.ID()
-	msgBytes, err := tssMessage.MarshalMayanMessage(
-		data.Caller.Hex(),
-		data.Calldata,
-		data.LiquidityPool.Hex(),
-		data.DepositTxHash,
-		data.Nonce,
-		data.BorrowAmount,
-		m.Source,
-		m.Destination)
+	msgBytes, err := data.MarshalJSON()
 	if err != nil {
 		return err
 	}

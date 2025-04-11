@@ -18,7 +18,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
-	tssMessage "github.com/sprintertech/sprinter-signing/tss/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
@@ -95,42 +94,6 @@ func NewAcrossMessageHandler(
 	}
 }
 
-func (h *AcrossMessageHandler) Listen(ctx context.Context) {
-	msgChn := make(chan *comm.WrappedMessage)
-	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID), comm.AcrossMsg, msgChn)
-
-	for {
-		select {
-		case wMsg := <-msgChn:
-			{
-				acrossMsg, err := tssMessage.UnmarshalAcrossMessage(wMsg.Payload)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
-					continue
-				}
-
-				msg := NewAcrossMessage(acrossMsg.Source, acrossMsg.Destination, &AcrossData{
-					DepositId:     acrossMsg.DepositId,
-					Nonce:         acrossMsg.Nonce,
-					Coordinator:   wMsg.From,
-					LiquidityPool: common.HexToAddress(acrossMsg.LiqudityPool),
-					Caller:        common.HexToAddress(acrossMsg.Caller),
-					ErrChn:        make(chan error, 1),
-				})
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling across message %+v because of: %s", acrossMsg, err)
-				}
-			}
-		case <-ctx.Done():
-			{
-				h.comm.UnSubscribe(subID)
-				return
-			}
-		}
-	}
-}
-
 // HandleMessage finds the Across deposit with the according deposit ID and starts
 // the MPC signature process for it. The result will be saved into the signature
 // cache through the result channel.
@@ -140,7 +103,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	log.Info().Str("depositId", data.DepositId.String()).Msgf("Handling across message %+v", data)
 
 	sourceChainID := h.chainID
-	err := h.notify(m, data)
+	err := h.notify(data)
 	if err != nil {
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
@@ -204,19 +167,44 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	return nil, nil
 }
 
-func (h *AcrossMessageHandler) notify(m *message.Message, data *AcrossData) error {
+func (h *AcrossMessageHandler) Listen(ctx context.Context) {
+	msgChn := make(chan *comm.WrappedMessage)
+	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID), comm.AcrossMsg, msgChn)
+
+	for {
+		select {
+		case wMsg := <-msgChn:
+			{
+				d := &AcrossData{}
+				err := d.UnmarshalJSON(wMsg.Payload)
+				if err != nil {
+					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
+					continue
+				}
+
+				d.ErrChn = make(chan error, 1)
+				msg := NewAcrossMessage(d.Source, d.Destination, d)
+				_, err = h.HandleMessage(msg)
+				if err != nil {
+					log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
+				}
+			}
+		case <-ctx.Done():
+			{
+				h.comm.UnSubscribe(subID)
+				return
+			}
+		}
+	}
+}
+
+func (h *AcrossMessageHandler) notify(data *AcrossData) error {
 	if data.Coordinator != peer.ID("") {
 		return nil
 	}
 
 	data.Coordinator = h.host.ID()
-	msgBytes, err := tssMessage.MarshalAcrossMessage(
-		data.DepositId,
-		data.Nonce,
-		data.LiquidityPool.Hex(),
-		data.Caller.Hex(),
-		m.Source,
-		m.Destination)
+	msgBytes, err := data.MarshalJSON()
 	if err != nil {
 		return err
 	}

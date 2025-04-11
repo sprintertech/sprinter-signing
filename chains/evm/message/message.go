@@ -1,6 +1,7 @@
 package message
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -25,12 +26,23 @@ const (
 )
 
 type AcrossData struct {
+	ErrChn chan error `json:"-"`
+
 	DepositId     *big.Int
 	Nonce         *big.Int
 	LiquidityPool common.Address
 	Caller        common.Address
 	Coordinator   peer.ID
-	ErrChn        chan error
+	Source        uint64
+	Destination   uint64
+}
+
+func (d *AcrossData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d)
+}
+
+func (d *AcrossData) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &d)
 }
 
 func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *message.Message {
@@ -44,14 +56,25 @@ func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *messa
 }
 
 type MayanData struct {
+	ErrChn chan error `json:"-"`
+
 	Coordinator   peer.ID
-	ErrChn        chan error
 	LiquidityPool common.Address
 	Caller        common.Address
 	DepositTxHash string
 	Calldata      string
 	Nonce         *big.Int
 	BorrowAmount  *big.Int
+	Source        uint64
+	Destination   uint64
+}
+
+func (d *MayanData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d)
+}
+
+func (d *MayanData) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &d)
 }
 
 func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.Message {
