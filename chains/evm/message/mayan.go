@@ -235,6 +235,16 @@ func (h *MayanMessageHandler) verifyOrder(
 		return err
 	}
 
+	_, tc, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(msg.TokenIn[12:]))
+	if err != nil {
+		return err
+	}
+
+	denormalizedAmountIn := contracts.DenormalizeAmount(new(big.Int).SetUint64(order.AmountIn), tc.Decimals)
+	if data.BorrowAmount.Cmp(denormalizedAmountIn) != -1 {
+		return fmt.Errorf("requested borrow amount more than input amount")
+	}
+
 	if srcChainId != h.chainID {
 		return fmt.Errorf("msg and handler chainID not matching")
 	}
@@ -258,11 +268,6 @@ func (h *MayanMessageHandler) verifyOrder(
 
 	if common.BytesToAddress(params.Recipient[12:]) != srcLiquidityPool {
 		return fmt.Errorf("invalid recipient")
-	}
-
-	_, tc, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(msg.TokenIn[12:]))
-	if err != nil {
-		return err
 	}
 
 	promisedAmount := contracts.DenormalizeAmount(
