@@ -328,7 +328,6 @@ func calculateNetAmount(
 		BPS_DENOMINATOR,
 	)
 
-	// Calculate net amount
 	netAmount := new(big.Int).Sub(fulfillAmount, referrerAmount)
 	netAmount.Sub(netAmount, protocolAmount)
 
