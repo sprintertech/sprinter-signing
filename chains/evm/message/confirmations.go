@@ -18,32 +18,33 @@ type TokenPricer interface {
 }
 
 type Watcher struct {
-	client        EventFilterer
-	tokens        map[string]evm.TokenConfig
-	confirmations map[uint64]uint64
-	blocktime     time.Duration
-	tokenPricer   TokenPricer
+	client         EventFilterer
+	tokensPerChain map[uint64]map[string]evm.TokenConfig
+	confirmations  map[uint64]uint64
+	blocktime      time.Duration
+	tokenPricer    TokenPricer
 }
 
 func NewWatcher(
 	client EventFilterer,
 	tokenPricer TokenPricer,
-	tokens map[string]evm.TokenConfig,
+	tokensPerChain map[uint64]map[string]evm.TokenConfig,
 	confirmations map[uint64]uint64,
 	blocktime time.Duration,
 ) *Watcher {
 	return &Watcher{
-		client:        client,
-		tokens:        tokens,
-		confirmations: confirmations,
-		blocktime:     blocktime,
-		tokenPricer:   tokenPricer,
+		client:         client,
+		tokensPerChain: tokensPerChain,
+		confirmations:  confirmations,
+		blocktime:      blocktime,
+		tokenPricer:    tokenPricer,
 	}
 }
 
 // WaitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
 func (w *Watcher) WaitForConfirmations(
 	ctx context.Context,
+	chainID uint64,
 	txHash common.Hash,
 	token common.Address,
 	amount *big.Int,
@@ -51,7 +52,7 @@ func (w *Watcher) WaitForConfirmations(
 	ctx, cancel := context.WithTimeout(ctx, TIMEOUT)
 	defer cancel()
 
-	requiredConfirmations, err := w.minimalConfirmations(token, amount)
+	requiredConfirmations, err := w.minimalConfirmations(chainID, token, amount)
 	if err != nil {
 		return err
 	}
@@ -94,8 +95,13 @@ func (w *Watcher) WaitForConfirmations(
 }
 
 // TokenConfig fetches the token configuration and symbol for the given chain
-func (w *Watcher) TokenConfig(token common.Address) (string, evm.TokenConfig, error) {
-	for symbol, c := range w.tokens {
+func (w *Watcher) TokenConfig(chainID uint64, token common.Address) (string, evm.TokenConfig, error) {
+	tokens, ok := w.tokensPerChain[chainID]
+	if !ok {
+		return "", evm.TokenConfig{}, fmt.Errorf("no tokens configured for chain %d", chainID)
+	}
+
+	for symbol, c := range tokens {
 		if c.Address == token {
 			return symbol, c, nil
 		}
@@ -106,8 +112,8 @@ func (w *Watcher) TokenConfig(token common.Address) (string, evm.TokenConfig, er
 
 // minimalConfirmations calculates the minimal confirmations needed to wait for execution
 // of an order based on order size
-func (w *Watcher) minimalConfirmations(token common.Address, amount *big.Int) (uint64, error) {
-	symbol, c, err := w.TokenConfig(token)
+func (w *Watcher) minimalConfirmations(chainID uint64, token common.Address, amount *big.Int) (uint64, error) {
+	symbol, c, err := w.TokenConfig(chainID, token)
 	if err != nil {
 		return 0, err
 	}

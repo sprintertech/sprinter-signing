@@ -41,8 +41,8 @@ func (s *WatcherTestSuite) SetupTest() {
 	confirmations[500] = 2
 
 	s.usdcToken = common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
-	tokens := make(map[string]evm.TokenConfig)
-	tokens["USDC"] = evm.TokenConfig{
+	tokens := make(map[uint64]map[string]evm.TokenConfig)
+	tokens[1]["USDC"] = evm.TokenConfig{
 		Decimals: 6,
 		Address:  s.usdcToken,
 	}
@@ -65,7 +65,7 @@ func (s *WatcherTestSuite) Test_WaitForConfirmations_InvalidToken() {
 func (s *WatcherTestSuite) Test_WaitForConfirmations_InvalidOrderValue() {
 	s.mockPricer.EXPECT().TokenPrice("USDC").Return(float64(0.99), nil)
 
-	err := s.watcher.WaitForConfirmations(context.Background(), common.Hash{}, s.usdcToken, big.NewInt(1000000000))
+	err := s.watcher.WaitForConfirmations(context.Background(), 1, common.Hash{}, s.usdcToken, big.NewInt(1000000000))
 
 	s.NotNil(err)
 }
@@ -76,7 +76,7 @@ func (s *WatcherTestSuite) Test_WaitForConfirmations_TxTimeout() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
 	defer cancel()
 
-	err := s.watcher.WaitForConfirmations(ctx, common.Hash{}, s.usdcToken, big.NewInt(499000000))
+	err := s.watcher.WaitForConfirmations(ctx, 1, common.Hash{}, s.usdcToken, big.NewInt(499000000))
 
 	s.NotNil(err)
 }
@@ -92,7 +92,7 @@ func (s *WatcherTestSuite) Test_WaitForConfirmations_ValidTransaction() {
 	s.mockClient.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
 	s.mockClient.EXPECT().LatestBlock().Return(big.NewInt(102), nil)
 
-	err := s.watcher.WaitForConfirmations(context.Background(), common.Hash{}, s.usdcToken, big.NewInt(499000000))
+	err := s.watcher.WaitForConfirmations(context.Background(), 1, common.Hash{}, s.usdcToken, big.NewInt(499000000))
 
 	s.Nil(err)
 }

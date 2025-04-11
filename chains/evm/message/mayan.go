@@ -99,6 +99,7 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 					Calldata:      mayanMsg.Calldata,
 					Nonce:         mayanMsg.Nonce,
 					ErrChn:        make(chan error, 1),
+					DepositTxHash: mayanMsg.DepositTxHash,
 				})
 				_, err = h.HandleMessage(msg)
 				if err != nil {
@@ -142,7 +143,8 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
-	if swap.OrderHash != hex.EncodeToString(msg.OrderHash[:]) {
+
+	if swap.OrderHash != "0x"+hex.EncodeToString(msg.OrderHash[:]) {
 		err = fmt.Errorf("swap and msg hash not matching")
 		data.ErrChn <- err
 		return nil, err
@@ -154,17 +156,19 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	// TODO: use calldata to verify it is correct
 	order, err := h.mayanDecoder.GetOrder(msg, swap, token.Decimals)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
-	if order.Status != contracts.OrderCreated {
-		err = fmt.Errorf("invalid order status %d", order.Status)
-		data.ErrChn <- err
-		return nil, err
-	}
+	/*
+		if order.Status != contracts.OrderCreated {
+			err = fmt.Errorf("invalid order status %d", order.Status)
+			data.ErrChn <- err
+			return nil, err
+		}
+	*/
+	fmt.Printf("%+v \n", order)
 
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
@@ -177,9 +181,15 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 	}
 	data.ErrChn <- nil
 
+	// TODO - check fulfill message
+	// TODO - check caller is auction winner
+	// TODO - check wormhole chain ids
+
+	// TODO provjeri order vrijednosti + chainIDeve
 	destChainId := new(big.Int).SetUint64(uint64(msg.DestChainId))
 	unlockHash, err := unlockHash(
 		calldataBytes,
+		// TODO: amount in based on profit
 		new(big.Int).SetUint64(msg.PromisedAmount),
 		common.BytesToAddress(msg.TokenOut[12:]),
 		destChainId,
@@ -221,6 +231,8 @@ func (h *MayanMessageHandler) notify(m *message.Message, data *MayanData) error 
 	msgBytes, err := tssMessage.MarshalMayanMessage(
 		data.Caller.Hex(),
 		data.Calldata,
+		data.LiquidityPool.Hex(),
+		data.DepositTxHash,
 		data.Nonce,
 		m.Source,
 		m.Destination)

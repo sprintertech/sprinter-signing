@@ -44,10 +44,11 @@ type TokenMatcher interface {
 type ConfirmationWatcher interface {
 	WaitForConfirmations(
 		ctx context.Context,
+		chainID uint64,
 		txHash common.Hash,
 		token common.Address,
 		amount *big.Int) error
-	TokenConfig(token common.Address) (string, evm.TokenConfig, error)
+	TokenConfig(chainID uint64, token common.Address) (string, evm.TokenConfig, error)
 }
 
 type AcrossMessageHandler struct {

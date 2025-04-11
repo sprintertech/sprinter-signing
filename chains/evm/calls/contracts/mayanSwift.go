@@ -4,8 +4,8 @@
 package contracts
 
 import (
+	"encoding/binary"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 
@@ -87,14 +87,18 @@ func (c *MayanSwiftContract) GetOrder(
 	msg *MayanFulfillMsg,
 	swap *mayan.MayanSwap,
 	srcTokenDecimals uint8) (*MayanOrder, error) {
-	res, err := c.CallContract("encodeKey", &MayanKey{
+	amountOut, err := strconv.ParseUint(swap.MinAmountOut64, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	key := &MayanKey{
 		Trader:       common.HexToHash(swap.Trader),
 		SrcChainId:   msg.SrcChainId,
 		TokenIn:      msg.TokenIn,
 		DestAddr:     msg.DestAddr,
 		DestChainId:  msg.DestChainId,
 		TokenOut:     msg.TokenOut,
-		MinAmountOut: msg.PromisedAmount,
+		MinAmountOut: amountOut,
 		GasDrop:      msg.GasDrop,
 		CancelFee:    convertFloatToUint(swap.RedeemRelayerFee, srcTokenDecimals),
 		RefundFee:    convertFloatToUint(swap.RefundRelayerFee, srcTokenDecimals),
@@ -104,32 +108,24 @@ func (c *MayanSwiftContract) GetOrder(
 		ProtocolBps:  swap.MayanBps,
 		AuctionMode:  swap.AuctionMode,
 		Random:       common.HexToHash(swap.RandomKey),
-	})
-	if err != nil {
-		return nil, err
-	}
-	key, ok := res[0].([32]byte)
-	if !ok {
-		return nil, fmt.Errorf("cannot convert key to [32]byte")
 	}
 
-	res, err = c.CallContract("orders", crypto.Keccak256(key[:]))
+	res, err := c.CallContract("orders", common.BytesToHash(crypto.Keccak256(encodeKey(key))))
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("RESULT")
-	fmt.Printf("%+v", res[0])
-
-	o, ok := res[0].(*MayanOrder)
-	if !ok {
-		return nil, fmt.Errorf("cannot convert fullfill payload to msg")
-	}
-	return o, nil
+	status := abi.ConvertType(res[0], new(uint8)).(*uint8)
+	amountIn := abi.ConvertType(res[1], new(uint64)).(*uint64)
+	destChainId := abi.ConvertType(res[2], new(uint16)).(*uint16)
+	return &MayanOrder{
+		Status:      OrderStatus(*status),
+		AmountIn:    *amountIn,
+		DestChainId: *destChainId,
+	}, nil
 }
 
 func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillMsg, error) {
-	fmt.Println("DECODING CALL")
 	method, ok := c.ABI.Methods["fulfillOrder"]
 	if !ok {
 		return nil, fmt.Errorf("no method fulfillOrder")
@@ -146,9 +142,7 @@ func (c *MayanSwiftContract) DecodeFulfillCall(calldata []byte) (*MayanFulfillMs
 		return nil, fmt.Errorf("failed decoding VM data")
 	}
 
-	fmt.Printf("%+v \n", encodedVM)
-
-	return c.ParseFulfillPayload(encodedVM)
+	return c.ParseFulfillPayload(extractWormholeVMPayload(encodedVM))
 }
 
 func (c *MayanSwiftContract) ParseFulfillPayload(calldata []byte) (*MayanFulfillMsg, error) {
@@ -157,26 +151,77 @@ func (c *MayanSwiftContract) ParseFulfillPayload(calldata []byte) (*MayanFulfill
 		return nil, err
 	}
 
-	fmt.Println("RESULT 0")
-	fmt.Printf("%+v", res[0])
-
 	out := abi.ConvertType(res[0], new(MayanFulfillMsg)).(*MayanFulfillMsg)
 	return out, nil
 }
 
 func convertFloatToUint(amount string, decimals uint8) uint64 {
-	floatAmount, _ := strconv.ParseFloat(amount, 64)
-	minDecimals := uint8(math.Min(float64(decimals), float64(WORMHOLE_DECIMALS)))
+	f, _, _ := big.ParseFloat(amount, 10, 256, big.ToNearestEven)
 
+	minDecimals := min(WORMHOLE_DECIMALS, decimals)
 	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minDecimals)), nil)
 
-	amountBigFloat := new(big.Float).SetFloat64(floatAmount)
+	scaled := new(big.Float).Mul(f, new(big.Float).SetInt(multiplier))
+	scaled.Add(scaled, big.NewFloat(0.5)) // Rounding adjustment
 
-	multiplierBigFloat := new(big.Float).SetInt(multiplier)
-	scaledAmountBigFloat := new(big.Float).Mul(amountBigFloat, multiplierBigFloat)
+	result := new(big.Int)
+	scaled.Int(result)
+	return result.Uint64()
+}
 
-	scaledAmountBigInt := new(big.Int)
-	scaledAmountBigFloat.Int(scaledAmountBigInt)
+func extractWormholeVMPayload(encodedVM []byte) []byte {
+	signersLen := int(encodedVM[5])            // Read signature count from byte 5
+	payloadStart := 6 + (signersLen * 66) + 51 // Calculate payload offset
+	return encodedVM[payloadStart:]
+}
 
-	return scaledAmountBigInt.Uint64()
+// encodeKey encodes mayan key into the order hash expected on-chain
+func encodeKey(key *MayanKey) []byte {
+	data := make([]byte, 239)
+	offset := 0
+
+	copy(data[offset:], key.Trader[:]) // 0-31 (32 bytes)
+	offset += 32
+
+	binary.BigEndian.PutUint16(data[offset:], key.SrcChainId) // 32-33 (2 bytes)
+	offset += 2
+
+	copy(data[offset:], key.TokenIn[:]) // 34-65 (32 bytes)
+	offset += 32
+
+	copy(data[offset:], key.DestAddr[:]) // 66-97 (32 bytes)
+	offset += 32
+
+	binary.BigEndian.PutUint16(data[offset:], key.DestChainId) // 98-99 (2 bytes)
+	offset += 2
+
+	copy(data[offset:], key.TokenOut[:]) // 100-131 (32 bytes)
+	offset += 32
+
+	// uint64 sequence (40 bytes total)
+	binary.BigEndian.PutUint64(data[offset:], key.MinAmountOut) // 132-139
+	offset += 8
+	binary.BigEndian.PutUint64(data[offset:], key.GasDrop) // 140-147
+	offset += 8
+	binary.BigEndian.PutUint64(data[offset:], key.CancelFee) // 148-155
+	offset += 8
+	binary.BigEndian.PutUint64(data[offset:], key.RefundFee) // 156-163
+	offset += 8
+	binary.BigEndian.PutUint64(data[offset:], key.Deadline) // 164-171
+	offset += 8
+
+	copy(data[offset:], key.ReferrerAddr[:]) // 172-203 (32 bytes)
+	offset += 32
+
+	data[offset] = key.ReferrerBps // 204 (1 byte)
+	offset += 1
+
+	// Final group (protocolBps + auctionMode + random)
+	data[offset] = key.ProtocolBps // 205 (1 byte)
+	offset += 1
+	data[offset] = key.AuctionMode // 206 (1 byte)
+	offset += 1
+	copy(data[offset:], key.Random[:]) // 207-238 (32 bytes)
+
+	return data
 }

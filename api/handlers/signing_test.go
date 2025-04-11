@@ -74,7 +74,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingCaller() {
 
 	input := handlers.SigningBody{
 		Protocol:      "across",
-		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		DepositId:     "1000",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 	}
@@ -105,7 +105,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingLiquidityPool() {
 
 	input := handlers.SigningBody{
 		Protocol:  "across",
-		DepositId: &handlers.BigInt{big.NewInt(1000)},
+		DepositId: "1000",
 		Caller:    "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Nonce:     &handlers.BigInt{big.NewInt(1001)},
 	}
@@ -135,7 +135,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		DepositId:     "1000",
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
@@ -167,7 +167,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		DepositId:     "1000",
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
@@ -199,7 +199,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		DepositId:     "1000",
 		Protocol:      "invalid",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
@@ -231,7 +231,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		DepositId:     "1000",
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
@@ -258,12 +258,12 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	s.Equal(http.StatusInternalServerError, recorder.Code)
 }
 
-func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
+func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 	msgChn := make(chan []*message.Message)
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId:     &handlers.BigInt{big.NewInt(1000)},
+		DepositId:     "1000",
 		Protocol:      "across",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
@@ -282,6 +282,39 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_Success() {
 	go func() {
 		msg := <-msgChn
 		ad := msg[0].Data.(across.AcrossData)
+		ad.ErrChn <- nil
+	}()
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
+}
+
+func (s *SigningHandlerTestSuite) Test_HandleSigning_MayanSuccess() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
+	input := handlers.SigningBody{
+		DepositId:     "1000",
+		Protocol:      "mayan",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Calldata:      "0xbe5",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.MayanData)
 		ad.ErrChn <- nil
 	}()
 

@@ -222,7 +222,7 @@ func Run() error {
 				}
 
 				if config.MayanSwift != "" {
-					mayanApi := mayan.NewMayanClient()
+					mayanApi := mayan.NewMayanExplorer()
 					mayanMh := evmMessage.NewMayanMessageHandler(
 						*config.GeneralChainConfig.Id,
 						client,

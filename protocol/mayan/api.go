@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const MAYAN_EXPLORER_URL = "https://explorer-api.mayan.finance/v3/swap/trx"
+const MAYAN_EXPLORER_URL = "https://explorer-api.mayan.finance"
 
 type MayanSwap struct {
 	OrderHash        string
@@ -18,22 +18,23 @@ type MayanSwap struct {
 	RedeemRelayerFee string
 	RefundRelayerFee string
 	Trader           string
+	MinAmountOut64   string
 }
 
-type MayanSwapClient struct {
+type MayanExplorer struct {
 	HTTPClient *http.Client
 }
 
-func NewMayanClient() *MayanSwapClient {
-	return &MayanSwapClient{
+func NewMayanExplorer() *MayanExplorer {
+	return &MayanExplorer{
 		HTTPClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
 }
 
-func (c *MayanSwapClient) GetSwap(hash string) (*MayanSwap, error) {
-	fullURL := fmt.Sprintf("%s/%s", MAYAN_EXPLORER_URL, hash)
+func (c *MayanExplorer) GetSwap(hash string) (*MayanSwap, error) {
+	fullURL := fmt.Sprintf("%s/v3/swap/trx/%s", MAYAN_EXPLORER_URL, hash)
 
 	resp, err := c.HTTPClient.Get(fullURL)
 	if err != nil {
