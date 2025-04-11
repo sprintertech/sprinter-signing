@@ -1,7 +1,6 @@
 package message
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -37,14 +36,6 @@ type AcrossData struct {
 	Destination   uint64
 }
 
-func (d *AcrossData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d)
-}
-
-func (d *AcrossData) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &d)
-}
-
 func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *message.Message {
 	return &message.Message{
 		Source:      source,
@@ -67,14 +58,6 @@ type MayanData struct {
 	BorrowAmount  *big.Int
 	Source        uint64
 	Destination   uint64
-}
-
-func (d *MayanData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d)
-}
-
-func (d *MayanData) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &d)
 }
 
 func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.Message {

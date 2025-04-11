@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -201,7 +202,7 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 		case wMsg := <-msgChn:
 			{
 				d := &MayanData{}
-				err := d.UnmarshalJSON(wMsg.Payload)
+				err := json.Unmarshal(wMsg.Payload, d)
 				if err != nil {
 					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
 					continue
@@ -288,7 +289,7 @@ func (h *MayanMessageHandler) notify(data *MayanData) error {
 	}
 
 	data.Coordinator = h.host.ID()
-	msgBytes, err := data.MarshalJSON()
+	msgBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}

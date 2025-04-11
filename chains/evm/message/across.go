@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -176,7 +177,7 @@ func (h *AcrossMessageHandler) Listen(ctx context.Context) {
 		case wMsg := <-msgChn:
 			{
 				d := &AcrossData{}
-				err := d.UnmarshalJSON(wMsg.Payload)
+				err := json.Unmarshal(wMsg.Payload, d)
 				if err != nil {
 					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
 					continue
@@ -204,7 +205,7 @@ func (h *AcrossMessageHandler) notify(data *AcrossData) error {
 	}
 
 	data.Coordinator = h.host.ID()
-	msgBytes, err := data.MarshalJSON()
+	msgBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}

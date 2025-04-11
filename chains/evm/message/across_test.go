@@ -115,7 +115,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{}, fmt.Errorf("error"))
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -150,7 +150,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -190,7 +190,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 	}, nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -239,7 +239,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -290,7 +290,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
