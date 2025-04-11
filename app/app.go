@@ -51,6 +51,7 @@ import (
 
 var Version string
 
+//nolint:gocognit
 func Run() error {
 	var err error
 
@@ -254,7 +255,6 @@ func Run() error {
 					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
-
 				}
 
 				var startBlock *big.Int

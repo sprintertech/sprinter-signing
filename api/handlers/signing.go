@@ -101,7 +101,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 
 	err = <-errChn
 	if err != nil {
-		JSONError(w, fmt.Errorf("Singing failed: %s", err), http.StatusInternalServerError)
+		JSONError(w, fmt.Errorf("singing failed: %s", err), http.StatusInternalServerError)
 		return
 	}
 
