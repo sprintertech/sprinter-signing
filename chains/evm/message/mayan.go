@@ -240,6 +240,8 @@ func (h *MayanMessageHandler) verifyOrder(
 		return err
 	}
 
+	fmt.Printf("%+v", msg)
+
 	denormalizedAmountIn := contracts.DenormalizeAmount(new(big.Int).SetUint64(order.AmountIn), tc.Decimals)
 	if data.BorrowAmount.Cmp(denormalizedAmountIn) != -1 {
 		return fmt.Errorf("requested borrow amount more than input amount")
@@ -253,8 +255,8 @@ func (h *MayanMessageHandler) verifyOrder(
 		return fmt.Errorf("swap and msg hash not matching")
 	}
 
-	if common.BytesToAddress(msg.ReferrerAddr[12:]) != data.Caller {
-		return fmt.Errorf("referrer and caller address is not the same")
+	if common.BytesToAddress(msg.Driver[12:]) != data.Caller {
+		return fmt.Errorf("driver and caller address is not the same")
 	}
 
 	if order.Status != contracts.OrderCreated {

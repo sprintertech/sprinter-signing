@@ -21,9 +21,8 @@ import (
 type OrderStatus uint8
 
 const (
-	OrderCreated OrderStatus = 1
-
-	WORMHOLE_DECIMALS = 8
+	OrderCreated      OrderStatus = 1
+	WORMHOLE_DECIMALS             = 8
 )
 
 type MayanOrder struct {
@@ -245,15 +244,20 @@ func DenormalizeAmount(amount *big.Int, decimals uint8) *big.Int {
 
 // ConvertFloatToUint convert mayan float amount to the nomalized uint64 amount
 func ConvertFloatToUint(amount string, decimals uint8) uint64 {
-	f, _, _ := big.ParseFloat(amount, 10, 256, big.ToNearestEven)
+	ratValue := new(big.Rat)
+	if _, success := ratValue.SetString(amount); !success {
+		return 0
+	}
 
 	minDecimals := min(WORMHOLE_DECIMALS, decimals)
-	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(minDecimals)), nil)
+	multiplier := new(big.Int).Exp(
+		big.NewInt(10),
+		big.NewInt(int64(minDecimals)),
+		nil,
+	)
 
-	scaled := new(big.Float).Mul(f, new(big.Float).SetInt(multiplier))
-	scaled.Add(scaled, big.NewFloat(0.5)) // Rounding adjustment
+	scaled := new(big.Rat).Mul(ratValue, new(big.Rat).SetInt(multiplier))
+	result := new(big.Int).Div(scaled.Num(), scaled.Denom())
 
-	result := new(big.Int)
-	scaled.Int(result)
 	return result.Uint64()
 }

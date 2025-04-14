@@ -8,17 +8,22 @@ import (
 	"time"
 )
 
-const MAYAN_EXPLORER_URL = "https://explorer-api.mayan.finance"
+const (
+	MAYAN_EXPLORER_URL = "https://explorer-api.mayan.finance"
+	WORMHOLE_DECIMALS  = 8
+)
 
 type MayanSwap struct {
-	OrderHash        string
-	RandomKey        string
-	MayanBps         uint8
-	AuctionMode      uint8
-	RedeemRelayerFee string
-	RefundRelayerFee string
-	Trader           string
-	MinAmountOut64   string
+	OrderHash          string
+	RandomKey          string
+	MayanBps           uint8
+	AuctionMode        uint8
+	RedeemRelayerFee   string
+	RedeemRelayerFee64 uint64
+	RefundRelayerFee   string
+	RefundRelayerFee64 uint64
+	Trader             string
+	MinAmountOut64     string
 }
 
 type MayanExplorer struct {
