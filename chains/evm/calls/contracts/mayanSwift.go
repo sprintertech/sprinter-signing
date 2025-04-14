@@ -21,8 +21,9 @@ import (
 type OrderStatus uint8
 
 const (
-	OrderCreated      OrderStatus = 1
-	WORMHOLE_DECIMALS             = 8
+	WORMHOLE_DECIMALS = 8
+
+	OrderCreated OrderStatus = 1
 )
 
 type MayanOrder struct {
