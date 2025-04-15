@@ -55,7 +55,7 @@ func (c *MayanExplorer) GetSwap(hash string) (*MayanSwap, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var s *MayanSwap
+	s := new(MayanSwap)
 	if err := json.Unmarshal(body, s); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
