@@ -39,16 +39,15 @@ func NewMayanExplorer() *MayanExplorer {
 }
 
 func (c *MayanExplorer) GetSwap(hash string) (*MayanSwap, error) {
-	fullURL := fmt.Sprintf("%s/v3/swap/trx/%s", MAYAN_EXPLORER_URL, hash)
-
-	resp, err := c.HTTPClient.Get(fullURL)
+	url := fmt.Sprintf("%s/v3/swap/trx/%s", MAYAN_EXPLORER_URL, hash)
+	resp, err := c.HTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d, %s", resp.StatusCode, url)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -57,7 +56,7 @@ func (c *MayanExplorer) GetSwap(hash string) (*MayanSwap, error) {
 	}
 
 	var s *MayanSwap
-	if err := json.Unmarshal(body, &s); err != nil {
+	if err := json.Unmarshal(body, s); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
