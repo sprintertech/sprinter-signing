@@ -175,8 +175,8 @@ func Run() error {
 					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, c.Tokens)
 				}
 
-				if c.LiqudityPool != "" {
-					lpAddress := common.HexToAddress(c.LiqudityPool)
+				if c.LiquidityPool != "" {
+					lpAddress := common.HexToAddress(c.LiquidityPool)
 					liquidityPools[*c.GeneralChainConfig.Id] = lpAddress
 				}
 

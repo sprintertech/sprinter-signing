@@ -43,7 +43,7 @@ type MayanMessageHandler struct {
 	chainID uint64
 
 	mayanPools          map[uint64]common.Address
-	liqudityPools       map[uint64]common.Address
+	liquidityPools      map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
 	tokenStore          config.TokenStore
 	mayanDecoder        MayanContract
@@ -60,7 +60,7 @@ type MayanMessageHandler struct {
 func NewMayanMessageHandler(
 	chainID uint64,
 	client EventFilterer,
-	liqudityPools map[uint64]common.Address,
+	liquidityPools map[uint64]common.Address,
 	mayanPools map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
@@ -76,7 +76,7 @@ func NewMayanMessageHandler(
 		chainID:             chainID,
 		client:              client,
 		mayanPools:          mayanPools,
-		liqudityPools:       liqudityPools,
+		liquidityPools:      liquidityPools,
 		coordinator:         coordinator,
 		host:                host,
 		comm:                comm,
@@ -263,7 +263,7 @@ func (h *MayanMessageHandler) verifyOrder(
 		return fmt.Errorf("invalid order status %d", order.Status)
 	}
 
-	srcLiquidityPool, ok := h.liqudityPools[h.chainID]
+	srcLiquidityPool, ok := h.liquidityPools[h.chainID]
 	if !ok {
 		return fmt.Errorf("no source liqudity recipient configured")
 	}
