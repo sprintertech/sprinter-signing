@@ -43,7 +43,7 @@ type MayanMessageHandler struct {
 	chainID uint64
 
 	mayanPools          map[uint64]common.Address
-	liqudityPools       map[uint64]common.Address
+	liquidityPools      map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
 	tokenStore          config.TokenStore
 	mayanDecoder        MayanContract
@@ -60,7 +60,7 @@ type MayanMessageHandler struct {
 func NewMayanMessageHandler(
 	chainID uint64,
 	client EventFilterer,
-	liqudityPools map[uint64]common.Address,
+	liquidityPools map[uint64]common.Address,
 	mayanPools map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
@@ -76,7 +76,7 @@ func NewMayanMessageHandler(
 		chainID:             chainID,
 		client:              client,
 		mayanPools:          mayanPools,
-		liqudityPools:       liqudityPools,
+		liquidityPools:      liquidityPools,
 		coordinator:         coordinator,
 		host:                host,
 		comm:                comm,
@@ -118,7 +118,8 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	symbol, token, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(msg.TokenIn[12:]))
+	tokenIn := common.BytesToAddress(msg.TokenIn[12:])
+	symbol, token, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -126,6 +127,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	destChainId, err := mayan.WormholeToEVMChainID(msg.DestChainId)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
 	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainId, symbol)
@@ -150,7 +152,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		context.Background(),
 		h.chainID,
 		txHash,
-		common.BytesToAddress(msg.TokenIn[12:]),
+		tokenIn,
 		new(big.Int).SetUint64(msg.PromisedAmount))
 	if err != nil {
 		data.ErrChn <- err
@@ -240,8 +242,6 @@ func (h *MayanMessageHandler) verifyOrder(
 		return err
 	}
 
-	fmt.Printf("%+v", msg)
-
 	denormalizedAmountIn := contracts.DenormalizeAmount(new(big.Int).SetUint64(order.AmountIn), tc.Decimals)
 	if data.BorrowAmount.Cmp(denormalizedAmountIn) != -1 {
 		return fmt.Errorf("requested borrow amount more than input amount")
@@ -263,7 +263,7 @@ func (h *MayanMessageHandler) verifyOrder(
 		return fmt.Errorf("invalid order status %d", order.Status)
 	}
 
-	srcLiquidityPool, ok := h.liqudityPools[h.chainID]
+	srcLiquidityPool, ok := h.liquidityPools[h.chainID]
 	if !ok {
 		return fmt.Errorf("no source liqudity recipient configured")
 	}
