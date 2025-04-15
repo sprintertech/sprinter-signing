@@ -126,6 +126,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	destChainId, err := mayan.WormholeToEVMChainID(msg.DestChainId)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
 	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainId, symbol)
