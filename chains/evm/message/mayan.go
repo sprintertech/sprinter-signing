@@ -118,7 +118,8 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	symbol, token, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(msg.TokenIn[12:]))
+	tokenIn := common.BytesToAddress(msg.TokenIn[12:])
+	symbol, token, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -151,7 +152,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		context.Background(),
 		h.chainID,
 		txHash,
-		common.BytesToAddress(msg.TokenIn[12:]),
+		tokenIn,
 		new(big.Int).SetUint64(msg.PromisedAmount))
 	if err != nil {
 		data.ErrChn <- err
@@ -240,8 +241,6 @@ func (h *MayanMessageHandler) verifyOrder(
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("%+v", msg)
 
 	denormalizedAmountIn := contracts.DenormalizeAmount(new(big.Int).SetUint64(order.AmountIn), tc.Decimals)
 	if data.BorrowAmount.Cmp(denormalizedAmountIn) != -1 {
