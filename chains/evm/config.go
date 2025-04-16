@@ -13,21 +13,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mitchellh/mapstructure"
 
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/config/chain"
 )
-
-type TokenConfig struct {
-	Address  common.Address
-	Decimals uint8
-}
 
 type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
 	Admin              string
 	AcrossPool         string
 	HubPool            string
-	LiqudityPool       string
-	Tokens             map[string]TokenConfig
+	MayanSwift         string
+	LiquidityPool      string
+	Tokens             map[string]config.TokenConfig
 	// usd bucket -> confirmations
 	ConfirmationsByValue map[uint64]uint64
 	BlockInterval        *big.Int
@@ -37,8 +34,9 @@ type EVMConfig struct {
 type RawEVMConfig struct {
 	chain.GeneralChainConfig `mapstructure:",squash"`
 	Admin                    string                 `mapstructure:"admin"`
-	LiqudityPool             string                 `mapstructure:"liquidityPool"`
+	LiquidityPool            string                 `mapstructure:"liquidityPool"`
 	AcrossPool               string                 `mapstructure:"acrossPool"`
+	MayanSwift               string                 `mapstructure:"mayanSwift"`
 	HubPool                  string                 `mapstructure:"hubPool"`
 	Tokens                   map[string]interface{} `mapstructure:"tokens"`
 	ConfirmationsByValue     map[string]interface{} `mapstructure:"confirmationsByValue"`
@@ -72,7 +70,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 		return nil, err
 	}
 
-	tokens := make(map[string]TokenConfig)
+	tokens := make(map[string]config.TokenConfig)
 	for s, c := range c.Tokens {
 		c := c.(map[string]interface{})
 
@@ -81,7 +79,7 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 			return nil, err
 		}
 
-		tc := TokenConfig{
+		tc := config.TokenConfig{
 			Address:  common.HexToAddress(c["address"].(string)),
 			Decimals: uint8(decimals),
 		}
@@ -111,9 +109,10 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,
-		LiqudityPool:       c.LiqudityPool,
+		LiquidityPool:      c.LiquidityPool,
 		AcrossPool:         c.AcrossPool,
 		HubPool:            c.HubPool,
+		MayanSwift:         c.MayanSwift,
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
 		BlockInterval:      big.NewInt(c.BlockInterval),

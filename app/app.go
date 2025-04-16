@@ -34,6 +34,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
+	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
 	coreEvm "github.com/sygmaprotocol/sygma-core/chains/evm"
@@ -50,6 +51,7 @@ import (
 
 var Version string
 
+//nolint:gocognit
 func Run() error {
 	var err error
 
@@ -142,89 +144,137 @@ func Run() error {
 	domains := make(map[uint64]relayer.RelayedChain)
 
 	var hubPoolContract evmMessage.TokenMatcher
+	var mayanSwiftContract *contracts.MayanSwiftContract
 	acrossPools := make(map[uint64]common.Address)
+	mayanPools := make(map[uint64]common.Address)
+	liquidityPools := make(map[uint64]common.Address)
+	tokens := make(map[uint64]map[string]config.TokenConfig)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				config, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig)
+				panicOnError(err)
+				kp, _ := secp256k1.GenerateKeypair()
+				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, kp)
 				panicOnError(err)
 
-				if config.AcrossPool != "" {
-					poolAddress := common.HexToAddress(config.AcrossPool)
-					acrossPools[*config.GeneralChainConfig.Id] = poolAddress
+				if c.AcrossPool != "" {
+					poolAddress := common.HexToAddress(c.AcrossPool)
+					acrossPools[*c.GeneralChainConfig.Id] = poolAddress
 				}
 
-				if config.HubPool != "" {
-					kp, _ := secp256k1.GenerateKeypair()
-					client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, kp)
-					panicOnError(err)
-
-					hubPoolAddress := common.HexToAddress(config.HubPool)
-					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, config.Tokens)
+				if c.MayanSwift != "" {
+					poolAddress := common.HexToAddress(c.MayanSwift)
+					mayanPools[*c.GeneralChainConfig.Id] = poolAddress
+					mayanSwiftContract = contracts.NewMayanSwiftContract(client, common.HexToAddress(c.MayanSwift))
 				}
+
+				if c.HubPool != "" {
+					hubPoolAddress := common.HexToAddress(c.HubPool)
+					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, c.Tokens)
+				}
+
+				if c.LiquidityPool != "" {
+					lpAddress := common.HexToAddress(c.LiquidityPool)
+					liquidityPools[*c.GeneralChainConfig.Id] = lpAddress
+				}
+
+				tokens[*c.GeneralChainConfig.Id] = c.Tokens
 			}
 		default:
 			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))
 		}
+	}
+	tokenStore := config.TokenStore{
+		Tokens: tokens,
 	}
 
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				config, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig)
 				panicOnError(err)
 
-				client, err := evmClient.NewEVMClient(config.GeneralChainConfig.Endpoint, nil)
+				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, nil)
 				panicOnError(err)
 
-				log.Info().Uint64("chain", *config.GeneralChainConfig.Id).Msgf("Registering EVM domain")
+				log.Info().Uint64("chain", *c.GeneralChainConfig.Id).Msgf("Registering EVM domain")
 
-				l := log.With().Str("chain", fmt.Sprintf("%v", config.GeneralChainConfig.Name)).Uint64("domainID", *config.GeneralChainConfig.Id)
+				l := log.With().Str("chain", fmt.Sprintf("%v", c.GeneralChainConfig.Name)).Uint64("domainID", *c.GeneralChainConfig.Id)
+
+				watcher := evmMessage.NewWatcher(
+					client,
+					priceAPI,
+					tokenStore,
+					c.ConfirmationsByValue,
+					// nolint:gosec
+					time.Duration(c.GeneralChainConfig.Blocktime)*time.Second,
+				)
 
 				mh := message.NewMessageHandler()
-				if config.AcrossPool != "" {
+				if c.AcrossPool != "" {
 					acrossMh := evmMessage.NewAcrossMessageHandler(
-						*config.GeneralChainConfig.Id,
+						*c.GeneralChainConfig.Id,
 						client,
 						acrossPools,
 						coordinator,
 						host,
 						communication,
 						keyshareStore,
-						priceAPI,
 						hubPoolContract,
-						sigChn,
-						config.Tokens,
-						config.ConfirmationsByValue,
-						// nolint:gosec
-						time.Duration(config.GeneralChainConfig.Blocktime)*time.Second)
+						tokenStore,
+						watcher,
+						sigChn)
 					go acrossMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
-					supportedChains[*config.GeneralChainConfig.Id] = struct{}{}
-					confirmationsPerChain[*config.GeneralChainConfig.Id] = config.ConfirmationsByValue
+					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
+				}
+
+				if c.MayanSwift != "" {
+					mayanApi := mayan.NewMayanExplorer()
+					mayanMh := evmMessage.NewMayanMessageHandler(
+						*c.GeneralChainConfig.Id,
+						client,
+						liquidityPools,
+						mayanPools,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						watcher,
+						tokenStore,
+						mayanSwiftContract,
+						mayanApi,
+						sigChn)
+					go mayanMh.Listen(ctx)
+
+					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
+					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
 
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener
 				eventHandlers := make([]coreListener.EventHandler, 0)
-				if config.Admin != "" {
+				if c.Admin != "" {
 					head, err := client.LatestBlock()
 					panicOnError(err)
 
 					startBlock = head
 
 					tssListener := events.NewListener(client)
-					adminAddress := common.HexToAddress(config.Admin)
+					adminAddress := common.HexToAddress(c.Admin)
 					eventHandlers = append(eventHandlers, evmListener.NewKeygenEventHandler(l, tssListener, coordinator, host, communication, keyshareStore, adminAddress, networkTopology.Threshold))
 					eventHandlers = append(eventHandlers, evmListener.NewRefreshEventHandler(l, topologyProvider, topologyStore, tssListener, coordinator, host, communication, connectionGate, keyshareStore, adminAddress))
-					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *config.GeneralChainConfig.Id, config.BlockRetryInterval, new(big.Int).SetUint64(config.GeneralChainConfig.BlockConfirmations), config.BlockInterval)
+					listener = coreListener.NewEVMListener(client, eventHandlers, blockstore, sygmaMetrics, *c.GeneralChainConfig.Id, c.BlockRetryInterval, new(big.Int).SetUint64(c.GeneralChainConfig.BlockConfirmations), c.BlockInterval)
 				}
 
-				chain := coreEvm.NewEVMChain(listener, mh, nil, *config.GeneralChainConfig.Id, startBlock)
-				domains[*config.GeneralChainConfig.Id] = chain
+				chain := coreEvm.NewEVMChain(listener, mh, nil, *c.GeneralChainConfig.Id, startBlock)
+				domains[*c.GeneralChainConfig.Id] = chain
 			}
 		default:
 			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))

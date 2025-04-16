@@ -129,45 +129,6 @@ func (mr *MockCoordinatorMockRecorder) Execute(ctx, tssProcesses, resultChn, coo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCoordinator)(nil).Execute), ctx, tssProcesses, resultChn, coordinator)
 }
 
-// MockTokenPricer is a mock of TokenPricer interface.
-type MockTokenPricer struct {
-	ctrl     *gomock.Controller
-	recorder *MockTokenPricerMockRecorder
-	isgomock struct{}
-}
-
-// MockTokenPricerMockRecorder is the mock recorder for MockTokenPricer.
-type MockTokenPricerMockRecorder struct {
-	mock *MockTokenPricer
-}
-
-// NewMockTokenPricer creates a new mock instance.
-func NewMockTokenPricer(ctrl *gomock.Controller) *MockTokenPricer {
-	mock := &MockTokenPricer{ctrl: ctrl}
-	mock.recorder = &MockTokenPricerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTokenPricer) EXPECT() *MockTokenPricerMockRecorder {
-	return m.recorder
-}
-
-// TokenPrice mocks base method.
-func (m *MockTokenPricer) TokenPrice(symbol string) (float64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TokenPrice", symbol)
-	ret0, _ := ret[0].(float64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// TokenPrice indicates an expected call of TokenPrice.
-func (mr *MockTokenPricerMockRecorder) TokenPrice(symbol any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenPrice", reflect.TypeOf((*MockTokenPricer)(nil).TokenPrice), symbol)
-}
-
 // MockTokenMatcher is a mock of TokenMatcher interface.
 type MockTokenMatcher struct {
 	ctrl     *gomock.Controller
@@ -205,4 +166,42 @@ func (m *MockTokenMatcher) DestinationToken(destinationChainId *big.Int, symbol 
 func (mr *MockTokenMatcherMockRecorder) DestinationToken(destinationChainId, symbol any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestinationToken", reflect.TypeOf((*MockTokenMatcher)(nil).DestinationToken), destinationChainId, symbol)
+}
+
+// MockConfirmationWatcher is a mock of ConfirmationWatcher interface.
+type MockConfirmationWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfirmationWatcherMockRecorder
+	isgomock struct{}
+}
+
+// MockConfirmationWatcherMockRecorder is the mock recorder for MockConfirmationWatcher.
+type MockConfirmationWatcherMockRecorder struct {
+	mock *MockConfirmationWatcher
+}
+
+// NewMockConfirmationWatcher creates a new mock instance.
+func NewMockConfirmationWatcher(ctrl *gomock.Controller) *MockConfirmationWatcher {
+	mock := &MockConfirmationWatcher{ctrl: ctrl}
+	mock.recorder = &MockConfirmationWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfirmationWatcher) EXPECT() *MockConfirmationWatcherMockRecorder {
+	return m.recorder
+}
+
+// WaitForConfirmations mocks base method.
+func (m *MockConfirmationWatcher) WaitForConfirmations(ctx context.Context, chainID uint64, txHash common.Hash, token common.Address, amount *big.Int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitForConfirmations", ctx, chainID, txHash, token, amount)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WaitForConfirmations indicates an expected call of WaitForConfirmations.
+func (mr *MockConfirmationWatcherMockRecorder) WaitForConfirmations(ctx, chainID, txHash, token, amount any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForConfirmations), ctx, chainID, txHash, token, amount)
 }

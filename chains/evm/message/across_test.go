@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
-	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
 	"github.com/sprintertech/sprinter-signing/comm"
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
 	"github.com/stretchr/testify/suite"
@@ -32,7 +31,7 @@ type AcrossMessageHandlerTestSuite struct {
 	mockEventFilterer *mock_message.MockEventFilterer
 	mockHost          *mock_host.MockHost
 	mockFetcher       *mock_tss.MockSaveDataFetcher
-	mockPricer        *mock_message.MockTokenPricer
+	mockWatcher       *mock_message.MockConfirmationWatcher
 	mockMatcher       *mock_message.MockTokenMatcher
 
 	handler *message.AcrossMessageHandler
@@ -60,7 +59,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
-	s.mockPricer = mock_message.NewMockTokenPricer(ctrl)
+	s.mockWatcher = mock_message.NewMockConfirmationWatcher(ctrl)
 	s.mockMatcher = mock_message.NewMockTokenMatcher(ctrl)
 
 	pools := make(map[uint64]common.Address)
@@ -71,14 +70,18 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
 	s.validLog, _ = hex.DecodeString("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab100000000000000000000000000000000000000000000000000119baee0ab0400000000000000000000000000000000000000000000000000001199073ea3008d0000000000000000000000000000000000000000000000000000000067bc6e3f0000000000000000000000000000000000000000000000000000000067bc927b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001886a1eb051c10f20c7386576a6a0716b20b2734000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 
-	tokens := make(map[string]evm.TokenConfig)
-	tokens["ETH"] = evm.TokenConfig{
+	tokens := make(map[uint64]map[string]config.TokenConfig)
+	tokens[1] = make(map[string]config.TokenConfig)
+	tokens[1]["ETH"] = config.TokenConfig{
 		Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 		Decimals: 18,
 	}
-	tokens["USDC"] = evm.TokenConfig{
+	tokens[1]["USDC"] = config.TokenConfig{
 		Address:  common.HexToAddress("0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4"),
 		Decimals: 6,
+	}
+	tokenStore := config.TokenStore{
+		Tokens: tokens,
 	}
 	confirmations := make(map[uint64]uint64)
 	confirmations[1000] = 100
@@ -92,12 +95,10 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 		s.mockHost,
 		s.mockCommunication,
 		s.mockFetcher,
-		s.mockPricer,
 		s.mockMatcher,
+		tokenStore,
+		s.mockWatcher,
 		s.sigChn,
-		tokens,
-		confirmations,
-		time.Millisecond,
 	)
 }
 
@@ -114,7 +115,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{}, fmt.Errorf("error"))
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -149,7 +150,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -189,7 +190,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 	}, nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -221,14 +222,6 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	s.mockEventFilterer.EXPECT().TransactionReceipt(
-		gomock.Any(),
-		gomock.Any(),
-	).Return(&types.Receipt{}, fmt.Errorf("missing transaction receipt"))
-	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
-		BlockNumber: big.NewInt(100),
-	}, nil)
-
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(200), nil).AnyTimes()
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
 		{
@@ -242,11 +235,11 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 			},
 		},
 	}, nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockPricer.EXPECT().TokenPrice("ETH").Return(2200.15, nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),
@@ -278,14 +271,6 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	s.mockEventFilterer.EXPECT().TransactionReceipt(
-		gomock.Any(),
-		gomock.Any(),
-	).Return(&types.Receipt{}, fmt.Errorf("missing transaction receipt"))
-	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
-		BlockNumber: big.NewInt(200),
-	}, nil)
-
 	log, _ := hex.DecodeString("0000000000000000000000003355df6d4c9c3035724fd0e3914de96a5a83aaf40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006d7cbe22000000000000000000000000000000000000000000000000000000006d789ac90000000000000000000000000000000000000000000000000000000067ce09230000000000000000000000000000000000000000000000000000000067ce5ea7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000051d55999c7cd91b17af7276cbecd647dbc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(400), nil).AnyTimes()
 	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
@@ -300,12 +285,12 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 			},
 		},
 	}, nil)
-	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockPricer.EXPECT().TokenPrice("USDC").Return(0.99, nil)
+	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
+	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
-	ad := message.AcrossData{
+	ad := &message.AcrossData{
 		ErrChn:        errChn,
 		DepositId:     big.NewInt(100),
 		Nonce:         big.NewInt(101),

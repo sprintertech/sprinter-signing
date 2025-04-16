@@ -22,6 +22,7 @@ const (
 	KeyRefreshSig  EventSig = "KeyRefresh(string)"
 
 	AcrossDepositSig EventSig = "FundsDeposited(bytes32,bytes32,uint256,uint256,uint256,uint256,uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes)"
+	MayanDepositSig  EventSig = "OrderCreated(bytes32)"
 )
 
 // Refresh struct holds key refresh event data

@@ -10,7 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
-	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
@@ -18,15 +18,19 @@ type ProtocolType string
 
 const (
 	AcrossProtocol ProtocolType = "across"
+	MayanProtocol  ProtocolType = "mayan"
 )
 
 type SigningBody struct {
 	ChainId       uint64
-	DepositId     *BigInt      `json:"depositId"`
+	DepositId     string       `json:"depositId"`
 	Nonce         *BigInt      `json:"nonce"`
 	Protocol      ProtocolType `json:"protocol"`
 	LiquidityPool string       `json:"liquidityPool"`
 	Caller        string       `json:"caller"`
+	Calldata      string       `json:"calldata"`
+	DepositTxHash string       `json:"depositTxHash"`
+	BorrowAmount  *BigInt      `json:"borrowAmount"`
 }
 
 type SigningHandler struct {
@@ -48,14 +52,14 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(b)
 	if err != nil {
-		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("invalid request body: %s", err), http.StatusBadRequest)
 		return
 	}
 
 	vars := mux.Vars(r)
 	err = h.validate(b, vars)
 	if err != nil {
-		JSONError(w, fmt.Sprintf("invalid request body: %s", err), http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("invalid request body: %s", err), http.StatusBadRequest)
 		return
 	}
 	errChn := make(chan error, 1)
@@ -64,23 +68,40 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	switch b.Protocol {
 	case AcrossProtocol:
 		{
-			m = across.NewAcrossMessage(0, b.ChainId, across.AcrossData{
-				DepositId:     b.DepositId.Int,
+			depositId, _ := new(big.Int).SetString(b.DepositId, 10)
+			m = evmMessage.NewAcrossMessage(0, b.ChainId, &evmMessage.AcrossData{
+				DepositId:     depositId,
+				Nonce:         b.Nonce.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				Source:        0,
+				Destination:   b.ChainId,
+				ErrChn:        errChn,
+			})
+		}
+	case MayanProtocol:
+		{
+			m = evmMessage.NewMayanMessage(0, b.ChainId, &evmMessage.MayanData{
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
 				ErrChn:        errChn,
+				Calldata:      b.Calldata,
+				DepositTxHash: b.DepositTxHash,
+				Source:        0,
+				Destination:   b.ChainId,
+				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
 	default:
-		JSONError(w, fmt.Sprintf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
 		return
 	}
 	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
 	if err != nil {
-		JSONError(w, fmt.Sprintf("Singing failed: %s", err), http.StatusInternalServerError)
+		JSONError(w, fmt.Errorf("singing failed: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -94,7 +115,7 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	}
 	b.ChainId = chainId.Uint64()
 
-	if b.DepositId == nil {
+	if b.DepositId == "" {
 		return fmt.Errorf("missing field 'depositId'")
 	}
 
@@ -144,17 +165,17 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	chainId, ok := new(big.Int).SetString(vars["chainId"], 0)
 	if !ok {
-		JSONError(w, "chain id invalid", http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("chain id invalid"), http.StatusBadRequest)
 		return
 	}
 	_, ok = h.chains[chainId.Uint64()]
 	if !ok {
-		JSONError(w, fmt.Sprintf("chain %d not supported", chainId.Int64()), http.StatusNotFound)
+		JSONError(w, fmt.Errorf("chain %d not supported", chainId.Int64()), http.StatusNotFound)
 		return
 	}
 	depositId, ok := vars["depositId"]
 	if !ok {
-		JSONError(w, "missing 'depositId", http.StatusBadRequest)
+		JSONError(w, fmt.Errorf("missing 'depositId"), http.StatusBadRequest)
 		return
 	}
 

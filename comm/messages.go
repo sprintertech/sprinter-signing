@@ -37,6 +37,8 @@ const (
 	SignatureMsg
 	// AcrossMsg message type is used for the process coordinator to share across data
 	AcrossMsg
+	// MayanMsg message type is used for the process coordinator to share mayan data
+	MayanMsg
 	// Unknown message type
 	Unknown
 )
@@ -44,6 +46,7 @@ const (
 const (
 	SignatureSessionID = "signatures"
 	AcrossSessionID    = "across"
+	MayanSessionID     = "mayan"
 )
 
 // String implements fmt.Stringer
@@ -75,6 +78,10 @@ func (msgType MessageType) String() string {
 		return "CoordinatorPingMsg"
 	case CoordinatorPingResponseMsg:
 		return "CoordinatorPingResponseMsg"
+	case AcrossMsg:
+		return "AcrossMsg"
+	case MayanMsg:
+		return "MayanMsg"
 	default:
 		return "UnknownMsg"
 	}
