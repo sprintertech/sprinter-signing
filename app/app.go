@@ -57,14 +57,8 @@ func Run() error {
 	var err error
 
 	configFlag := viper.GetString(config.ConfigFlagName)
-	configURL := viper.GetString("config-url")
 
 	var configuration *config.Config
-	if configURL != "" {
-		configuration, err = config.GetSharedConfigFromNetwork(configURL)
-		panicOnError(err)
-	}
-
 	if strings.ToLower(configFlag) == "env" {
 		configuration, err = config.GetConfigFromENV(configuration)
 		panicOnError(err)
@@ -198,7 +192,7 @@ func Run() error {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				c, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
 				panicOnError(err)
 
 				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, nil)

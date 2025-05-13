@@ -25,9 +25,6 @@ func init() {
 	config.BindFlags(rootCMD)
 	rootCMD.PersistentFlags().String("name", "", "relayer name")
 	_ = viper.BindPFlag("name", rootCMD.PersistentFlags().Lookup("name"))
-
-	rootCMD.PersistentFlags().String("config-url", "", "URL of shared configuration")
-	_ = viper.BindPFlag("config-url", rootCMD.PersistentFlags().Lookup("config-url"))
 }
 
 func Execute() {

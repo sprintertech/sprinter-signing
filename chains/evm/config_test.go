@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	solverConfig "github.com/sprintertech/solver-config/go/config"
 	"github.com/sprintertech/sprinter-signing/chains/evm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/config/chain"
@@ -26,13 +27,13 @@ func TestRunNewEVMConfigTestSuite(t *testing.T) {
 func (s *NewEVMConfigTestSuite) Test_FailedDecode() {
 	_, err := evm.NewEVMConfig(map[string]interface{}{
 		"gasLimit": "invalid",
-	})
+	}, solverConfig.SolverConfig{})
 
 	s.NotNil(err)
 }
 
 func (s *NewEVMConfigTestSuite) Test_FailedGeneralConfigValidation() {
-	_, err := evm.NewEVMConfig(map[string]interface{}{})
+	_, err := evm.NewEVMConfig(map[string]interface{}{}, solverConfig.SolverConfig{})
 
 	s.NotNil(err)
 }
@@ -42,7 +43,7 @@ func (s *NewEVMConfigTestSuite) Test_FailedEVMConfigValidation() {
 		"endpoint": "ws://domain.com",
 		"name":     "evm1",
 		"from":     "address",
-	})
+	}, solverConfig.SolverConfig{})
 
 	s.NotNil(err)
 }
@@ -62,7 +63,7 @@ func (s *NewEVMConfigTestSuite) Test_InvalidConfirmations() {
 		},
 	}
 
-	_, err := evm.NewEVMConfig(rawConfig)
+	_, err := evm.NewEVMConfig(rawConfig, solverConfig.SolverConfig{})
 
 	s.NotNil(err)
 }
@@ -79,7 +80,30 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		"acrossPool":  "acrossPool",
 	}
 
-	actualConfig, err := evm.NewEVMConfig(rawConfig)
+	solverChains := make(map[string]solverConfig.Chain)
+	solverChains["eip155:1"] = solverConfig.Chain{
+		Tokens:        make(map[string]solverConfig.Token),
+		Confirmations: make([]solverConfig.Confirmations, 0),
+	}
+
+	actualConfig, err := evm.NewEVMConfig(rawConfig, solverConfig.SolverConfig{
+		Chains: solverChains,
+		ProtocolsMetadata: solverConfig.ProtocolsMetadata{
+			Across: &solverConfig.AcrossMetadata{
+				SpokePools: map[string]string{
+					"eip155:1": "acrossPool",
+				},
+				HubPools: map[string]string{
+					"eip155:1": "acrossHubPool",
+				},
+			},
+			Mayan: &solverConfig.MayanMetadata{
+				SwiftContracts: map[string]string{
+					"eip155:1": "mayanSwift",
+				},
+			},
+		},
+	})
 
 	id := new(uint64)
 	*id = 1
@@ -96,6 +120,8 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		BlockRetryInterval:   time.Duration(5) * time.Second,
 		Admin:                "adminAddress",
 		AcrossPool:           "acrossPool",
+		AcrossHubPool:        "acrossHubPool",
+		MayanSwift:           "mayanSwift",
 		ConfirmationsByValue: make(map[uint64]uint64),
 		Tokens:               make(map[string]config.TokenConfig),
 	})
@@ -142,7 +168,44 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		Decimals: 8,
 	}
 
-	actualConfig, err := evm.NewEVMConfig(rawConfig)
+	solverChains := make(map[string]solverConfig.Chain)
+	solverChains["eip155:1"] = solverConfig.Chain{
+		Tokens: map[string]solverConfig.Token{
+			"usdc": {
+				Address:  "0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29",
+				Decimals: 8,
+			},
+		},
+		Confirmations: []solverConfig.Confirmations{
+			{
+				Confirmations: 5,
+				MaxAmountUSD:  1000,
+			},
+			{
+				Confirmations: 10,
+				MaxAmountUSD:  2000,
+			},
+		},
+	}
+
+	actualConfig, err := evm.NewEVMConfig(rawConfig, solverConfig.SolverConfig{
+		Chains: solverChains,
+		ProtocolsMetadata: solverConfig.ProtocolsMetadata{
+			Across: &solverConfig.AcrossMetadata{
+				SpokePools: map[string]string{
+					"eip155:1": "acrossPool",
+				},
+				HubPools: map[string]string{
+					"eip155:1": "acrossHubPool",
+				},
+			},
+			Mayan: &solverConfig.MayanMetadata{
+				SwiftContracts: map[string]string{
+					"eip155:1": "mayanSwift",
+				},
+			},
+		},
+	})
 
 	id := new(uint64)
 	*id = 1
@@ -159,7 +222,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		BlockRetryInterval:   time.Duration(10) * time.Second,
 		Admin:                "adminAddress",
 		AcrossPool:           "acrossPool",
-		AcrossHubPool:        "hubPool",
+		AcrossHubPool:        "acrossHubPool",
 		MayanSwift:           "mayanSwift",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
