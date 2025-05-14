@@ -78,7 +78,8 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 	tokens := make(map[string]config.TokenConfig)
 	for s, c := range sc.Tokens {
 		tc := config.TokenConfig{
-			Address:  common.HexToAddress(c.Address),
+			Address: common.HexToAddress(c.Address),
+			// nolint:gosec
 			Decimals: uint8(c.Decimals),
 		}
 		tokens[s] = tc
@@ -86,6 +87,7 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 
 	confirmations := make(map[uint64]uint64)
 	for _, confirmation := range sc.Confirmations {
+		// nolint:gosec
 		confirmations[uint64(confirmation.MaxAmountUSD)] = uint64(confirmation.Confirmations)
 	}
 
