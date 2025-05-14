@@ -240,7 +240,6 @@ func (h *AcrossMessageHandler) deposit(hash common.Hash, depositId *big.Int) (*e
 			return nil, err
 		}
 		return d, nil
-
 	}
 
 	return nil, fmt.Errorf("deposit with id %s not found", depositId)
