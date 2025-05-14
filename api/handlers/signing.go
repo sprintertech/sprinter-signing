@@ -77,6 +77,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Source:        0,
 				Destination:   b.ChainId,
 				ErrChn:        errChn,
+				DepositTxHash: common.HexToHash(b.DepositTxHash),
 			})
 		}
 	case MayanProtocol:

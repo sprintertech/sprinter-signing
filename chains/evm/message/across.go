@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	FILTER_LOGS_TIMEOUT = 30 * time.Second
+	TRANSACTION_TIMEOUT = 30 * time.Second
 )
 
 type EventFilterer interface {
@@ -109,7 +109,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	txHash, d, err := h.deposit(data.DepositId)
+	d, err := h.deposit(data.DepositTxHash, data.DepositId)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -118,7 +118,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
 		h.chainID,
-		txHash,
+		data.DepositTxHash,
 		common.BytesToAddress(d.InputToken[12:]),
 		d.InputAmount)
 	if err != nil {
@@ -213,49 +213,37 @@ func (h *AcrossMessageHandler) notify(data *AcrossData) error {
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID))
 }
 
-func (h *AcrossMessageHandler) deposit(depositId *big.Int) (common.Hash, *events.AcrossDeposit, error) {
-	latestBlock, err := h.client.LatestBlock()
-	if err != nil {
-		return common.Hash{}, nil, err
-	}
-
-	q := ethereum.FilterQuery{
-		ToBlock:   latestBlock,
-		FromBlock: new(big.Int).Sub(latestBlock, big.NewInt(BLOCK_RANGE)),
-		Addresses: []common.Address{
-			h.pools[h.chainID],
-		},
-		Topics: [][]common.Hash{
-			{
-				events.AcrossDepositSig.GetTopic(),
-			},
-			{},
-			{
-				common.HexToHash(common.Bytes2Hex(common.LeftPadBytes(depositId.Bytes(), 32))),
-			},
-		},
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), FILTER_LOGS_TIMEOUT)
+func (h *AcrossMessageHandler) deposit(hash common.Hash, depositId *big.Int) (*events.AcrossDeposit, error) {
+	ctx, cancel := context.WithTimeout(context.TODO(), TRANSACTION_TIMEOUT)
 	defer cancel()
 
-	logs, err := h.client.FilterLogs(ctx, q)
+	receipt, err := h.client.TransactionReceipt(ctx, hash)
 	if err != nil {
-		return common.Hash{}, nil, err
-	}
-	if len(logs) == 0 {
-		return common.Hash{}, nil, fmt.Errorf("no deposit found with ID: %s", depositId)
-	}
-	if logs[0].Removed {
-		return common.Hash{}, nil, fmt.Errorf("deposit log removed")
+		return nil, err
 	}
 
-	d, err := h.parseDeposit(logs[0])
-	if err != nil {
-		return common.Hash{}, nil, err
+	for _, l := range receipt.Logs {
+		if l.Removed {
+			continue
+		}
+
+		if l.Topics[0] != events.AcrossDepositSig.GetTopic() {
+			continue
+		}
+
+		if l.Topics[2] != common.HexToHash(common.Bytes2Hex(common.LeftPadBytes(depositId.Bytes(), 32))) {
+			continue
+		}
+
+		d, err := h.parseDeposit(*l)
+		if err != nil {
+			return nil, err
+		}
+		return d, nil
+
 	}
 
-	return logs[0].TxHash, d, nil
+	return nil, fmt.Errorf("deposit with id %s not found", depositId)
 }
 
 func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit, error) {

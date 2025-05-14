@@ -102,7 +102,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	)
 }
 
-func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
+func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedTransactionQuery() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
 		gomock.Any(),
@@ -111,8 +111,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedLogQuery() {
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
-	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
-	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{}, fmt.Errorf("error"))
+	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error"))
 
 	errChn := make(chan error, 1)
 	ad := &message.AcrossData{
@@ -146,8 +145,9 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_LogMissing() {
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
-	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{}, nil)
-	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
+	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
+		Logs: []*types.Log{},
+	}, nil)
 
 	errChn := make(chan error, 1)
 	ad := &message.AcrossData{
@@ -181,11 +181,12 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_IgnoreRemovedLogs() {
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
-	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(100), nil)
-	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
-		{
-			Removed: true,
-			Data:    s.validLog,
+	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
+		Logs: []*types.Log{
+			{
+				Removed: true,
+				Data:    s.validLog,
+			},
 		},
 	}, nil)
 
@@ -222,26 +223,28 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidLog() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(200), nil).AnyTimes()
-	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
-		{
-			Removed: false,
-			Data:    s.validLog,
-			Topics: []common.Hash{
-				{},
-				{},
-				{},
-				{},
+	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
+		Logs: []*types.Log{
+			{
+				Removed: false,
+				Data:    s.validLog,
+				Topics: []common.Hash{
+					common.HexToHash("0x32ed1a409ef04c7b0227189c3a103dc5ac10e775a15b785dcc510201f7c25ad3"),
+					{},
+					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000279995"),
+					{},
+				},
 			},
 		},
 	}, nil)
+
 	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
 	ad := &message.AcrossData{
 		ErrChn:        errChn,
-		DepositId:     big.NewInt(100),
+		DepositId:     big.NewInt(2595221),
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
@@ -272,16 +275,17 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
 	log, _ := hex.DecodeString("0000000000000000000000003355df6d4c9c3035724fd0e3914de96a5a83aaf40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006d7cbe22000000000000000000000000000000000000000000000000000000006d789ac90000000000000000000000000000000000000000000000000000000067ce09230000000000000000000000000000000000000000000000000000000067ce5ea7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000051d55999c7cd91b17af7276cbecd647dbc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
-	s.mockEventFilterer.EXPECT().LatestBlock().Return(big.NewInt(400), nil).AnyTimes()
-	s.mockEventFilterer.EXPECT().FilterLogs(gomock.Any(), gomock.Any()).Return([]types.Log{
-		{
-			Removed: false,
-			Data:    log,
-			Topics: []common.Hash{
-				{},
-				{},
-				{},
-				{},
+	s.mockEventFilterer.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(&types.Receipt{
+		Logs: []*types.Log{
+			{
+				Removed: false,
+				Data:    log,
+				Topics: []common.Hash{
+					common.HexToHash("0x32ed1a409ef04c7b0227189c3a103dc5ac10e775a15b785dcc510201f7c25ad3"),
+					{},
+					common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000279995"),
+					{},
+				},
 			},
 		},
 	}, nil)
@@ -292,7 +296,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 	errChn := make(chan error, 1)
 	ad := &message.AcrossData{
 		ErrChn:        errChn,
-		DepositId:     big.NewInt(100),
+		DepositId:     big.NewInt(2595221),
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),

@@ -27,6 +27,7 @@ const (
 type AcrossData struct {
 	ErrChn chan error `json:"-"`
 
+	DepositTxHash common.Hash
 	DepositId     *big.Int
 	Nonce         *big.Int
 	LiquidityPool common.Address
