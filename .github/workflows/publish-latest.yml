@@ -10,8 +10,11 @@ on:
       - main
 
 env:
+  GO111MODULE: on
+  GOPRIVATE: github.com/sprintertech
   ORG: 'sprintertech'
   REGISTRY: 'ghcr.io'
+  TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 
 jobs:
   build-and-push:
@@ -20,6 +23,9 @@ jobs:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: setup git access to private repos
+        run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
 
       # Log in to GHCR
       - name: Log in to GHCR
@@ -38,7 +44,7 @@ jobs:
           context: .
           push: true
           # Pass build arguments for the GitHub credentials
-          build-args: |
+          secrets: |
             GH_USER_NAME=${{ secrets.GH_USER_NAME }}
             GH_USER_TOKEN=${{ secrets.GHCR_TOKEN }}
           tags: |

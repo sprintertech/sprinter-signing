@@ -18,6 +18,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	solverConfig "github.com/sprintertech/solver-config/go/config"
 	"github.com/sprintertech/sprinter-signing/api"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	"github.com/sprintertech/sprinter-signing/cache"
@@ -56,14 +57,7 @@ func Run() error {
 	var err error
 
 	configFlag := viper.GetString(config.ConfigFlagName)
-	configURL := viper.GetString("config-url")
-
 	var configuration *config.Config
-	if configURL != "" {
-		configuration, err = config.GetSharedConfigFromNetwork(configURL)
-		panicOnError(err)
-	}
-
 	if strings.ToLower(configFlag) == "env" {
 		configuration, err = config.GetConfigFromENV(configuration)
 		panicOnError(err)
@@ -143,17 +137,29 @@ func Run() error {
 	confirmationsPerChain := make(map[uint64]map[uint64]uint64)
 	domains := make(map[uint64]relayer.RelayedChain)
 
+	solverConfigOpts := []solverConfig.Option{
+		solverConfig.WithCredentials(
+			configuration.RelayerConfig.SolverConfig.AccessKey,
+			configuration.RelayerConfig.SolverConfig.SecretKey),
+	}
+	staging := viper.GetBool(config.StagingFlagName)
+	if staging {
+		solverConfigOpts = append(solverConfigOpts, solverConfig.WithStaging())
+	}
+	solverConfig, err := solverConfig.FetchSolverConfig(ctx, solverConfigOpts...)
+	panicOnError(err)
+
 	var hubPoolContract evmMessage.TokenMatcher
 	var mayanSwiftContract *contracts.MayanSwiftContract
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
-	liquidityPools := make(map[uint64]common.Address)
+	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				c, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
 				panicOnError(err)
 				kp, _ := secp256k1.GenerateKeypair()
 				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, kp)
@@ -170,14 +176,14 @@ func Run() error {
 					mayanSwiftContract = contracts.NewMayanSwiftContract(client, common.HexToAddress(c.MayanSwift))
 				}
 
-				if c.HubPool != "" {
-					hubPoolAddress := common.HexToAddress(c.HubPool)
+				if c.AcrossHubPool != "" {
+					hubPoolAddress := common.HexToAddress(c.AcrossHubPool)
 					hubPoolContract = contracts.NewHubPoolContract(client, hubPoolAddress, c.Tokens)
 				}
 
-				if c.LiquidityPool != "" {
-					lpAddress := common.HexToAddress(c.LiquidityPool)
-					liquidityPools[*c.GeneralChainConfig.Id] = lpAddress
+				if c.Repayer != "" {
+					repayerAddress := common.HexToAddress(c.Repayer)
+					repayerAddresses[*c.GeneralChainConfig.Id] = repayerAddress
 				}
 
 				tokens[*c.GeneralChainConfig.Id] = c.Tokens
@@ -194,7 +200,7 @@ func Run() error {
 		switch chainConfig["type"] {
 		case "evm":
 			{
-				c, err := evm.NewEVMConfig(chainConfig)
+				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
 				panicOnError(err)
 
 				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, nil)
@@ -239,7 +245,7 @@ func Run() error {
 					mayanMh := evmMessage.NewMayanMessageHandler(
 						*c.GeneralChainConfig.Id,
 						client,
-						liquidityPools,
+						repayerAddresses,
 						mayanPools,
 						coordinator,
 						host,

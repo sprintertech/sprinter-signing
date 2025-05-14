@@ -8,6 +8,12 @@ FROM  golang:1.23 AS builder
 ADD . /src
 WORKDIR /src
 RUN cd /src && echo $(ls -1 /src)
+RUN --mount=type=secret,id=GH_USER_NAME \
+    --mount=type=secret,id=GH_USER_TOKEN \
+    GH_USER_NAME=$(cat /run/secrets/GH_USER_NAME) && \
+    GH_USER_TOKEN=$(cat /run/secrets/GH_USER_TOKEN) && \
+    go env -w GOPRIVATE=github.com/sprintertech && \
+    git config --global url."https://${GH_USER_NAME}:${GH_USER_TOKEN}@github.com".insteadOf "https://github.com" 
 RUN go mod download
 RUN go build -ldflags "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=ignore -X github.com/sprintertech/sprinter-signing/app.Version=$(sed -n '0,/## \[\([0-9.]*\)\]/s/.*\[\([0-9.]*\)\].*/\1/p' CHANGELOG.md)" -o /signing .
 

@@ -5,6 +5,8 @@ on: [pull_request]
 name: Linter check
 env:
   GO111MODULE: on
+  GOPRIVATE: github.com/sprintertech
+  TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 
 jobs:
   linter-check:
@@ -16,6 +18,9 @@ jobs:
           go-version: 1.23
 
       - uses: actions/checkout@v2
+
+      - name: setup git access to private repos
+        run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
 
       - name: Install linter
         run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin

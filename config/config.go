@@ -4,10 +4,7 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/creasty/defaults"
 	"github.com/imdario/mergo"
@@ -63,32 +60,6 @@ func GetConfigFromFile(path string, config *Config) (*Config, error) {
 	}
 
 	return processRawConfig(rawConfig, config)
-}
-
-// GetSharedConfigFromNetwork fetches shared configuration from URL and parses it.
-func GetSharedConfigFromNetwork(url string) (*Config, error) {
-	rawConfig := RawConfig{}
-	config := &Config{}
-
-	//nolint:gosec
-	resp, err := http.Get(url)
-	if err != nil {
-		return &Config{}, err
-	}
-
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return &Config{}, err
-	}
-
-	err = json.Unmarshal(body, &rawConfig)
-	if err != nil {
-		return &Config{}, err
-	}
-
-	config.ChainConfigs = rawConfig.ChainConfigs
-	return config, err
 }
 
 func processRawConfig(rawConfig RawConfig, config *Config) (*Config, error) {
@@ -166,6 +137,7 @@ func compareDomainID(a, b interface{}) bool {
 
 var (
 	// Flags for running the app
+	StagingFlagName     = "staging"
 	ConfigFlagName      = "config"
 	KeystoreFlagName    = "keystore"
 	BlockstoreFlagName  = "blockstore"
@@ -188,4 +160,7 @@ func BindFlags(rootCMD *cobra.Command) {
 
 	rootCMD.PersistentFlags().String(KeystoreFlagName, "./keys", "Path to keystore directory")
 	_ = viper.BindPFlag(KeystoreFlagName, rootCMD.PersistentFlags().Lookup(KeystoreFlagName))
+
+	rootCMD.PersistentFlags().Bool(StagingFlagName, false, "Run the singer with staging configuration")
+	_ = viper.BindPFlag(StagingFlagName, rootCMD.PersistentFlags().Lookup(StagingFlagName))
 }
