@@ -72,7 +72,7 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 	id := fmt.Sprintf("eip155:%d", *c.Id)
 	sc, ok := solverConfig.Chains[id]
 	if !ok {
-		return nil, fmt.Errorf("no solver config for chain %d", c.Id)
+		return nil, fmt.Errorf("no solver config for id %s", id)
 	}
 
 	tokens := make(map[string]config.TokenConfig)
