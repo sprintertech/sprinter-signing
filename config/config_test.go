@@ -69,6 +69,8 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 	_ = os.Setenv("SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY", "test-enc-key")
 	_ = os.Setenv("SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL", "http://test.com")
 	_ = os.Setenv("SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_PATH", "path")
+	_ = os.Setenv("SYG_RELAYER_SOLVERCONFIG_ACCESSKEY", "solverAccessKey")
+	_ = os.Setenv("SYG_RELAYER_SOLVERCONFIG_SECRETKEY", "solverSecretKey")
 	_ = os.Setenv("SYG_RELAYER_ENV", "TEST")
 	_ = os.Setenv("SYG_RELAYER_ID", "123")
 
@@ -114,6 +116,10 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 			},
 			CoinmarketcapConfig: relayer.CoinmarketcapConfig{
 				Url: "https://pro-api.coinmarketcap.com",
+			},
+			SolverConfig: relayer.SolverConfig{
+				AccessKey: "solverAccessKey",
+				SecretKey: "solverSecretKey",
 			},
 		},
 		ChainConfigs: []map[string]interface{}{

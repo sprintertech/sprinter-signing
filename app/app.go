@@ -57,7 +57,6 @@ func Run() error {
 	var err error
 
 	configFlag := viper.GetString(config.ConfigFlagName)
-
 	var configuration *config.Config
 	if strings.ToLower(configFlag) == "env" {
 		configuration, err = config.GetConfigFromENV(configuration)
@@ -138,7 +137,16 @@ func Run() error {
 	confirmationsPerChain := make(map[uint64]map[uint64]uint64)
 	domains := make(map[uint64]relayer.RelayedChain)
 
-	solverConfig, err := solverConfig.FetchSolverConfig(ctx)
+	solverConfigOpts := []solverConfig.Option{
+		solverConfig.WithCredentials(
+			configuration.RelayerConfig.SolverConfig.AccessKey,
+			configuration.RelayerConfig.SolverConfig.SecretKey),
+	}
+	staging := viper.GetBool(config.StagingFlagName)
+	if staging {
+		solverConfigOpts = append(solverConfigOpts, solverConfig.WithStaging())
+	}
+	solverConfig, err := solverConfig.FetchSolverConfig(ctx, solverConfigOpts...)
 	panicOnError(err)
 
 	var hubPoolContract evmMessage.TokenMatcher

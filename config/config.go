@@ -137,6 +137,7 @@ func compareDomainID(a, b interface{}) bool {
 
 var (
 	// Flags for running the app
+	StagingFlagName     = "staging"
 	ConfigFlagName      = "config"
 	KeystoreFlagName    = "keystore"
 	BlockstoreFlagName  = "blockstore"
@@ -159,4 +160,7 @@ func BindFlags(rootCMD *cobra.Command) {
 
 	rootCMD.PersistentFlags().String(KeystoreFlagName, "./keys", "Path to keystore directory")
 	_ = viper.BindPFlag(KeystoreFlagName, rootCMD.PersistentFlags().Lookup(KeystoreFlagName))
+
+	rootCMD.PersistentFlags().Bool(StagingFlagName, false, "Run the singer with staging configuration")
+	_ = viper.BindPFlag(StagingFlagName, rootCMD.PersistentFlags().Lookup(StagingFlagName))
 }
