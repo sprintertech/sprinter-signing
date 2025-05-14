@@ -8,6 +8,7 @@ on:
 env:
   GO111MODULE: on
   GOPRIVATE: github.com/sprintertech
+  TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

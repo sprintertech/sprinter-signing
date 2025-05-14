@@ -14,6 +14,8 @@ env:
   REGISTRY: 'ghcr.io'
   GO111MODULE: on
   GOPRIVATE: github.com/sprintertech
+  TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+
 
 jobs:
   build-and-push:

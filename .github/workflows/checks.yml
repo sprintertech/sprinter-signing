@@ -6,6 +6,7 @@ name: Linter check
 env:
   GO111MODULE: on
   GOPRIVATE: github.com/sprintertech
+  TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 
 jobs:
   linter-check:
