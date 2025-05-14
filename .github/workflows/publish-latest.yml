@@ -44,7 +44,7 @@ jobs:
           context: .
           push: true
           # Pass build arguments for the GitHub credentials
-          build-args: |
+          secrets: |
             GH_USER_NAME=${{ secrets.GH_USER_NAME }}
             GH_USER_TOKEN=${{ secrets.GHCR_TOKEN }}
           tags: |
