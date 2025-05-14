@@ -34,6 +34,8 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: setup git access to private repos
+        run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
       - name: Unit tests
         run: make test
       - name: Cover
