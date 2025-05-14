@@ -4,10 +4,6 @@ permissions:
   packages: write
   contents: read
   
-env:
-  GO111MODULE: on
-  GOPRIVATE: github.com/sprintertech
-
 on:
   release:
     types:
@@ -16,6 +12,8 @@ on:
 env:
   ORG: 'sprintertech'
   REGISTRY: 'ghcr.io'
+  GO111MODULE: on
+  GOPRIVATE: github.com/sprintertech
 
 jobs:
   build-and-push:
