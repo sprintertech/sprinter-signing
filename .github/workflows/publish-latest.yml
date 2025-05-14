@@ -4,6 +4,10 @@ permissions:
   packages: write
   contents: read
 
+env:
+  GO111MODULE: on
+  GOPRIVATE: github.com/sprintertech
+
 on:
   push:
     branches:
