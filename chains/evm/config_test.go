@@ -102,6 +102,11 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 					"eip155:1": "mayanSwift",
 				},
 			},
+			Sprinter: &solverConfig.SprinterMetadata{
+				Repayer: map[string]string{
+					"eip155:1": "repayer",
+				},
+			},
 		},
 	})
 
@@ -119,6 +124,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		BlockInterval:        big.NewInt(5),
 		BlockRetryInterval:   time.Duration(5) * time.Second,
 		Admin:                "adminAddress",
+		Repayer:              "repayer",
 		AcrossPool:           "acrossPool",
 		AcrossHubPool:        "acrossHubPool",
 		MayanSwift:           "mayanSwift",
@@ -204,6 +210,11 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 					"eip155:1": "mayanSwift",
 				},
 			},
+			Sprinter: &solverConfig.SprinterMetadata{
+				Repayer: map[string]string{
+					"eip155:1": "repayer",
+				},
+			},
 		},
 	})
 
@@ -224,6 +235,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		AcrossPool:           "acrossPool",
 		AcrossHubPool:        "acrossHubPool",
 		MayanSwift:           "mayanSwift",
+		Repayer:              "repayer",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
 	})
