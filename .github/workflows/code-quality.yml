@@ -37,6 +37,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: setup git access to private repos
+        run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
