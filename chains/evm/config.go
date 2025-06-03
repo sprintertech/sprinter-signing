@@ -95,7 +95,7 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,
-		Repayer:            c.Repayer,
+		Repayer:            solverConfig.ProtocolsMetadata.Sprinter.Repayer[id],
 
 		AcrossPool:    solverConfig.ProtocolsMetadata.Across.SpokePools[id],
 		AcrossHubPool: solverConfig.ProtocolsMetadata.Across.HubPools[id],
