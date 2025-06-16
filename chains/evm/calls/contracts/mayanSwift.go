@@ -23,7 +23,7 @@ type OrderStatus uint8
 const (
 	WORMHOLE_DECIMALS = 8
 
-	OrderCreated OrderStatus = 1
+	OrderCreated OrderStatus = 0
 )
 
 type MayanOrder struct {
