@@ -117,6 +117,24 @@ func (c *MayanSwiftContract) GetOrder(
 		Random:       common.HexToHash(swap.RandomKey),
 	}
 
+	fmt.Println("MayanKey:")
+	fmt.Println("  Trader:", key.Trader.Hex())
+	fmt.Println("  SrcChainId:", key.SrcChainId)
+	fmt.Println("  TokenIn:", key.TokenIn.Hex())
+	fmt.Println("  DestAddr:", key.DestAddr.Hex())
+	fmt.Println("  DestChainId:", key.DestChainId)
+	fmt.Println("  TokenOut:", key.TokenOut.Hex())
+	fmt.Println("  MinAmountOut:", key.MinAmountOut)
+	fmt.Println("  GasDrop:", key.GasDrop)
+	fmt.Println("  CancelFee:", key.CancelFee)
+	fmt.Println("  RefundFee:", key.RefundFee)
+	fmt.Println("  Deadline:", key.Deadline)
+	fmt.Println("  ReferrerAddr:", key.ReferrerAddr.Hex())
+	fmt.Println("  ReferrerBps:", key.ReferrerBps)
+	fmt.Println("  ProtocolBps:", key.ProtocolBps)
+	fmt.Println("  AuctionMode:", key.AuctionMode)
+	fmt.Println("  Random:", key.Random.Hex())
+
 	res, err := c.CallContract("orders", common.BytesToHash(crypto.Keccak256(encodeKey(key))))
 	if err != nil {
 		return nil, err
