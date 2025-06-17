@@ -125,7 +125,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	fmt.Printf("TokenIn: %s, Symbol: %s, Decimals: %d, Address2: %s", tokenIn.Hex(), symbol, token.Decimals, token.Address.Hex())
+	fmt.Printf("TokenIn: %s, Symbol: %s, Decimals: %d, Address2: %s \n", tokenIn.Hex(), symbol, token.Decimals, token.Address.Hex())
 
 	destChainId, err := mayan.WormholeToEVMChainID(msg.DestChainId)
 	if err != nil {
@@ -137,7 +137,11 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
-	fmt.Printf("DestToken: %s, Decimals: %d", destinationBorrowToken.Address.Hex(), destinationBorrowToken.Decimals)
+	fmt.Printf("DestToken: %s, Decimals: %d \n", destinationBorrowToken.Address.Hex(), destinationBorrowToken.Decimals)
+
+	fmt.Printf("Swap: %+v \n", swap)
+	fmt.Printf("Msg: %+v \n", msg)
+	fmt.Printf("Token: %+v \n", token)
 
 	order, err := h.mayanDecoder.GetOrder(msg, swap, token.Decimals)
 	if err != nil {
