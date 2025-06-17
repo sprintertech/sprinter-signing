@@ -150,7 +150,6 @@ func Run() error {
 	panicOnError(err)
 
 	var hubPoolContract evmMessage.TokenMatcher
-	var mayanSwiftContract *contracts.MayanSwiftContract
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
 	repayerAddresses := make(map[uint64]common.Address)
@@ -173,7 +172,6 @@ func Run() error {
 				if c.MayanSwift != "" {
 					poolAddress := common.HexToAddress(c.MayanSwift)
 					mayanPools[*c.GeneralChainConfig.Id] = poolAddress
-					mayanSwiftContract = contracts.NewMayanSwiftContract(client, common.HexToAddress(c.MayanSwift))
 				}
 
 				if c.AcrossHubPool != "" {
@@ -203,7 +201,8 @@ func Run() error {
 				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
 				panicOnError(err)
 
-				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, nil)
+				kp, _ := secp256k1.GenerateKeypair()
+				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, kp)
 				panicOnError(err)
 
 				log.Info().Uint64("chain", *c.GeneralChainConfig.Id).Msgf("Registering EVM domain")
@@ -241,6 +240,7 @@ func Run() error {
 				}
 
 				if c.MayanSwift != "" {
+					mayanSwiftContract := contracts.NewMayanSwiftContract(client, common.HexToAddress(c.MayanSwift))
 					mayanApi := mayan.NewMayanExplorer()
 					mayanMh := evmMessage.NewMayanMessageHandler(
 						*c.GeneralChainConfig.Id,
