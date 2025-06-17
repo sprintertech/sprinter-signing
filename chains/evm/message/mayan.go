@@ -148,6 +148,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
+	fmt.Println(txHash.Hex())
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
 		h.chainID,
@@ -243,6 +244,9 @@ func (h *MayanMessageHandler) verifyOrder(
 	}
 
 	denormalizedAmountIn := contracts.DenormalizeAmount(new(big.Int).SetUint64(order.AmountIn), tc.Decimals)
+
+	fmt.Printf("Brrow amount: %s, Denormalized Amount, %s, AmountIn %d \n", data.BorrowAmount, denormalizedAmountIn, order.AmountIn)
+	fmt.Printf("Order: %+v, Params: %+v", order, params)
 	if data.BorrowAmount.Cmp(denormalizedAmountIn) != -1 {
 		return fmt.Errorf("requested borrow amount more than input amount")
 	}

@@ -1,4 +1,4 @@
-name: Publish Latest Docker Image
+name: Publish Test Docker Image
 
 permissions:
   packages: write
@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - main
+      - test
 
 env:
   GO111MODULE: on
@@ -48,4 +48,4 @@ jobs:
             GH_USER_NAME=${{ secrets.GH_USER_NAME }}
             GH_USER_TOKEN=${{ secrets.GHCR_TOKEN }}
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository }}:test
