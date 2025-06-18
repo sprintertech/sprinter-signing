@@ -50,6 +50,7 @@ func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *messa
 type MayanData struct {
 	ErrChn chan error `json:"-"`
 
+	OrderHash     string
 	Coordinator   peer.ID
 	LiquidityPool common.Address
 	Caller        common.Address
