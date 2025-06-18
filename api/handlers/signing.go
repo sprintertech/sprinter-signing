@@ -83,6 +83,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 	case MayanProtocol:
 		{
 			m = evmMessage.NewMayanMessage(0, b.ChainId, &evmMessage.MayanData{
+				OrderHash:     b.DepositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
