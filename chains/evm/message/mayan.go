@@ -169,6 +169,26 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	data.ErrChn <- nil
 
+	fmt.Printf(`
+		calldata: %s,
+		borrow Amount: %s,
+		destination borrow token: %s,
+		dest chain ID: %d,
+		mayan pools: %s,
+		deadline: %d,
+		caller: %s,
+		liquidity pool: %s,
+		nonce: %s 
+		\n
+	`, hex.EncodeToString(calldataBytes),
+		data.BorrowAmount,
+		destinationBorrowToken.Address.Hex(),
+		destChainId,
+		h.mayanPools[destChainId],
+		msg.Deadline,
+		data.Caller.Hex(),
+		data.LiquidityPool.Hex(),
+		data.Nonce)
 	unlockHash, err := unlockHash(
 		calldataBytes,
 		data.BorrowAmount,
