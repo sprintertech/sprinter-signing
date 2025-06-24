@@ -24,6 +24,7 @@ type MayanSwap struct {
 	RefundRelayerFee64 uint64
 	Trader             string
 	MinAmountOut64     string
+	SourceTxHash       string
 }
 
 type MayanExplorer struct {
@@ -39,7 +40,7 @@ func NewMayanExplorer() *MayanExplorer {
 }
 
 func (c *MayanExplorer) GetSwap(hash string) (*MayanSwap, error) {
-	url := fmt.Sprintf("%s/v3/swap/trx/%s", MAYAN_EXPLORER_URL, hash)
+	url := fmt.Sprintf("%s/v3/swap/order-id/SWIFT_%s", MAYAN_EXPLORER_URL, hash)
 	resp, err := c.HTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)

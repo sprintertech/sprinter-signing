@@ -133,11 +133,11 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Calldata:      mayanCalldata,
 		BorrowAmount:  big.NewInt(9000000000000000),
+		OrderHash:     "orderHash",
 		DepositTxHash: "0x6cd3de31d0085c8318a19eb1299b00e1d0636838cb6359da6199adcd6d142952",
 	}
 
 	calldataBytes, _ := hex.DecodeString(ad.Calldata)
-	txHash := common.HexToHash(ad.DepositTxHash)
 	orderHash := common.HexToHash(common.Bytes2Hex([]byte("orderHash")))
 
 	s.mockContract.EXPECT().DecodeFulfillCall(calldataBytes).Return(
@@ -156,7 +156,7 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 			PromisedAmount: 989000,
 		},
 		nil)
-	s.mockSwapFetcher.EXPECT().GetSwap(txHash.Hex()).Return(&mayan.MayanSwap{
+	s.mockSwapFetcher.EXPECT().GetSwap(ad.OrderHash).Return(&mayan.MayanSwap{
 		OrderHash: orderHash.Hex(),
 	}, nil)
 	s.mockContract.EXPECT().GetOrder(gomock.Any(), gomock.Any(), uint8(18)).Return(&contracts.MayanOrder{
@@ -199,11 +199,11 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountTooHigh() 
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Calldata:      mayanCalldata,
 		BorrowAmount:  big.NewInt(900000000000000000),
+		OrderHash:     "orderHash",
 		DepositTxHash: "0x6cd3de31d0085c8318a19eb1299b00e1d0636838cb6359da6199adcd6d142952",
 	}
 
 	calldataBytes, _ := hex.DecodeString(ad.Calldata)
-	txHash := common.HexToHash(ad.DepositTxHash)
 	orderHash := common.HexToHash(common.Bytes2Hex([]byte("orderHash")))
 
 	s.mockContract.EXPECT().DecodeFulfillCall(calldataBytes).Return(
@@ -222,7 +222,7 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountTooHigh() 
 			PromisedAmount: 989000,
 		},
 		nil)
-	s.mockSwapFetcher.EXPECT().GetSwap(txHash.Hex()).Return(&mayan.MayanSwap{
+	s.mockSwapFetcher.EXPECT().GetSwap(ad.OrderHash).Return(&mayan.MayanSwap{
 		OrderHash: orderHash.Hex(),
 	}, nil)
 	s.mockContract.EXPECT().GetOrder(gomock.Any(), gomock.Any(), uint8(18)).Return(&contracts.MayanOrder{
@@ -264,10 +264,10 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_InvalidOrderHash() {
 		Calldata:      mayanCalldata,
 		BorrowAmount:  big.NewInt(900000000000000000),
 		DepositTxHash: "0x6cd3de31d0085c8318a19eb1299b00e1d0636838cb6359da6199adcd6d142952",
+		OrderHash:     "orderHash",
 	}
 
 	calldataBytes, _ := hex.DecodeString(ad.Calldata)
-	txHash := common.HexToHash(ad.DepositTxHash)
 	orderHash := common.HexToHash(common.Bytes2Hex([]byte("orderHash")))
 
 	s.mockContract.EXPECT().DecodeFulfillCall(calldataBytes).Return(
@@ -286,7 +286,7 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_InvalidOrderHash() {
 			PromisedAmount: 989000,
 		},
 		nil)
-	s.mockSwapFetcher.EXPECT().GetSwap(txHash.Hex()).Return(&mayan.MayanSwap{
+	s.mockSwapFetcher.EXPECT().GetSwap(ad.OrderHash).Return(&mayan.MayanSwap{
 		OrderHash: "invalid",
 	}, nil)
 	s.mockContract.EXPECT().GetOrder(gomock.Any(), gomock.Any(), uint8(18)).Return(&contracts.MayanOrder{
@@ -327,11 +327,11 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_InvalidCaller() {
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Calldata:      mayanCalldata,
 		BorrowAmount:  big.NewInt(900000000000000000),
+		OrderHash:     "orderHash",
 		DepositTxHash: "0x6cd3de31d0085c8318a19eb1299b00e1d0636838cb6359da6199adcd6d142952",
 	}
 
 	calldataBytes, _ := hex.DecodeString(ad.Calldata)
-	txHash := common.HexToHash(ad.DepositTxHash)
 	orderHash := common.HexToHash(common.Bytes2Hex([]byte("orderHash")))
 
 	s.mockContract.EXPECT().DecodeFulfillCall(calldataBytes).Return(
@@ -350,7 +350,7 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_InvalidCaller() {
 			PromisedAmount: 989000,
 		},
 		nil)
-	s.mockSwapFetcher.EXPECT().GetSwap(txHash.Hex()).Return(&mayan.MayanSwap{
+	s.mockSwapFetcher.EXPECT().GetSwap(ad.OrderHash).Return(&mayan.MayanSwap{
 		OrderHash: orderHash.Hex(),
 	}, nil)
 	s.mockContract.EXPECT().GetOrder(gomock.Any(), gomock.Any(), uint8(18)).Return(&contracts.MayanOrder{
@@ -392,10 +392,10 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_InvalidFulfillAmount()
 		Calldata:      mayanCalldata,
 		BorrowAmount:  big.NewInt(900000000000000000),
 		DepositTxHash: "0x6cd3de31d0085c8318a19eb1299b00e1d0636838cb6359da6199adcd6d142952",
+		OrderHash:     "orderHash",
 	}
 
 	calldataBytes, _ := hex.DecodeString(ad.Calldata)
-	txHash := common.HexToHash(ad.DepositTxHash)
 	orderHash := common.HexToHash(common.Bytes2Hex([]byte("orderHash")))
 
 	s.mockContract.EXPECT().DecodeFulfillCall(calldataBytes).Return(
@@ -414,7 +414,7 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_InvalidFulfillAmount()
 			PromisedAmount: 9900000,
 		},
 		nil)
-	s.mockSwapFetcher.EXPECT().GetSwap(txHash.Hex()).Return(&mayan.MayanSwap{
+	s.mockSwapFetcher.EXPECT().GetSwap(ad.OrderHash).Return(&mayan.MayanSwap{
 		OrderHash: orderHash.Hex(),
 	}, nil)
 	s.mockContract.EXPECT().GetOrder(gomock.Any(), gomock.Any(), uint8(18)).Return(&contracts.MayanOrder{
