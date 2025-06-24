@@ -254,10 +254,6 @@ func (h *MayanMessageHandler) verifyOrder(
 		return fmt.Errorf("swap and msg hash not matching")
 	}
 
-	if common.BytesToAddress(msg.Driver[12:]) != data.Caller {
-		return fmt.Errorf("driver and caller address is not the same")
-	}
-
 	if order.Status != contracts.OrderCreated {
 		return fmt.Errorf("invalid order status %d", order.Status)
 	}
