@@ -154,7 +154,6 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	fmt.Println(txHash.Hex())
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
 		h.chainID,
