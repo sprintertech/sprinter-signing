@@ -35,6 +35,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
+	"github.com/sprintertech/sprinter-signing/protocol/across"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -149,7 +150,7 @@ func Run() error {
 	solverConfig, err := solverConfig.FetchSolverConfig(ctx, solverConfigOpts...)
 	panicOnError(err)
 
-	var hubPoolContract evmMessage.TokenMatcher
+	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
 	repayerAddresses := make(map[uint64]common.Address)

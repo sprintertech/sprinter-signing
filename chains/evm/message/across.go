@@ -13,10 +13,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/comm"
-	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -37,10 +35,6 @@ type Coordinator interface {
 	Execute(ctx context.Context, tssProcesses []tss.TssProcess, resultChn chan interface{}, coordinator peer.ID) error
 }
 
-type TokenMatcher interface {
-	DestinationToken(destinationChainId *big.Int, symbol string) (common.Address, error)
-}
-
 type ConfirmationWatcher interface {
 	WaitForConfirmations(
 		ctx context.Context,
@@ -50,14 +44,16 @@ type ConfirmationWatcher interface {
 		amount *big.Int) error
 }
 
+type DepositFetcher interface {
+	Deposit(ctx context.Context, hash common.Hash, depositID *big.Int) (*events.AcrossDeposit, error)
+}
+
 type AcrossMessageHandler struct {
-	client  EventFilterer
 	chainID uint64
 
 	pools               map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
-	tokenMatcher        TokenMatcher
-	tokenStore          config.TokenStore
+	depositFetcher      DepositFetcher
 
 	coordinator Coordinator
 	host        host.Host
@@ -69,20 +65,16 @@ type AcrossMessageHandler struct {
 
 func NewAcrossMessageHandler(
 	chainID uint64,
-	client EventFilterer,
 	pools map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
-	tokenMatcher TokenMatcher,
-	tokenStore config.TokenStore,
 	confirmationWatcher ConfirmationWatcher,
 	sigChn chan any,
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
 		chainID:             chainID,
-		client:              client,
 		pools:               pools,
 		coordinator:         coordinator,
 		host:                host,
@@ -90,8 +82,6 @@ func NewAcrossMessageHandler(
 		fetcher:             fetcher,
 		sigChn:              sigChn,
 		confirmationWatcher: confirmationWatcher,
-		tokenMatcher:        tokenMatcher,
-		tokenStore:          tokenStore,
 	}
 }
 
@@ -109,7 +99,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	d, err := h.deposit(data.DepositTxHash, data.DepositId)
+	d, err := h.depositFetcher.Deposit(context.Background(), data.DepositTxHash, data.DepositId)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -211,68 +201,4 @@ func (h *AcrossMessageHandler) notify(data *AcrossData) error {
 	}
 
 	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.AcrossMsg, fmt.Sprintf("%d-%s", h.chainID, comm.AcrossSessionID))
-}
-
-func (h *AcrossMessageHandler) deposit(hash common.Hash, depositId *big.Int) (*events.AcrossDeposit, error) {
-	ctx, cancel := context.WithTimeout(context.TODO(), TRANSACTION_TIMEOUT)
-	defer cancel()
-
-	receipt, err := h.client.TransactionReceipt(ctx, hash)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, l := range receipt.Logs {
-		if l.Removed {
-			continue
-		}
-
-		if l.Topics[0] != events.AcrossDepositSig.GetTopic() {
-			continue
-		}
-
-		if l.Topics[2] != common.HexToHash(common.Bytes2Hex(common.LeftPadBytes(depositId.Bytes(), 32))) {
-			continue
-		}
-
-		d, err := h.parseDeposit(*l)
-		if err != nil {
-			return nil, err
-		}
-		return d, nil
-	}
-
-	return nil, fmt.Errorf("deposit with id %s not found", depositId)
-}
-
-func (h *AcrossMessageHandler) parseDeposit(l types.Log) (*events.AcrossDeposit, error) {
-	d := &events.AcrossDeposit{}
-	err := consts.SpokePoolABI.UnpackIntoInterface(d, "FundsDeposited", l.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(l.Topics) < 4 {
-		return nil, fmt.Errorf("across deposit missing topics")
-	}
-
-	d.DestinationChainId = new(big.Int).SetBytes(l.Topics[1].Bytes())
-	d.DepositId = new(big.Int).SetBytes(l.Topics[2].Bytes())
-	copy(d.Depositor[:], l.Topics[3].Bytes())
-
-	if common.Bytes2Hex(d.OutputToken[:]) == ZERO_HASH {
-		symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, common.BytesToAddress(d.InputToken[12:]))
-		if err != nil {
-			return nil, err
-		}
-
-		address, err := h.tokenMatcher.DestinationToken(d.DestinationChainId, symbol)
-		if err != nil {
-			return nil, err
-		}
-
-		d.OutputToken = common.BytesToHash(address.Bytes())
-	}
-
-	return d, err
 }

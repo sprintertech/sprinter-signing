@@ -17,7 +17,6 @@ const (
 	AcrossMessage = "AcrossMessage"
 	MayanMessage  = "MayanMessage"
 
-	ZERO_HASH   = "0000000000000000000000000000000000000000000000000000000000000000"
 	DOMAIN_NAME = "LiquidityPool"
 	VERSION     = "1.0.0"
 	TIMEOUT     = 10 * time.Minute
