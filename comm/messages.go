@@ -39,14 +39,17 @@ const (
 	AcrossMsg
 	// MayanMsg message type is used for the process coordinator to share mayan data
 	MayanMsg
+	// Rhinestone message type is used for the process coordinator to share rhinestone data
+	RhinestoneMsg
 	// Unknown message type
 	Unknown
 )
 
 const (
-	SignatureSessionID = "signatures"
-	AcrossSessionID    = "across"
-	MayanSessionID     = "mayan"
+	SignatureSessionID  = "signatures"
+	AcrossSessionID     = "across"
+	MayanSessionID      = "mayan"
+	RhinestoneSessionID = "rhinestone"
 )
 
 // String implements fmt.Stringer
@@ -82,6 +85,8 @@ func (msgType MessageType) String() string {
 		return "AcrossMsg"
 	case MayanMsg:
 		return "MayanMsg"
+	case RhinestoneMsg:
+		return "RhinestoneMsg"
 	default:
 		return "UnknownMsg"
 	}
