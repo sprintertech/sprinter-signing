@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/protocol/rhinestone"
@@ -28,9 +29,9 @@ type BundleFetcher interface {
 type RhinestoneMessageHandler struct {
 	chainID uint64
 
-	liquidityPools map[uint64]common.Address
-	bundleFetcher  BundleFetcher
-	tokenStore     config.TokenStore
+	bundleFetcher      BundleFetcher
+	tokenStore         config.TokenStore
+	rhinestoneContract contracts.RhinestoneContract
 
 	coordinator Coordinator
 	host        host.Host
@@ -40,7 +41,32 @@ type RhinestoneMessageHandler struct {
 	sigChn chan any
 }
 
-// HandleMessage
+func NewRhinestoneMessageHandler(
+	chainID uint64,
+	coordinator Coordinator,
+	host host.Host,
+	comm comm.Communication,
+	fetcher signing.SaveDataFetcher,
+	tokenStore config.TokenStore,
+	rhinestoneContract contracts.RhinestoneContract,
+	bundleFetcher BundleFetcher,
+	sigChn chan any,
+) *RhinestoneMessageHandler {
+	return &RhinestoneMessageHandler{
+		chainID:            chainID,
+		coordinator:        coordinator,
+		host:               host,
+		comm:               comm,
+		fetcher:            fetcher,
+		sigChn:             sigChn,
+		rhinestoneContract: rhinestoneContract,
+		bundleFetcher:      bundleFetcher,
+		tokenStore:         tokenStore,
+	}
+}
+
+// HandleMessage verifies the bundle data and signs the unlock hash to use liquidity
+// for the Rhinestone protocol
 func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(*RhinestoneData)
 	err := h.notify(data)
@@ -54,7 +80,7 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	calldata, err := hex.DecodeString(bundle.BundleEvent.FillPayload.Data)
+	calldata, err := hex.DecodeString(bundle.BundleEvent.FillPayload.Data[2:])
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -66,10 +92,27 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
+	err = h.verifyOrder(bundle, data, calldata)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	borrowToken, err := h.outputToken(
+		bundle.BundleEvent.AcrossDepositEvents[0].OriginClaimPayload.ChainID,
+		bundle.TargetChainId,
+		common.HexToAddress(bundle.BundleEvent.AcrossDepositEvents[0].InputToken),
+	)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+	data.ErrChn <- nil
+
 	unlockHash, err := unlockHash(
 		calldata,
 		data.BorrowAmount,
-		common.Address{},
+		borrowToken,
 		new(big.Int).SetUint64(bundle.TargetChainId),
 		common.HexToAddress(bundle.BundleEvent.FillPayload.To),
 		deadline,
@@ -81,7 +124,7 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("%d-%s", h.chainID, bundle.BundleEvent.BundleId)
+	sessionID := fmt.Sprintf("%d-%s", bundle.TargetChainId, bundle.BundleEvent.BundleId)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,
@@ -100,9 +143,85 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	return nil, nil
 }
 
+// outputToken fetches the matching output token to the
+// input token of the across deposit
+func (h *RhinestoneMessageHandler) outputToken(
+	srcChainID uint64,
+	dstChainID uint64,
+	token common.Address,
+) (common.Address, error) {
+	symbol, _, err := h.tokenStore.ConfigByAddress(srcChainID, token)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	cfg, err := h.tokenStore.ConfigBySymbol(dstChainID, symbol)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return cfg.Address, nil
+}
+
+// verifyOrder checks that the order is an existing valid order on-chain
+// and the fill calldata is corresponds to the expected stash fill
+func (h *RhinestoneMessageHandler) verifyOrder(
+	bundle *rhinestone.Bundle,
+	data *RhinestoneData,
+	calldata []byte,
+) error {
+	if bundle.Status == rhinestone.StatusCompleted {
+		return fmt.Errorf("invalid order status %s", bundle.Status)
+	}
+
+	inputToken := bundle.BundleEvent.AcrossDepositEvents[0].InputToken
+	outputToken := bundle.BundleEvent.AcrossDepositEvents[0].OutputToken
+	inputAmount := big.NewInt(0)
+	for _, d := range bundle.BundleEvent.AcrossDepositEvents {
+		if d.InputToken != inputToken || d.OutputToken != outputToken {
+			return fmt.Errorf("order has different tokens in the bundle")
+		}
+
+		bigInputAmount, _ := new(big.Int).SetString(d.InputAmount, 10)
+		inputAmount.Add(inputAmount, bigInputAmount)
+	}
+
+	if data.BorrowAmount.Cmp(inputAmount) == 1 {
+		return fmt.Errorf(
+			"requested borrow amount %s larger than input amount %s",
+			data.BorrowAmount, inputAmount)
+	}
+
+	fillInput, err := h.rhinestoneContract.DecodeFillCall(calldata)
+	if err != nil {
+		return err
+	}
+
+	for _, address := range fillInput.RepaymentAddresses {
+		if address != data.LiquidityPool {
+			return fmt.Errorf(
+				"repayment address %s different from liquidity pool address %s",
+				address,
+				data.LiquidityPool,
+			)
+		}
+	}
+	for _, chainID := range fillInput.RepaymentChainIds {
+		if chainID.Uint64() != h.chainID {
+			return fmt.Errorf(
+				"repayment chainID %d different than expected chainID %d",
+				chainID.Uint64(),
+				h.chainID,
+			)
+		}
+	}
+
+	return nil
+}
+
 func (h *RhinestoneMessageHandler) Listen(ctx context.Context) {
 	msgChn := make(chan *comm.WrappedMessage)
-	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.RhinestoneSessionID), comm.RhinestoneMsg, msgChn)
+	subID := h.comm.Subscribe(comm.RhinestoneSessionID, comm.RhinestoneMsg, msgChn)
 
 	for {
 		select {
@@ -111,7 +230,7 @@ func (h *RhinestoneMessageHandler) Listen(ctx context.Context) {
 				d := &RhinestoneData{}
 				err := json.Unmarshal(wMsg.Payload, d)
 				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
+					log.Warn().Msgf("Failed unmarshaling rhinestone message: %s", err)
 					continue
 				}
 
@@ -119,7 +238,7 @@ func (h *RhinestoneMessageHandler) Listen(ctx context.Context) {
 				msg := NewRhinestoneMessage(d.Source, d.Destination, d)
 				_, err = h.HandleMessage(msg)
 				if err != nil {
-					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", msg, err)
+					log.Err(err).Msgf("Failed handling rhinestone message %+v because of: %s", msg, err)
 				}
 			}
 		case <-ctx.Done():
@@ -142,5 +261,5 @@ func (h *RhinestoneMessageHandler) notify(data *RhinestoneData) error {
 		return err
 	}
 
-	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.MayanMsg, fmt.Sprintf("%d-%s", h.chainID, comm.MayanSessionID))
+	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.RhinestoneMsg, fmt.Sprintf("%d-%s", h.chainID, comm.RhinestoneSessionID))
 }

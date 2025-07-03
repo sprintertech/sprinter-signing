@@ -70,6 +70,7 @@ func NewAcrossMessageHandler(
 	host host.Host,
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
+	depositFetcher DepositFetcher,
 	confirmationWatcher ConfirmationWatcher,
 	sigChn chan any,
 ) *AcrossMessageHandler {
@@ -82,6 +83,7 @@ func NewAcrossMessageHandler(
 		fetcher:             fetcher,
 		sigChn:              sigChn,
 		confirmationWatcher: confirmationWatcher,
+		depositFetcher:      depositFetcher,
 	}
 }
 

@@ -21,7 +21,7 @@ type FillPayload struct {
 type BundleEvent struct {
 	BundleId            string               `json:"bundleId"`
 	AcrossDepositEvents []AcrossDepositEvent `json:"acrossDepositEvents"`
-	FillPayload         FillPayload
+	FillPayload         FillPayload          `json:"targetFillPayload"`
 }
 
 type OriginClaimPayload struct {

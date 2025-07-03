@@ -15,7 +15,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/comm"
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
-	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
 	"github.com/stretchr/testify/suite"
@@ -26,13 +25,13 @@ import (
 type AcrossMessageHandlerTestSuite struct {
 	suite.Suite
 
-	mockCommunication *mock_communication.MockCommunication
-	mockCoordinator   *mock_message.MockCoordinator
-	mockEventFilterer *mock_message.MockEventFilterer
-	mockHost          *mock_host.MockHost
-	mockFetcher       *mock_tss.MockSaveDataFetcher
-	mockWatcher       *mock_message.MockConfirmationWatcher
-	mockMatcher       *mock_message.MockTokenMatcher
+	mockCommunication  *mock_communication.MockCommunication
+	mockCoordinator    *mock_message.MockCoordinator
+	mockEventFilterer  *mock_message.MockEventFilterer
+	mockHost           *mock_host.MockHost
+	mockFetcher        *mock_tss.MockSaveDataFetcher
+	mockWatcher        *mock_message.MockConfirmationWatcher
+	mockDepositFetcher *mock_message.MockDepositFetcher
 
 	handler *message.AcrossMessageHandler
 	sigChn  chan interface{}
@@ -60,7 +59,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
 	s.mockWatcher = mock_message.NewMockConfirmationWatcher(ctrl)
-	s.mockMatcher = mock_message.NewMockTokenMatcher(ctrl)
+	s.mockDepositFetcher = mock_message.NewMockDepositFetcher(ctrl)
 
 	pools := make(map[uint64]common.Address)
 	pools[2] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
@@ -70,33 +69,18 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
 	s.validLog, _ = hex.DecodeString("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab100000000000000000000000000000000000000000000000000119baee0ab0400000000000000000000000000000000000000000000000000001199073ea3008d0000000000000000000000000000000000000000000000000000000067bc6e3f0000000000000000000000000000000000000000000000000000000067bc927b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001886a1eb051c10f20c7386576a6a0716b20b2734000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 
-	tokens := make(map[uint64]map[string]config.TokenConfig)
-	tokens[1] = make(map[string]config.TokenConfig)
-	tokens[1]["ETH"] = config.TokenConfig{
-		Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
-		Decimals: 18,
-	}
-	tokens[1]["USDC"] = config.TokenConfig{
-		Address:  common.HexToAddress("0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4"),
-		Decimals: 6,
-	}
-	tokenStore := config.TokenStore{
-		Tokens: tokens,
-	}
 	confirmations := make(map[uint64]uint64)
 	confirmations[1000] = 100
 	confirmations[2000] = 200
 
 	s.handler = message.NewAcrossMessageHandler(
 		1,
-		s.mockEventFilterer,
 		pools,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,
 		s.mockFetcher,
-		s.mockMatcher,
-		tokenStore,
+		s.mockDepositFetcher,
 		s.mockWatcher,
 		s.sigChn,
 	)
@@ -290,7 +274,6 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ZeroOutputToken() {
 		},
 	}, nil)
 	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	s.mockMatcher.EXPECT().DestinationToken(gomock.Any(), "USDC").Return(common.Address{}, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)

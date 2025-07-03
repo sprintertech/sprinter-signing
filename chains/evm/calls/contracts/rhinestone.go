@@ -12,8 +12,8 @@ import (
 )
 
 type SegmentData struct {
-	TokenIn           [2][]*big.Int  `abi:"tokenIn"`
-	TokenOut          [2][]*big.Int  `abi:"tokenOut"`
+	TokenIn           [][2]*big.Int  `abi:"tokenIn"`
+	TokenOut          [][2]*big.Int  `abi:"tokenOut"`
 	OriginModule      common.Address `abi:"originModule"`
 	OriginWETHAddress common.Address `abi:"originWETHAddress"`
 	OriginChainId     *big.Int       `abi:"originChainId"`
