@@ -17,8 +17,9 @@ import (
 type ProtocolType string
 
 const (
-	AcrossProtocol ProtocolType = "across"
-	MayanProtocol  ProtocolType = "mayan"
+	AcrossProtocol     ProtocolType = "across"
+	MayanProtocol      ProtocolType = "mayan"
+	RhinestoneProtocol ProtocolType = "rhinestone"
 )
 
 type SigningBody struct {
@@ -90,6 +91,19 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				ErrChn:        errChn,
 				Calldata:      b.Calldata,
 				DepositTxHash: b.DepositTxHash,
+				Source:        0,
+				Destination:   b.ChainId,
+				BorrowAmount:  b.BorrowAmount.Int,
+			})
+		}
+	case RhinestoneProtocol:
+		{
+			m = evmMessage.NewRhinestoneMessage(0, b.ChainId, &evmMessage.RhinestoneData{
+				BundleID:      b.DepositId,
+				Nonce:         b.Nonce.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				ErrChn:        errChn,
 				Source:        0,
 				Destination:   b.ChainId,
 				BorrowAmount:  b.BorrowAmount.Int,
