@@ -34,6 +34,7 @@ type RhinestoneMessageHandlerTestSuite struct {
 	sigChn            chan interface{}
 
 	mockBundleFetcher *mock_message.MockBundleFetcher
+	mockBundle        *rhinestone.Bundle
 	handler           *message.RhinestoneMessageHandler
 }
 
@@ -56,6 +57,11 @@ func (s *RhinestoneMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 
 	s.mockBundleFetcher = mock_message.NewMockBundleFetcher(ctrl)
+	b := new(rhinestone.Bundle)
+	if err := json.Unmarshal([]byte(mock_message.MockBundleJSON), b); err != nil {
+		panic(err)
+	}
+	s.mockBundle = b
 
 	rhinestoneContract := contracts.NewRhinestoneContract()
 
@@ -112,12 +118,7 @@ func (s *RhinestoneMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 		BundleID:      "bundleID",
 	}
 
-	b := new(rhinestone.Bundle)
-	if err := json.Unmarshal([]byte(mock_message.MockBundleJSON), b); err != nil {
-		panic(err)
-	}
-
-	s.mockBundleFetcher.EXPECT().GetBundle("bundleID").Return(b, nil)
+	s.mockBundleFetcher.EXPECT().GetBundle("bundleID").Return(s.mockBundle, nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	m := &coreMessage.Message{
@@ -133,4 +134,115 @@ func (s *RhinestoneMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 
 	err = <-errChn
 	s.Nil(err)
+}
+
+func (s *RhinestoneMessageHandlerTestSuite) Test_HandleMessage_FetchingBundleFails() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.RhinestoneMsg,
+		fmt.Sprintf("%d-%s", 8453, comm.RhinestoneSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.RhinestoneData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
+		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		BorrowAmount:  big.NewInt(3493365192379644),
+		BundleID:      "bundleID",
+	}
+
+	s.mockBundleFetcher.EXPECT().GetBundle("bundleID").Return(s.mockBundle, fmt.Errorf("error"))
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
+}
+
+func (s *RhinestoneMessageHandlerTestSuite) Test_HandleMessage_InvalidBorrowAmount() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.RhinestoneMsg,
+		fmt.Sprintf("%d-%s", 8453, comm.RhinestoneSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.RhinestoneData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
+		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		BorrowAmount:  big.NewInt(3493365192379644),
+		BundleID:      "bundleID",
+	}
+
+	s.mockBundleFetcher.EXPECT().GetBundle("bundleID").Return(s.mockBundle, nil)
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
+}
+
+func (s *RhinestoneMessageHandlerTestSuite) Test_HandleMessage_InvalidRepaymentAddresses() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.RhinestoneMsg,
+		fmt.Sprintf("%d-%s", 8453, comm.RhinestoneSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.RhinestoneData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xinvalid"),
+		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		BorrowAmount:  big.NewInt(2493365192379644),
+		BundleID:      "bundleID",
+	}
+
+	s.mockBundleFetcher.EXPECT().GetBundle("bundleID").Return(s.mockBundle, nil)
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
 }
