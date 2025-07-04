@@ -36,6 +36,20 @@ type AcrossDepositFetcher struct {
 	tokenMatcher TokenMatcher
 }
 
+func NewAcrossDepositFetcher(
+	chainID uint64,
+	tokenStore config.TokenStore,
+	client EventFilterer,
+	tokenMatcher TokenMatcher,
+) *AcrossDepositFetcher {
+	return &AcrossDepositFetcher{
+		chainID:      chainID,
+		tokenStore:   tokenStore,
+		client:       client,
+		tokenMatcher: tokenMatcher,
+	}
+}
+
 func (h *AcrossDepositFetcher) Deposit(ctx context.Context, hash common.Hash, depositID *big.Int) (*events.AcrossDeposit, error) {
 	ctx, cancel := context.WithTimeout(ctx, TRANSACTION_TIMEOUT)
 	defer cancel()

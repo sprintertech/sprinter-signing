@@ -221,16 +221,20 @@ func Run() error {
 
 				mh := message.NewMessageHandler()
 				if c.AcrossPool != "" {
+					acrossDepositFetcher := across.NewAcrossDepositFetcher(
+						*c.GeneralChainConfig.Id,
+						tokenStore,
+						client,
+						hubPoolContract,
+					)
 					acrossMh := evmMessage.NewAcrossMessageHandler(
 						*c.GeneralChainConfig.Id,
-						client,
 						acrossPools,
 						coordinator,
 						host,
 						communication,
 						keyshareStore,
-						hubPoolContract,
-						tokenStore,
+						acrossDepositFetcher,
 						watcher,
 						sigChn)
 					go acrossMh.Listen(ctx)
