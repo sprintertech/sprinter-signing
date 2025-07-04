@@ -138,19 +138,22 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
 	deposit := &events.AcrossDeposit{
-		InputToken:          fillBytes32("input_token_address_1234567890"),
-		OutputToken:         fillBytes32("output_token_address_0987654321"),
-		InputAmount:         big.NewInt(1000000000000000000), // 1e18
-		OutputAmount:        big.NewInt(990000000000000000),  // 0.99e18
-		DestinationChainId:  big.NewInt(137),                 // Polygon chain ID
-		DepositId:           big.NewInt(123456789),
-		QuoteTimestamp:      uint32(time.Now().Unix()),
+		InputToken:         fillBytes32("input_token_address_1234567890"),
+		OutputToken:        fillBytes32("output_token_address_0987654321"),
+		InputAmount:        big.NewInt(1000000000000000000), // 1e18
+		OutputAmount:       big.NewInt(990000000000000000),  // 0.99e18
+		DestinationChainId: big.NewInt(137),                 // Polygon chain ID
+		DepositId:          big.NewInt(123456789),
+		//nolint:gosec
+		QuoteTimestamp: uint32(time.Now().Unix()),
+		//nolint:gosec
 		ExclusivityDeadline: uint32(time.Now().Add(10 * time.Minute).Unix()),
-		FillDeadline:        uint32(time.Now().Add(1 * time.Hour).Unix()),
-		Depositor:           fillBytes32("depositor_address_abcdef123456"),
-		Recipient:           fillBytes32("recipient_address_654321fedcba"),
-		ExclusiveRelayer:    fillBytes32("relayer_address_112233445566"),
-		Message:             []byte("Sample message for AcrossDeposit"),
+		//nolint:gosec
+		FillDeadline:     uint32(time.Now().Add(1 * time.Hour).Unix()),
+		Depositor:        fillBytes32("depositor_address_abcdef123456"),
+		Recipient:        fillBytes32("recipient_address_654321fedcba"),
+		ExclusiveRelayer: fillBytes32("relayer_address_112233445566"),
+		Message:          []byte("Sample message for AcrossDeposit"),
 	}
 	s.mockDepositFetcher.EXPECT().Deposit(gomock.Any(), gomock.Any(), gomock.Any()).Return(deposit, nil)
 

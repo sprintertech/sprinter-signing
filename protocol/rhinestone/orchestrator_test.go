@@ -1,3 +1,4 @@
+// nolint
 package rhinestone_test
 
 import (

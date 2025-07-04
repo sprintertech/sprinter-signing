@@ -47,7 +47,6 @@ func NewRhinestoneContract() *RhinestoneContract {
 	return &RhinestoneContract{
 		abi: consts.RhinestoneABI,
 	}
-
 }
 
 func (c *RhinestoneContract) DecodeFillCall(calldata []byte) (*FillInput, error) {
