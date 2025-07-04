@@ -94,7 +94,6 @@ func NewMayanMessageHandler(
 // cache through the result channel.
 func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(*MayanData)
-	txHash := common.HexToHash(data.DepositTxHash)
 
 	err := h.notify(data)
 	if err != nil {
@@ -151,7 +150,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
 		h.chainID,
-		txHash,
+		common.HexToHash(swap.SourceTxHash),
 		tokenIn,
 		new(big.Int).SetUint64(msg.PromisedAmount))
 	if err != nil {
