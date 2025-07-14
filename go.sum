@@ -768,6 +768,8 @@ github.com/sprintertech/solver-config/go v0.0.0-20250513131040-3cde77de33bb h1:F
 github.com/sprintertech/solver-config/go v0.0.0-20250513131040-3cde77de33bb/go.mod h1:Y0MjuSx4gxwYo9/rJcwB05DmNwDsDVcGDphh6hN0uX8=
 github.com/sprintertech/solver-config/go v0.0.0-20250529124037-c285cf3b5a60 h1:QBjqQFS3SvchRtpUOIWfJG9S5cTz/6rHrCzXEOPAXqY=
 github.com/sprintertech/solver-config/go v0.0.0-20250529124037-c285cf3b5a60/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
+github.com/sprintertech/solver-config/go v0.0.0-20250710125738-eb8eeea57100 h1:JSDdVqsmYpkOYW2cI6xc/yk03hJX6TYf8q8R0t1NviU=
+github.com/sprintertech/solver-config/go v0.0.0-20250710125738-eb8eeea57100/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
