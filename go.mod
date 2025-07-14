@@ -18,7 +18,7 @@ require (
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/sprintertech/solver-config/go v0.0.0-20250529124037-c285cf3b5a60
+	github.com/sprintertech/solver-config/go v0.0.0-20250710125738-eb8eeea57100
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	go.opentelemetry.io/otel v1.16.0
