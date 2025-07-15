@@ -324,6 +324,40 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MayanSuccess() {
 	s.Equal(http.StatusAccepted, recorder.Code)
 }
 
+func (s *SigningHandlerTestSuite) Test_HandleSigning_RhinestoneSuccess() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains)
+
+	input := handlers.SigningBody{
+		DepositId:     "depositID",
+		Protocol:      "rhinestone",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Calldata:      "0xbe5",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.RhinestoneData)
+		ad.ErrChn <- nil
+	}()
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
+}
+
 type StatusHandlerTestSuite struct {
 	suite.Suite
 

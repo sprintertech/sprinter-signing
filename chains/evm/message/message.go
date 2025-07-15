@@ -17,7 +17,6 @@ const (
 	AcrossMessage = "AcrossMessage"
 	MayanMessage  = "MayanMessage"
 
-	ZERO_HASH   = "0000000000000000000000000000000000000000000000000000000000000000"
 	DOMAIN_NAME = "LiquidityPool"
 	VERSION     = "1.0.0"
 	TIMEOUT     = 10 * time.Minute
@@ -67,6 +66,29 @@ func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.
 		Source:      source,
 		Destination: destination,
 		Data:        mayanData,
+		Type:        MayanMessage,
+		Timestamp:   time.Now(),
+	}
+}
+
+type RhinestoneData struct {
+	ErrChn chan error `json:"-"`
+
+	BundleID      string
+	Coordinator   peer.ID
+	LiquidityPool common.Address
+	Caller        common.Address
+	BorrowAmount  *big.Int
+	Nonce         *big.Int
+	Source        uint64
+	Destination   uint64
+}
+
+func NewRhinestoneMessage(source, destination uint64, rhinestoneData *RhinestoneData) *message.Message {
+	return &message.Message{
+		Source:      source,
+		Destination: destination,
+		Data:        rhinestoneData,
 		Type:        MayanMessage,
 		Timestamp:   time.Now(),
 	}

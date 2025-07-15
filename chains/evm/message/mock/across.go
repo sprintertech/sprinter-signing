@@ -18,6 +18,7 @@ import (
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	events "github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	tss "github.com/sprintertech/sprinter-signing/tss"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -129,45 +130,6 @@ func (mr *MockCoordinatorMockRecorder) Execute(ctx, tssProcesses, resultChn, coo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCoordinator)(nil).Execute), ctx, tssProcesses, resultChn, coordinator)
 }
 
-// MockTokenMatcher is a mock of TokenMatcher interface.
-type MockTokenMatcher struct {
-	ctrl     *gomock.Controller
-	recorder *MockTokenMatcherMockRecorder
-	isgomock struct{}
-}
-
-// MockTokenMatcherMockRecorder is the mock recorder for MockTokenMatcher.
-type MockTokenMatcherMockRecorder struct {
-	mock *MockTokenMatcher
-}
-
-// NewMockTokenMatcher creates a new mock instance.
-func NewMockTokenMatcher(ctrl *gomock.Controller) *MockTokenMatcher {
-	mock := &MockTokenMatcher{ctrl: ctrl}
-	mock.recorder = &MockTokenMatcherMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTokenMatcher) EXPECT() *MockTokenMatcherMockRecorder {
-	return m.recorder
-}
-
-// DestinationToken mocks base method.
-func (m *MockTokenMatcher) DestinationToken(destinationChainId *big.Int, symbol string) (common.Address, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestinationToken", destinationChainId, symbol)
-	ret0, _ := ret[0].(common.Address)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DestinationToken indicates an expected call of DestinationToken.
-func (mr *MockTokenMatcherMockRecorder) DestinationToken(destinationChainId, symbol any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestinationToken", reflect.TypeOf((*MockTokenMatcher)(nil).DestinationToken), destinationChainId, symbol)
-}
-
 // MockConfirmationWatcher is a mock of ConfirmationWatcher interface.
 type MockConfirmationWatcher struct {
 	ctrl     *gomock.Controller
@@ -204,4 +166,43 @@ func (m *MockConfirmationWatcher) WaitForConfirmations(ctx context.Context, chai
 func (mr *MockConfirmationWatcherMockRecorder) WaitForConfirmations(ctx, chainID, txHash, token, amount any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForConfirmations), ctx, chainID, txHash, token, amount)
+}
+
+// MockDepositFetcher is a mock of DepositFetcher interface.
+type MockDepositFetcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockDepositFetcherMockRecorder
+	isgomock struct{}
+}
+
+// MockDepositFetcherMockRecorder is the mock recorder for MockDepositFetcher.
+type MockDepositFetcherMockRecorder struct {
+	mock *MockDepositFetcher
+}
+
+// NewMockDepositFetcher creates a new mock instance.
+func NewMockDepositFetcher(ctrl *gomock.Controller) *MockDepositFetcher {
+	mock := &MockDepositFetcher{ctrl: ctrl}
+	mock.recorder = &MockDepositFetcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDepositFetcher) EXPECT() *MockDepositFetcherMockRecorder {
+	return m.recorder
+}
+
+// Deposit mocks base method.
+func (m *MockDepositFetcher) Deposit(ctx context.Context, hash common.Hash, depositID *big.Int) (*events.AcrossDeposit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Deposit", ctx, hash, depositID)
+	ret0, _ := ret[0].(*events.AcrossDeposit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Deposit indicates an expected call of Deposit.
+func (mr *MockDepositFetcherMockRecorder) Deposit(ctx, hash, depositID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deposit", reflect.TypeOf((*MockDepositFetcher)(nil).Deposit), ctx, hash, depositID)
 }
