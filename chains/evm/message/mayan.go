@@ -157,7 +157,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 	err = h.confirmationWatcher.WaitForConfirmations(
 		context.Background(),
 		h.chainID,
-		common.HexToHash(swap.SourceTxHash),
+		common.HexToHash(swap.CreateTxHash),
 		tokenIn,
 		new(big.Int).SetUint64(msg.PromisedAmount))
 	if err != nil {
