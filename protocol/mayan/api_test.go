@@ -40,7 +40,8 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
                 "refundRelayerFee": "0.05",
                 "trader": "0xTrader",
                 "minAmountOut64": "100",
-				"sourceTxHash": "0xhash"
+				"sourceTxHash": "0xhash",
+				"createTxHash": "0xcreatehash"
             }`),
 			statusCode: http.StatusOK,
 			wantResult: &mayan.MayanSwap{
@@ -53,6 +54,7 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
 				Trader:           "0xTrader",
 				MinAmountOut64:   "100",
 				SourceTxHash:     "0xhash",
+				CreateTxHash:     "0xcreatehash",
 			},
 		},
 		{
@@ -82,7 +84,7 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
 			client := mayan.NewMayanExplorer()
 			client.HTTPClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				// Verify URL construction
-				expectedURL := fmt.Sprintf("%s/v3/swap/order-id/SWIFT_%s", mayan.MAYAN_EXPLORER_URL, tc.hash)
+				expectedURL := fmt.Sprintf("%s/v3/swap/order-id/%s", mayan.MAYAN_EXPLORER_URL, tc.hash)
 				if req.URL.String() != expectedURL {
 					return nil, fmt.Errorf("unexpected URL: got %s, want %s", req.URL.String(), expectedURL)
 				}
