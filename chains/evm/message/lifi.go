@@ -38,6 +38,7 @@ type AllocatorFetcher interface {
 type LifiCompactMessageHandler struct {
 	chainID uint64
 
+	compactAddress common.Address
 	lifiAddresses  map[uint64]common.Address
 	liquidityPools map[uint64]common.Address
 	tokenStore     config.TokenStore
@@ -131,7 +132,7 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 	return nil, nil
 }
 
-// verifyOrder verifies order based on: https://docs.catalyst.exchange/solver/orderflow/#order-validation
+// verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
 func (h *LifiCompactMessageHandler) verifyOrder(order *lifi.LifiOrder, data *LifiData) error {
 	err := h.verifySignatures(order)
 	if err != nil {
@@ -230,7 +231,7 @@ func (h *LifiCompactMessageHandler) verifyDeadline(order *lifi.LifiOrder) error 
 func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) error {
 	digest, b, err := lifi.GenerateCompactDigest(
 		new(big.Int).SetUint64(h.chainID),
-		h.lifiAddresses[h.chainID],
+		h.compactAddress,
 		*order,
 	)
 	if err != nil {
