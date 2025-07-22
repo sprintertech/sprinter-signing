@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -14,9 +15,9 @@ import (
 )
 
 type Lock struct {
-	LockTag [12]byte       // bytes12
-	Token   common.Address // address
-	Amount  *big.Int       // uint256
+	LockTag [12]byte
+	Token   common.Address
+	Amount  *big.Int
 }
 
 // AllocatorID extracts the 92-bit allocator ID from lock tag.
@@ -38,6 +39,48 @@ func (l *Lock) AllocatorID() (*big.Int, error) {
 	// The result is a 92-bit allocator ID as big.Int
 	return allocatorBits, nil
 }
+
+func (l *Lock) Period() (time.Duration, error) {
+	lastFour := binary.BigEndian.Uint32(l.LockTag[8:12])
+	period := uint8((lastFour >> 2) & 0x3) // Bits 92-93: period
+	return ResetPeriod(period).ToDuration()
+}
+
+type ResetPeriod uint8
+
+func (p ResetPeriod) ToDuration() (time.Duration, error) {
+	switch p {
+	case OneSecond:
+		return time.Second, nil
+	case FifteenSeconds:
+		return time.Second * 15, nil
+	case OneMinute:
+		return time.Minute, nil
+	case TenMinutes:
+		return time.Minute * 10, nil
+	case OneHourAndFiveMinutes:
+		return time.Minute * 65, nil
+	case OneDay:
+		return time.Hour * 24, nil
+	case SevenDaysAndOneHour:
+		return time.Hour*24*7 + time.Hour, nil
+	case ThirtyDays:
+		return time.Hour * 24 * 30, nil
+	default:
+		return time.Second, fmt.Errorf("unknown reset period")
+	}
+}
+
+const (
+	OneSecond             ResetPeriod = 0
+	FifteenSeconds        ResetPeriod = 1
+	OneMinute             ResetPeriod = 2
+	TenMinutes            ResetPeriod = 3
+	OneHourAndFiveMinutes ResetPeriod = 4
+	OneDay                ResetPeriod = 5
+	SevenDaysAndOneHour   ResetPeriod = 6
+	ThirtyDays            ResetPeriod = 7
+)
 
 type BatchCompact struct {
 	Arbiter     common.Address
@@ -115,7 +158,7 @@ func GenerateCompactDigest(chainId *big.Int, verifyingContract common.Address, o
 		return []byte{}, nil, err
 	}
 
-	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(messageHash)))
+	rawData := fmt.Appendf(nil, "\x19\x01%s%s", string(domainSeparator), string(messageHash))
 	return crypto.Keccak256(rawData), b, nil
 }
 
@@ -169,7 +212,7 @@ func extractCommitments(idsAndAmounts [][2]*BigInt) ([]Lock, error) {
 		lockTag := extractLockTag(idsAndAmount[0].Int)
 
 		// Extract token address (last 20 bytes) from idsAndAmount[0]
-		tokenAddr := extractTokenAddress(idsAndAmount[0].Int)
+		tokenAddr := ExtractTokenAddress(idsAndAmount[0].Int)
 
 		locks[i] = Lock{
 			LockTag: lockTag,
@@ -191,7 +234,7 @@ func extractLockTag(packed *big.Int) [12]byte {
 	return lockTag
 }
 
-func extractTokenAddress(packed *big.Int) common.Address {
+func ExtractTokenAddress(packed *big.Int) common.Address {
 	temp := new(big.Int).Set(packed)
 
 	mask := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 160), big.NewInt(1))

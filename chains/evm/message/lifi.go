@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strconv"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -16,6 +18,12 @@ import (
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
+)
+
+const (
+	EXPIRY          = time.Hour
+	FILL_DEADLINE   = time.Minute * 5
+	MAX_CALL_LENGTH = 65535
 )
 
 type OrderFetcher interface {
@@ -80,7 +88,7 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 		return nil, err
 	}
 
-	err = h.verifyOrder(order)
+	err = h.verifyOrder(order, data)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -123,7 +131,98 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 	return nil, nil
 }
 
-func (h *LifiCompactMessageHandler) verifyOrder(order *lifi.LifiOrder) error {
+// verifyOrder verifies order based on: https://docs.catalyst.exchange/solver/orderflow/#order-validation
+func (h *LifiCompactMessageHandler) verifyOrder(order *lifi.LifiOrder, data *LifiData) error {
+	err := h.verifySignatures(order)
+	if err != nil {
+		return err
+	}
+
+	err = h.verifyDeadline(order)
+	if err != nil {
+		return err
+	}
+
+	err = h.verifyInputs(order)
+	if err != nil {
+		return err
+	}
+
+	err = h.verifyOutput(order, data.Caller, data.BorrowAmount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *LifiCompactMessageHandler) verifyInputs(order *lifi.LifiOrder) error {
+	for _, token := range order.Order.Inputs {
+		address := lifi.ExtractTokenAddress(token[0].Int)
+		_, _, err := h.tokenStore.ConfigByAddress(h.chainID, address)
+		if err != nil {
+			return fmt.Errorf("token %s not configured", address)
+		}
+	}
+
+	return nil
+}
+
+func (h *LifiCompactMessageHandler) verifyOutput(
+	order *lifi.LifiOrder,
+	caller common.Address,
+	borrowAmount *big.Int,
+) error {
+	token := order.Order.Outputs[0].Token
+	amount := new(big.Int)
+	for _, output := range order.Order.Outputs {
+		chainID, err := strconv.ParseUint(output.ChainID, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if output.Token != token {
+			return fmt.Errorf("order has different output tokens")
+		}
+
+		_, _, err = h.tokenStore.ConfigByAddress(chainID, common.HexToAddress(output.Token))
+		if err != nil {
+			return fmt.Errorf("token %s not configured", token)
+		}
+
+		if len(output.Call) > MAX_CALL_LENGTH || len(output.Context) > MAX_CALL_LENGTH {
+			return fmt.Errorf("output call exceeds max length")
+		}
+
+		if common.HexToAddress(output.Settler).Hex() != caller.Hex() {
+			return fmt.Errorf("output settler %s is not caller %s", output.Settler, caller)
+		}
+
+		amount = new(big.Int).Add(amount, output.Amount.Int)
+	}
+
+	if amount.Cmp(borrowAmount) != 1 {
+		return fmt.Errorf("requested borrow amount exceeds output amount")
+	}
+
+	return nil
+}
+
+func (h *LifiCompactMessageHandler) verifyDeadline(order *lifi.LifiOrder) error {
+	fillDeadline := time.Unix(order.Order.FillDeadline, 0)
+	if time.Until(fillDeadline) < FILL_DEADLINE {
+		return fmt.Errorf("fill deadline %s too short", time.Until(fillDeadline))
+	}
+
+	expiryDeadline := time.Unix(order.Order.Expires, 0)
+	if time.Until(expiryDeadline) < FILL_DEADLINE {
+		return fmt.Errorf("order expiry %s too short", time.Until(expiryDeadline))
+	}
+
+	return nil
+}
+
+func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) error {
 	digest, b, err := lifi.GenerateCompactDigest(
 		new(big.Int).SetUint64(h.chainID),
 		h.lifiAddress,
@@ -145,6 +244,16 @@ func (h *LifiCompactMessageHandler) verifyOrder(order *lifi.LifiOrder) error {
 
 		if allocatorID.String() != id.String() {
 			return fmt.Errorf("order inputs have different allocators")
+		}
+
+		resetPeriod, err := lock.Period()
+		if err != nil {
+			return err
+		}
+
+		expiryDeadline := time.Unix(order.Order.Expires, 0)
+		if time.Until(expiryDeadline) > resetPeriod {
+			return fmt.Errorf("expiry less than reset period")
 		}
 	}
 
