@@ -49,6 +49,7 @@ const (
 	SignatureSessionID  = "signatures"
 	AcrossSessionID     = "across"
 	MayanSessionID      = "mayan"
+	LifiSessionID       = "lifi"
 	RhinestoneSessionID = "rhinestone"
 )
 
