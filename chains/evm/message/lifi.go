@@ -15,6 +15,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
+	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
@@ -37,7 +38,7 @@ type AllocatorFetcher interface {
 type LifiCompactMessageHandler struct {
 	chainID uint64
 
-	lifiAddress    common.Address
+	lifiAddresses  map[uint64]common.Address
 	liquidityPools map[uint64]common.Address
 	tokenStore     config.TokenStore
 
@@ -95,39 +96,38 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 	}
 	data.ErrChn <- nil
 
-	/*
-			unlockHash, err := unlockHash(
-				calldataBytes,
-				data.BorrowAmount,
-				destinationBorrowToken.Address,
-				new(big.Int).SetUint64(destChainId),
-				h.mayanPools[destChainId],
-				msg.Deadline,
-				data.Caller,
-				data.LiquidityPool,
-				data.Nonce,
-			)
-			if err != nil {
-				return nil, err
-			}
+	chainID, _ := strconv.ParseUint(order.Order.Outputs[0].ChainID, 10, 64)
+	unlockHash, err := unlockHash(
+		[]byte{}, // TODO
+		data.BorrowAmount,
+		common.HexToAddress(order.Order.Outputs[0].Token),
+		new(big.Int).SetUint64(chainID),
+		h.lifiAddresses[chainID],
+		uint64(order.Order.FillDeadline),
+		data.Caller,
+		data.LiquidityPool,
+		data.Nonce,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-		sessionID := fmt.Sprintf("%d-%s", h.chainID, swap.OrderHash)
-		signing, err := signing.NewSigning(
-			new(big.Int).SetBytes(unlockHash),
-			sessionID,
-			sessionID,
-			h.host,
-			h.comm,
-			h.fetcher)
-		if err != nil {
-			return nil, err
-		}
+	sessionID := fmt.Sprintf("%d-%s", h.chainID, order.Order.Nonce)
+	signing, err := signing.NewSigning(
+		new(big.Int).SetBytes(unlockHash),
+		sessionID,
+		sessionID,
+		h.host,
+		h.comm,
+		h.fetcher)
+	if err != nil {
+		return nil, err
+	}
 
-		err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-		if err != nil {
-			return nil, err
-		}
-	*/
+	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
+	if err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -174,11 +174,16 @@ func (h *LifiCompactMessageHandler) verifyOutput(
 	borrowAmount *big.Int,
 ) error {
 	token := order.Order.Outputs[0].Token
+	destination := order.Order.Outputs[0].ChainID
 	amount := new(big.Int)
 	for _, output := range order.Order.Outputs {
 		chainID, err := strconv.ParseUint(output.ChainID, 10, 64)
 		if err != nil {
 			return err
+		}
+
+		if destination != output.ChainID {
+			return fmt.Errorf("order has different destinations")
 		}
 
 		if output.Token != token {
@@ -225,7 +230,7 @@ func (h *LifiCompactMessageHandler) verifyDeadline(order *lifi.LifiOrder) error 
 func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) error {
 	digest, b, err := lifi.GenerateCompactDigest(
 		new(big.Int).SetUint64(h.chainID),
-		h.lifiAddress,
+		h.lifiAddresses[h.chainID],
 		*order,
 	)
 	if err != nil {
