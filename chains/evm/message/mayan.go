@@ -111,7 +111,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		data.ErrChn <- err
 		return nil, err
 	}
-	swap, err := h.swapFetcher.GetSwap(data.OrderHash)
+	swap, err := h.swapFetcher.GetSwap(data.DepositTxHash)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
