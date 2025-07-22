@@ -84,7 +84,7 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
 			client := mayan.NewMayanExplorer()
 			client.HTTPClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				// Verify URL construction
-				expectedURL := fmt.Sprintf("%s/v3/swap/order-id/%s", mayan.MAYAN_EXPLORER_URL, tc.hash)
+				expectedURL := fmt.Sprintf("%s/v3/swap/order-id/SWIFT_%s", mayan.MAYAN_EXPLORER_URL, tc.hash)
 				if req.URL.String() != expectedURL {
 					return nil, fmt.Errorf("unexpected URL: got %s, want %s", req.URL.String(), expectedURL)
 				}

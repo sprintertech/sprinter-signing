@@ -41,7 +41,7 @@ func NewMayanExplorer() *MayanExplorer {
 }
 
 func (c *MayanExplorer) GetSwap(hash string) (*MayanSwap, error) {
-	url := fmt.Sprintf("%s/v3/swap/order-id/%s", MAYAN_EXPLORER_URL, hash)
+	url := fmt.Sprintf("%s/v3/swap/order-id/SWIFT_%s", MAYAN_EXPLORER_URL, hash)
 	resp, err := c.HTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
