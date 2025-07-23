@@ -26,6 +26,31 @@ var CompactABI, _ = abi.JSON(strings.NewReader(`
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "name": "getForcedWithdrawalStatus",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "account", "type": "address" },
+      { "name": "id",      "type": "uint256" }
+    ],
+    "outputs": [
+      { "name": "status",           "type": "uint8" },
+      { "name": "withdrawableAt",   "type": "uint256" }
+    ]
+  },
+  {
+    "name": "hasConsumedAllocatorNonce",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "allocator", "type": "address" },
+      { "name": "nonce",     "type": "uint256" }
+    ],
+    "outputs": [
+      { "name": "", "type": "bool" }
+    ]
   }
 ]
 `))

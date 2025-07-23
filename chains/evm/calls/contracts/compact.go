@@ -13,6 +13,15 @@ import (
 	"github.com/sygmaprotocol/sygma-core/chains/evm/contracts"
 )
 
+type WithdrawalStatus uint8
+
+const (
+	STATUS_DISABLED WithdrawalStatus = 0
+	STATUS_PENDING  WithdrawalStatus = 1
+	STATUS_ENABLED  WithdrawalStatus = 2
+	INVALID_STATUS  WithdrawalStatus = 3
+)
+
 type CompactContract struct {
 	contracts.Contract
 	client client.Client
@@ -36,4 +45,24 @@ func (c *CompactContract) Allocator(allocatorId *big.Int) (common.Address, error
 
 	out := *abi.ConvertType(res[0], new(common.Address)).(*common.Address)
 	return out, nil
+}
+
+func (c *CompactContract) GetForcedWithdrawalStatus(account common.Address, id *big.Int) (WithdrawalStatus, error) {
+	res, err := c.CallContract("getForcedWithdrawalStatus", account, id)
+	if err != nil {
+		return INVALID_STATUS, err
+	}
+
+	status := *abi.ConvertType(res[0], new(uint8)).(*uint8)
+	return WithdrawalStatus(status), nil
+}
+
+func (c *CompactContract) HasConsumedAllocatorNonce(allocator common.Address, nonce *big.Int) (bool, error) {
+	res, err := c.CallContract("hasConsumedAllocatorNonce", allocator, nonce)
+	if err != nil {
+		return true, err
+	}
+
+	hasConsumedNonce := *abi.ConvertType(res[0], new(bool)).(*bool)
+	return hasConsumedNonce, nil
 }

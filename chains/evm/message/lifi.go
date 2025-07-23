@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
@@ -31,20 +32,22 @@ type OrderFetcher interface {
 	GetOrder(orderID string) (*lifi.LifiOrder, error)
 }
 
-type AllocatorFetcher interface {
+type Compact interface {
 	Allocator(allocatorID *big.Int) (common.Address, error)
+	GetForcedWithdrawalStatus(account common.Address, id *big.Int) (contracts.WithdrawalStatus, error)
+	HasConsumedAllocatorNonce(allocator common.Address, nonce *big.Int) (bool, error)
+	Address() common.Address
 }
 
 type LifiCompactMessageHandler struct {
 	chainID uint64
 
-	compactAddress common.Address
 	lifiAddresses  map[uint64]common.Address
 	liquidityPools map[uint64]common.Address
 	tokenStore     config.TokenStore
 
-	orderFetcher     OrderFetcher
-	allocatorFetcher AllocatorFetcher
+	orderFetcher OrderFetcher
+	compact      Compact
 
 	coordinator Coordinator
 	host        host.Host
@@ -164,6 +167,17 @@ func (h *LifiCompactMessageHandler) verifyInputs(order *lifi.LifiOrder) error {
 		if err != nil {
 			return fmt.Errorf("token %s not configured", address)
 		}
+
+		withdrawalStatus, err := h.compact.GetForcedWithdrawalStatus(
+			common.HexToAddress(order.Order.User),
+			token[0].Int)
+		if err != nil {
+			return err
+		}
+
+		if withdrawalStatus != contracts.STATUS_DISABLED {
+			return fmt.Errorf("order has withdrawal status %d", withdrawalStatus)
+		}
 	}
 
 	return nil
@@ -231,7 +245,7 @@ func (h *LifiCompactMessageHandler) verifyDeadline(order *lifi.LifiOrder) error 
 func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) error {
 	digest, b, err := lifi.GenerateCompactDigest(
 		new(big.Int).SetUint64(h.chainID),
-		h.compactAddress,
+		h.compact.Address(),
 		*order,
 	)
 	if err != nil {
@@ -271,7 +285,7 @@ func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) erro
 		return fmt.Errorf("sponsor signature invalid: %s", err)
 	}
 
-	allocator, err := h.allocatorFetcher.Allocator(allocatorID)
+	allocator, err := h.compact.Allocator(allocatorID)
 	if err != nil {
 		return err
 	}
@@ -282,6 +296,14 @@ func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) erro
 	)
 	if !valid || err != nil {
 		return fmt.Errorf("allocator signature invalid: %s", err)
+	}
+
+	hasConsumedNonce, err := h.compact.HasConsumedAllocatorNonce(allocator, b.Nonce)
+	if err != nil {
+		return err
+	}
+	if hasConsumedNonce {
+		return fmt.Errorf("order nonce already used")
 	}
 
 	return nil
