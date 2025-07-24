@@ -268,11 +268,16 @@ func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) erro
 		return err
 	}
 
-	allocatorID, err := b.Commitments[0].AllocatorID()
+	locks, err := lifi.ExtractLocks(order.Order.Inputs)
 	if err != nil {
 		return err
 	}
-	for _, lock := range b.Commitments {
+
+	allocatorID, err := locks[0].AllocatorID()
+	if err != nil {
+		return err
+	}
+	for _, lock := range locks {
 		id, err := lock.AllocatorID()
 		if err != nil {
 			return err

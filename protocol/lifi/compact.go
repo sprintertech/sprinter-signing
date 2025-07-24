@@ -83,14 +83,30 @@ const (
 )
 
 type BatchCompact struct {
-	Arbiter     common.Address
-	Sponsor     common.Address
-	Nonce       *big.Int
-	Expires     *big.Int
-	Commitments []Lock
+	Arbiter       common.Address
+	Sponsor       common.Address
+	Nonce         *big.Int
+	Expires       *big.Int
+	IdsAndAmounts [][2]*big.Int
+	Mandate       Mandate
 }
 
-const LOCK_TYPEHASH = "fb7744571d97aa61eb9c2bc3c67b9b1ba047ac9e95afb2ef02bc5b3d9e64fbe5"
+type Mandate struct {
+	FillDeadline      uint32
+	LocalOracle       common.Address
+	OutputDescription []Output
+}
+
+type Output struct {
+	Oracle    common.Hash
+	Settler   common.Hash
+	ChainId   *big.Int
+	Token     common.Hash
+	Amount    *big.Int
+	Recipient common.Hash
+	Call      []byte
+	Context   []byte
+}
 
 // VerifyCompactSignature verifies that the signature over the compact digest was made by the signer
 func VerifyCompactSignature(digest []byte, signature []byte, signer common.Address) (bool, error) {
@@ -121,17 +137,28 @@ func GenerateCompactDigest(chainId *big.Int, verifyingContract common.Address, o
 			{Name: "chainId", Type: "uint256"},
 			{Name: "verifyingContract", Type: "address"},
 		},
-		"Lock": []apitypes.Type{
-			{Name: "lockTag", Type: "bytes12"},
-			{Name: "token", Type: "address"},
+		"OutputDescription": []apitypes.Type{
+			{Name: "oracle", Type: "bytes32"},
+			{Name: "settler", Type: "bytes32"},
+			{Name: "token", Type: "bytes32"},
+			{Name: "recipient", Type: "bytes32"},
+			{Name: "call", Type: "bytes"},
+			{Name: "context", Type: "bytes"},
+			{Name: "chainId", Type: "uint256"},
 			{Name: "amount", Type: "uint256"},
+		},
+		"Mandate": []apitypes.Type{
+			{Name: "fillDeadline", Type: "uint32"},
+			{Name: "localOracle", Type: "address"},
+			{Name: "outputs", Type: "OutputDescription[]"},
 		},
 		"BatchCompact": []apitypes.Type{
 			{Name: "arbiter", Type: "address"},
 			{Name: "sponsor", Type: "address"},
 			{Name: "nonce", Type: "uint256"},
 			{Name: "expires", Type: "uint256"},
-			{Name: "commitments", Type: "Lock[]"},
+			{Name: "idsAndAmounts", Type: "uint256[2][]"},
+			{Name: "mandate", Type: "Mandate"},
 		},
 	}
 
@@ -163,48 +190,110 @@ func GenerateCompactDigest(chainId *big.Int, verifyingContract common.Address, o
 }
 
 func batchCompactToMessage(b BatchCompact) map[string]interface{} {
-	commitments := make([]map[string]interface{}, len(b.Commitments))
-	for i, lock := range b.Commitments {
-		commitments[i] = lockToMap(lock)
+	outputs := make([]map[string]interface{}, len(b.Mandate.OutputDescription))
+	for i, o := range b.Mandate.OutputDescription {
+		outputs[i] = outputToMap(o)
+	}
+
+	mandate := map[string]interface{}{
+		"fillDeadline": new(big.Int).SetUint64(uint64(b.Mandate.FillDeadline)),
+		"localOracle":  b.Mandate.LocalOracle.Hex(),
+		"outputs":      outputs,
 	}
 
 	return map[string]interface{}{
-		"arbiter":     b.Arbiter.Hex(),
-		"sponsor":     b.Sponsor.Hex(),
-		"nonce":       b.Nonce.String(),
-		"expires":     b.Expires.String(),
-		"commitments": commitments,
+		"arbiter":       b.Arbiter.Hex(),
+		"sponsor":       b.Sponsor.Hex(),
+		"nonce":         b.Nonce.String(),
+		"expires":       b.Expires.String(),
+		"mandate":       mandate,
+		"idsAndAmounts": idsAndAmountsToInterface(b.IdsAndAmounts),
 	}
 }
 
-func lockToMap(lock Lock) map[string]interface{} {
+func outputToMap(output Output) map[string]interface{} {
 	return map[string]interface{}{
-		"lockTag": "0x" + hex.EncodeToString(lock.LockTag[:]),
-		"token":   lock.Token.Hex(),
-		"amount":  lock.Amount.String(),
+		"oracle":    output.Oracle.Hex(),
+		"settler":   output.Oracle.Hex(),
+		"token":     output.Token.Hex(),
+		"recipient": output.Recipient.Hex(),
+		"call":      "0x" + hex.EncodeToString(output.Call),
+		"context":   "0x" + hex.EncodeToString(output.Context),
+		"chainId":   output.ChainId,
+		"amount":    output.Amount,
 	}
+}
+
+func idsAndAmountsToInterface(idsAndAmounts [][2]*big.Int) []interface{} {
+	ids := (make([]interface{}, len(idsAndAmounts)))
+	for i, amounts := range idsAndAmounts {
+		ids[i] = []interface{}{amounts[0], amounts[1]}
+	}
+	return ids
 }
 
 // convertLifiOrderToBatchCompact calculates the EIP712 BatchCompact from the lifi order
 func convertLifiOrderToBatchCompact(lifiOrder LifiOrder) (*BatchCompact, error) {
-	commitments, err := extractCommitments(lifiOrder.Order.Inputs)
+	idsAndAmounts := make([][2]*big.Int, len(lifiOrder.Order.Inputs))
+	for i, idAndAmount := range lifiOrder.Order.Inputs {
+		idsAndAmounts[i][0] = idAndAmount[0].Int
+		idsAndAmounts[i][1] = idAndAmount[1].Int
+
+	}
+
+	outputs, err := extractOutputs(lifiOrder.Order.Outputs)
 	if err != nil {
 		return nil, err
 	}
 
-	sponsor := common.HexToAddress(lifiOrder.Order.User)
-	arbiter := common.HexToAddress(lifiOrder.Order.LocalOracle)
-
 	return &BatchCompact{
-		Arbiter:     arbiter,
-		Sponsor:     sponsor,
-		Nonce:       lifiOrder.Order.Nonce.Int,
-		Expires:     big.NewInt(lifiOrder.Order.Expires),
-		Commitments: commitments,
+		// TODO: arbiter
+		Arbiter:       common.HexToAddress(lifiOrder.Order.LocalOracle),
+		Sponsor:       common.HexToAddress(lifiOrder.Order.User),
+		Nonce:         lifiOrder.Order.Nonce.Int,
+		Expires:       big.NewInt(lifiOrder.Order.Expires),
+		IdsAndAmounts: idsAndAmounts,
+		Mandate: Mandate{
+			FillDeadline:      uint32(lifiOrder.Order.FillDeadline),
+			LocalOracle:       common.HexToAddress(lifiOrder.Order.LocalOracle),
+			OutputDescription: outputs,
+		},
 	}, nil
 }
 
-func extractCommitments(idsAndAmounts [][2]*BigInt) ([]Lock, error) {
+func extractOutputs(mandateOutputs []MandateOutput) ([]Output, error) {
+	outputs := make([]Output, len(mandateOutputs))
+	for i, output := range mandateOutputs {
+		chainID, ok := new(big.Int).SetString(output.ChainID, 10)
+		if !ok {
+			return outputs, fmt.Errorf("failed parsing chainID")
+		}
+
+		call, err := hex.DecodeString(output.Call[2:])
+		if err != nil {
+			return outputs, err
+		}
+
+		context, err := hex.DecodeString(output.Context[2:])
+		if err != nil {
+			return outputs, err
+		}
+
+		outputs[i] = Output{
+			Oracle:    common.HexToHash(output.Oracle),
+			Settler:   common.HexToHash(output.Settler),
+			ChainId:   chainID,
+			Token:     common.HexToHash(output.Token),
+			Amount:    output.Amount.Int,
+			Recipient: common.HexToHash(output.Recipient),
+			Call:      call,
+			Context:   context,
+		}
+	}
+	return outputs, nil
+}
+
+func ExtractLocks(idsAndAmounts [][2]*BigInt) ([]Lock, error) {
 	locks := make([]Lock, len(idsAndAmounts))
 
 	for i, idsAndAmount := range idsAndAmounts {
