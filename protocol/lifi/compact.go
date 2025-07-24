@@ -48,6 +48,17 @@ func (l *Lock) Period() (time.Duration, error) {
 
 type ResetPeriod uint8
 
+const (
+	OneSecond             ResetPeriod = 0
+	FifteenSeconds        ResetPeriod = 1
+	OneMinute             ResetPeriod = 2
+	TenMinutes            ResetPeriod = 3
+	OneHourAndFiveMinutes ResetPeriod = 4
+	OneDay                ResetPeriod = 5
+	SevenDaysAndOneHour   ResetPeriod = 6
+	ThirtyDays            ResetPeriod = 7
+)
+
 func (p ResetPeriod) ToDuration() (time.Duration, error) {
 	switch p {
 	case OneSecond:
@@ -70,17 +81,6 @@ func (p ResetPeriod) ToDuration() (time.Duration, error) {
 		return time.Second, fmt.Errorf("unknown reset period")
 	}
 }
-
-const (
-	OneSecond             ResetPeriod = 0
-	FifteenSeconds        ResetPeriod = 1
-	OneMinute             ResetPeriod = 2
-	TenMinutes            ResetPeriod = 3
-	OneHourAndFiveMinutes ResetPeriod = 4
-	OneDay                ResetPeriod = 5
-	SevenDaysAndOneHour   ResetPeriod = 6
-	ThirtyDays            ResetPeriod = 7
-)
 
 type BatchCompact struct {
 	Arbiter       common.Address
