@@ -30,17 +30,17 @@ func (b *BigInt) MarshalJSON() ([]byte, error) {
 }
 
 type OrderItem struct {
-	User          string       `json:"user"`
-	Nonce         *BigInt      `json:"nonce"`
-	Inputs        [][2]*BigInt `json:"inputs"` // [token, amount]
-	Expires       int64        `json:"expires"`
-	Outputs       []Output     `json:"outputs"`
-	LocalOracle   string       `json:"localOracle"`
-	FillDeadline  int64        `json:"fillDeadline"`
-	OriginChainID string       `json:"originChainId"`
+	User          string          `json:"user"`
+	Nonce         *BigInt         `json:"nonce"`
+	Inputs        [][2]*BigInt    `json:"inputs"` // [token, amount]
+	Expires       int64           `json:"expires"`
+	Outputs       []MandateOutput `json:"outputs"`
+	LocalOracle   string          `json:"localOracle"`
+	FillDeadline  int64           `json:"fillDeadline"`
+	OriginChainID string          `json:"originChainId"`
 }
 
-type Output struct {
+type MandateOutput struct {
 	Call      string  `json:"call"`
 	Token     string  `json:"token"`
 	Amount    *BigInt `json:"amount"`

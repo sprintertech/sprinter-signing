@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
@@ -42,6 +43,7 @@ type Compact interface {
 type LifiCompactMessageHandler struct {
 	chainID uint64
 
+	mpcAddress     common.Address
 	lifiAddresses  map[uint64]common.Address
 	liquidityPools map[uint64]common.Address
 	tokenStore     config.TokenStore
@@ -100,9 +102,14 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 	}
 	data.ErrChn <- nil
 
+	calldata, err := h.calldata(order)
+	if err != nil {
+		return nil, err
+	}
+
 	chainID, _ := strconv.ParseUint(order.Order.Outputs[0].ChainID, 10, 64)
 	unlockHash, err := unlockHash(
-		[]byte{}, // TODO
+		calldata,
 		data.BorrowAmount,
 		common.HexToAddress(order.Order.Outputs[0].Token),
 		new(big.Int).SetUint64(chainID),
@@ -133,6 +140,15 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (h *LifiCompactMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, error) {
+	return consts.LifiABI.Pack(
+		"fillOrderOutputs",
+		order.Order.FillDeadline,
+		order.Meta.OnChainOrderID,
+		order.Order.Outputs,
+		common.HexToHash(h.mpcAddress.Hex()))
 }
 
 // verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
