@@ -94,6 +94,29 @@ func NewRhinestoneMessage(source, destination uint64, rhinestoneData *Rhinestone
 	}
 }
 
+type LifiData struct {
+	ErrChn chan error `json:"-"`
+
+	OrderID       string
+	Coordinator   peer.ID
+	LiquidityPool common.Address
+	Caller        common.Address
+	BorrowAmount  *big.Int
+	Nonce         *big.Int
+	Source        uint64
+	Destination   uint64
+}
+
+func NewLifiData(source, destination uint64, lifiData *LifiData) *message.Message {
+	return &message.Message{
+		Source:      source,
+		Destination: destination,
+		Data:        lifiData,
+		Type:        MayanMessage,
+		Timestamp:   time.Now(),
+	}
+}
+
 // unlockHash calculates the hash that has to signed and submitted on-chain to the liquidity
 // pool contract.
 func unlockHash(

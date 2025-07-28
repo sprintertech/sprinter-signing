@@ -20,6 +20,7 @@ const (
 	AcrossProtocol     ProtocolType = "across"
 	MayanProtocol      ProtocolType = "mayan"
 	RhinestoneProtocol ProtocolType = "rhinestone"
+	LifiCompact        ProtocolType = "lifi-compact"
 )
 
 type SigningBody struct {
@@ -100,6 +101,19 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		{
 			m = evmMessage.NewRhinestoneMessage(0, b.ChainId, &evmMessage.RhinestoneData{
 				BundleID:      b.DepositId,
+				Nonce:         b.Nonce.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				ErrChn:        errChn,
+				Source:        0,
+				Destination:   b.ChainId,
+				BorrowAmount:  b.BorrowAmount.Int,
+			})
+		}
+	case LifiCompact:
+		{
+			m = evmMessage.NewLifiData(0, b.ChainId, &evmMessage.LifiData{
+				OrderID:       b.DepositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
