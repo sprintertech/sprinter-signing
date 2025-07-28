@@ -301,7 +301,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidOutp
 		common.HexToAddress(s.mockOrder.Order.User),
 		gomock.Any(),
 	).Return(contracts.STATUS_DISABLED, nil)
-	s.mockOrder.Order.Outputs[0].Token = "invalid"
+	s.mockOrder.Order.Outputs[0].Token = "0x000000000000000000000000036CbD53842c5426634e7929541eC2318f3dCF7b"
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
 
 	m := &coreMessage.Message{
