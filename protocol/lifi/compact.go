@@ -237,7 +237,6 @@ func convertLifiOrderToBatchCompact(lifiOrder LifiOrder) (*BatchCompact, error) 
 	for i, idAndAmount := range lifiOrder.Order.Inputs {
 		idsAndAmounts[i][0] = idAndAmount[0].Int
 		idsAndAmounts[i][1] = idAndAmount[1].Int
-
 	}
 
 	outputs, err := extractOutputs(lifiOrder.Order.Outputs)
@@ -252,7 +251,7 @@ func convertLifiOrderToBatchCompact(lifiOrder LifiOrder) (*BatchCompact, error) 
 		Expires:       big.NewInt(lifiOrder.Order.Expires),
 		IdsAndAmounts: idsAndAmounts,
 		Mandate: Mandate{
-			FillDeadline:      uint32(lifiOrder.Order.FillDeadline),
+			FillDeadline:      lifiOrder.Order.FillDeadline,
 			LocalOracle:       common.HexToAddress(lifiOrder.Order.LocalOracle),
 			OutputDescription: outputs,
 		},

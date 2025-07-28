@@ -61,7 +61,6 @@ func TestVerifyCompactSignature(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			valid, err := lifi.VerifyCompactSignature(digest, tc.signature, validSponsor)
 			if (err != nil) != tc.expectErr {
 				t.Fatalf("expected error: %v, got: %v", tc.expectErr, err)

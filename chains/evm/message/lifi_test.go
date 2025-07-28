@@ -102,7 +102,8 @@ func (s *LifiCompactMessageHandlerTestSuite) SetupTest() {
 	var order *lifi.LifiOrder
 	_ = json.Unmarshal([]byte(mock.ExpectedLifiResponse), &order)
 	s.mockOrder = order
-	s.mockOrder.Order.FillDeadline = time.Now().Add(time.Minute * 10).Unix()
+	// nolint:gosec
+	s.mockOrder.Order.FillDeadline = uint32(time.Now().Add(time.Minute * 10).Unix())
 	s.mockOrder.Order.Expires = time.Now().Add(time.Hour * 2).Unix()
 
 	sponsorKp, _ := secp256k1.GenerateKeypair()
@@ -178,7 +179,8 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidFillDeadl
 		OrderID:       "orderID",
 	}
 
-	s.mockOrder.Order.FillDeadline = time.Now().Unix()
+	// nolint:gosec
+	s.mockOrder.Order.FillDeadline = uint32(time.Now().Unix())
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
 
 	m := &coreMessage.Message{

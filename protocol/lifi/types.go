@@ -36,7 +36,7 @@ type OrderItem struct {
 	Expires       int64           `json:"expires"`
 	Outputs       []MandateOutput `json:"outputs"`
 	LocalOracle   string          `json:"localOracle"`
-	FillDeadline  int64           `json:"fillDeadline"`
+	FillDeadline  uint32          `json:"fillDeadline"`
 	OriginChainID string          `json:"originChainId"`
 }
 

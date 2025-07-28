@@ -177,7 +177,7 @@ func (h *LifiCompactMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, err
 
 	return consts.LifiABI.Pack(
 		"fillOrderOutputs",
-		uint32(order.Order.FillDeadline),
+		order.Order.FillDeadline,
 		common.HexToHash(order.Meta.OnChainOrderID),
 		outputs,
 		common.HexToHash(h.mpcAddress.Hex()))
@@ -279,7 +279,7 @@ func (h *LifiCompactMessageHandler) verifyOutput(
 }
 
 func (h *LifiCompactMessageHandler) verifyDeadline(order *lifi.LifiOrder) error {
-	fillDeadline := time.Unix(order.Order.FillDeadline, 0)
+	fillDeadline := time.Unix(int64(order.Order.FillDeadline), 0)
 	if time.Until(fillDeadline) < FILL_DEADLINE {
 		return fmt.Errorf("fill deadline %s too short", time.Until(fillDeadline))
 	}
