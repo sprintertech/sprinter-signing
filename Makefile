@@ -37,6 +37,7 @@ genmocks:
 	mockgen -destination=./comm/p2p/mock/stream/stream.go github.com/libp2p/go-libp2p/core/network Stream,Conn
 	mockgen -source=./chains/evm/message/across.go -destination=./chains/evm/message/mock/across.go
 	mockgen -source=./chains/evm/message/rhinestone.go -destination=./chains/evm/message/mock/rhinestone.go
+	mockgen -source=./chains/evm/message/lifi.go -destination=./chains/evm/message/mock/lifi.go
 	mockgen -source=./chains/evm/message/mayan.go -destination=./chains/evm/message/mock/mayan.go
 	mockgen -source=./chains/evm/message/confirmations.go -destination=./chains/evm/message/mock/confirmations.go
 	mockgen -source=./api/handlers/signing.go -destination=./api/handlers/mock/signing.go

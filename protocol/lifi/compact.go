@@ -41,8 +41,7 @@ func (l *Lock) AllocatorID() (*big.Int, error) {
 }
 
 func (l *Lock) Period() (time.Duration, error) {
-	lastFour := binary.BigEndian.Uint32(l.LockTag[8:12])
-	period := uint8((lastFour >> 2) & 0x3) // Bits 92-93: period
+	period := l.LockTag[0] >> 4 & 0b111
 	return ResetPeriod(period).ToDuration()
 }
 
@@ -247,7 +246,6 @@ func convertLifiOrderToBatchCompact(lifiOrder LifiOrder) (*BatchCompact, error) 
 	}
 
 	return &BatchCompact{
-		// TODO: arbiter
 		Arbiter:       common.HexToAddress(lifiOrder.Order.LocalOracle),
 		Sponsor:       common.HexToAddress(lifiOrder.Order.User),
 		Nonce:         lifiOrder.Order.Nonce.Int,

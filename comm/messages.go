@@ -39,6 +39,8 @@ const (
 	AcrossMsg
 	// MayanMsg message type is used for the process coordinator to share mayan data
 	MayanMsg
+	// LifiMsg message type is used for the process coordinator to share lifi data
+	LifiMsg
 	// Rhinestone message type is used for the process coordinator to share rhinestone data
 	RhinestoneMsg
 	// Unknown message type

@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -43,10 +44,9 @@ type Compact interface {
 type LifiCompactMessageHandler struct {
 	chainID uint64
 
-	mpcAddress     common.Address
-	lifiAddresses  map[uint64]common.Address
-	liquidityPools map[uint64]common.Address
-	tokenStore     config.TokenStore
+	mpcAddress    common.Address
+	lifiAddresses map[uint64]common.Address
+	tokenStore    config.TokenStore
 
 	orderFetcher OrderFetcher
 	compact      Compact
@@ -58,25 +58,31 @@ type LifiCompactMessageHandler struct {
 	sigChn      chan any
 }
 
-func NewLifiMessageHandler(
+func NewLifiCompactMessageHandler(
 	chainID uint64,
-	liquidityPools map[uint64]common.Address,
+	mpcAddress common.Address,
+	lifiAddresses map[uint64]common.Address,
+	tokenStore config.TokenStore,
+	orderFetcher OrderFetcher,
+	compact Compact,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
-	tokenStore config.TokenStore,
 	sigChn chan any,
 ) *LifiCompactMessageHandler {
 	return &LifiCompactMessageHandler{
-		chainID:        chainID,
-		liquidityPools: liquidityPools,
-		coordinator:    coordinator,
-		host:           host,
-		comm:           comm,
-		fetcher:        fetcher,
-		sigChn:         sigChn,
-		tokenStore:     tokenStore,
+		chainID:       chainID,
+		mpcAddress:    mpcAddress,
+		lifiAddresses: lifiAddresses,
+		orderFetcher:  orderFetcher,
+		compact:       compact,
+		coordinator:   coordinator,
+		host:          host,
+		comm:          comm,
+		fetcher:       fetcher,
+		sigChn:        sigChn,
+		tokenStore:    tokenStore,
 	}
 }
 
@@ -143,22 +149,43 @@ func (h *LifiCompactMessageHandler) HandleMessage(m *message.Message) (*proposal
 }
 
 func (h *LifiCompactMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, error) {
+	type output struct {
+		Oracle    common.Hash
+		Settler   common.Hash
+		Recipient common.Hash
+		ChainId   *big.Int
+		Token     common.Hash
+		Amount    *big.Int
+		Call      []byte
+		Context   []byte
+	}
+	outputs := make([]output, len(order.Order.Outputs))
+	for i, o := range order.Order.Outputs {
+		chainID, _ := new(big.Int).SetString(o.ChainID, 10)
+		call, _ := hex.DecodeString(o.Call)
+		context, _ := hex.DecodeString(o.Context)
+		outputs[i] = output{
+			Oracle:    common.HexToHash(o.Oracle),
+			Settler:   common.HexToHash(o.Settler),
+			ChainId:   chainID,
+			Amount:    o.Amount.Int,
+			Recipient: common.HexToHash(o.Recipient),
+			Call:      call,
+			Context:   context,
+		}
+	}
+
 	return consts.LifiABI.Pack(
 		"fillOrderOutputs",
-		order.Order.FillDeadline,
-		order.Meta.OnChainOrderID,
-		order.Order.Outputs,
+		uint32(order.Order.FillDeadline),
+		common.HexToHash(order.Meta.OnChainOrderID),
+		outputs,
 		common.HexToHash(h.mpcAddress.Hex()))
 }
 
 // verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
 func (h *LifiCompactMessageHandler) verifyOrder(order *lifi.LifiOrder, data *LifiData) error {
-	err := h.verifySignatures(order)
-	if err != nil {
-		return err
-	}
-
-	err = h.verifyDeadline(order)
+	err := h.verifyDeadline(order)
 	if err != nil {
 		return err
 	}
@@ -169,6 +196,11 @@ func (h *LifiCompactMessageHandler) verifyOrder(order *lifi.LifiOrder, data *Lif
 	}
 
 	err = h.verifyOutput(order, data.Caller, data.BorrowAmount)
+	if err != nil {
+		return err
+	}
+
+	err = h.verifySignatures(order)
 	if err != nil {
 		return err
 	}
@@ -221,7 +253,8 @@ func (h *LifiCompactMessageHandler) verifyOutput(
 			return fmt.Errorf("order has different output tokens")
 		}
 
-		_, _, err = h.tokenStore.ConfigByAddress(chainID, common.HexToAddress(output.Token))
+		address := common.BytesToAddress(common.Hex2Bytes(output.Token[2:])[12:])
+		_, _, err = h.tokenStore.ConfigByAddress(chainID, address)
 		if err != nil {
 			return fmt.Errorf("token %s not configured", token)
 		}
@@ -230,7 +263,8 @@ func (h *LifiCompactMessageHandler) verifyOutput(
 			return fmt.Errorf("output call exceeds max length")
 		}
 
-		if common.HexToAddress(output.Settler).Hex() != caller.Hex() {
+		settlerAddress := common.BytesToAddress(common.Hex2Bytes(output.Settler[2:])[12:])
+		if settlerAddress.Hex() != caller.Hex() {
 			return fmt.Errorf("output settler %s is not caller %s", output.Settler, caller)
 		}
 
@@ -291,28 +325,36 @@ func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) erro
 		if err != nil {
 			return err
 		}
-
 		expiryDeadline := time.Unix(order.Order.Expires, 0)
+
 		if time.Until(expiryDeadline) > resetPeriod {
 			return fmt.Errorf("expiry less than reset period")
 		}
 	}
 
+	sSig, err := hex.DecodeString(order.SponsorSignature[2:])
+	if err != nil {
+		return err
+	}
 	valid, err := lifi.VerifyCompactSignature(
 		digest,
-		[]byte(order.SponsorSignature),
+		sSig,
 		common.HexToAddress(order.Order.User))
 	if !valid || err != nil {
 		return fmt.Errorf("sponsor signature invalid: %s", err)
 	}
 
+	aSig, err := hex.DecodeString(order.AllocatorSignature[2:])
+	if err != nil {
+		return err
+	}
 	allocator, err := h.compact.Allocator(allocatorID)
 	if err != nil {
 		return err
 	}
 	valid, err = lifi.VerifyCompactSignature(
 		digest,
-		[]byte(order.AllocatorSignature),
+		aSig,
 		allocator,
 	)
 	if !valid || err != nil {
@@ -332,7 +374,7 @@ func (h *LifiCompactMessageHandler) verifySignatures(order *lifi.LifiOrder) erro
 
 func (h *LifiCompactMessageHandler) Listen(ctx context.Context) {
 	msgChn := make(chan *comm.WrappedMessage)
-	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.LifiSessionID), comm.MayanMsg, msgChn)
+	subID := h.comm.Subscribe(fmt.Sprintf("%d-%s", h.chainID, comm.LifiSessionID), comm.LifiMsg, msgChn)
 
 	for {
 		select {
@@ -372,5 +414,5 @@ func (h *LifiCompactMessageHandler) notify(data *LifiData) error {
 		return err
 	}
 
-	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.MayanMsg, fmt.Sprintf("%d-%s", h.chainID, comm.LifiSessionID))
+	return h.comm.Broadcast(h.host.Peerstore().Peers(), msgBytes, comm.LifiMsg, fmt.Sprintf("%d-%s", h.chainID, comm.LifiSessionID))
 }
