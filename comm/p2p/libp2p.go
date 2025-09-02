@@ -39,7 +39,7 @@ func NewCommunication(h host.Host, protocolID protocol.ID) Libp2pCommunication {
 		h:                          h,
 		protocolID:                 protocolID,
 		logger:                     logger,
-		streamManager:              NewStreamManager(),
+		streamManager:              NewStreamManager(h),
 	}
 
 	// start processing incoming messages
@@ -179,21 +179,27 @@ func (c Libp2pCommunication) sendMessage(
 	}
 
 	var stream network.Stream
-	stream, err = c.streamManager.Stream(sessionID, to)
+	stream, err = c.streamManager.Stream(sessionID, to, c.protocolID)
 	if err != nil {
-		// try to open the stream again if it failed the first time
-		stream, err = c.h.NewStream(context.TODO(), to, c.protocolID)
-		if err != nil {
-			return err
-		}
-		c.streamManager.AddStream(sessionID, to, stream)
+		return err
 	}
 
 	err = WriteStream(msg, bufio.NewWriterSize(stream, defaultBufferSize))
 	if err != nil {
 		c.logger.Error().Str("To", to.String()).Err(err).Msg("unable to send message")
+		c.streamManager.ReleaseStreams(sessionID)
+
+		stream, err = c.streamManager.Stream(sessionID, to, c.protocolID)
+		if err != nil {
+			return err
+		}
+
+		err = WriteStream(msg, bufio.NewWriterSize(stream, defaultBufferSize))
+	}
+	if err != nil {
 		return err
 	}
+
 	c.logger.Trace().Str(
 		"To", to.String()).Str(
 		"MsgType", msgType.String()).Str(
