@@ -230,6 +230,7 @@ func Run() error {
 					acrossMh := evmMessage.NewAcrossMessageHandler(
 						*c.GeneralChainConfig.Id,
 						acrossPools,
+						repayerAddresses,
 						coordinator,
 						host,
 						communication,

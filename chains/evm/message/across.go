@@ -52,6 +52,7 @@ type AcrossMessageHandler struct {
 	chainID uint64
 
 	pools               map[uint64]common.Address
+	repayers            map[uint64]common.Address
 	confirmationWatcher ConfirmationWatcher
 	depositFetcher      DepositFetcher
 
@@ -66,6 +67,7 @@ type AcrossMessageHandler struct {
 func NewAcrossMessageHandler(
 	chainID uint64,
 	pools map[uint64]common.Address,
+	repayers map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
@@ -77,6 +79,7 @@ func NewAcrossMessageHandler(
 	return &AcrossMessageHandler{
 		chainID:             chainID,
 		pools:               pools,
+		repayers:            repayers,
 		coordinator:         coordinator,
 		host:                host,
 		comm:                comm,
@@ -96,6 +99,13 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	log.Info().Str("depositId", data.DepositId.String()).Msgf("Handling across message %+v", data)
 
 	sourceChainID := h.chainID
+	repaymentAddress, ok := h.repayers[data.RepaymentChainID]
+	if !ok {
+		err := fmt.Errorf("invalid repayment chain %d", data.RepaymentChainID)
+		data.ErrChn <- err
+		return nil, err
+	}
+
 	err := h.notify(data)
 	if err != nil {
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
@@ -121,7 +131,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 
 	calldata, err := d.ToV3RelayData(
 		new(big.Int).SetUint64(sourceChainID),
-	).Calldata(d.DestinationChainId, data.LiquidityPool)
+	).Calldata(new(big.Int).SetUint64(data.RepaymentChainID), repaymentAddress)
 	if err != nil {
 		return nil, err
 	}

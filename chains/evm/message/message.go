@@ -26,14 +26,15 @@ const (
 type AcrossData struct {
 	ErrChn chan error `json:"-"`
 
-	DepositTxHash common.Hash
-	DepositId     *big.Int
-	Nonce         *big.Int
-	LiquidityPool common.Address
-	Caller        common.Address
-	Coordinator   peer.ID
-	Source        uint64
-	Destination   uint64
+	DepositTxHash    common.Hash
+	DepositId        *big.Int
+	Nonce            *big.Int
+	LiquidityPool    common.Address
+	RepaymentChainID uint64
+	Caller           common.Address
+	Coordinator      peer.ID
+	Source           uint64
+	Destination      uint64
 }
 
 func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *message.Message {
