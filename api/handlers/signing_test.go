@@ -263,11 +263,12 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 	handler := handlers.NewSigningHandler(msgChn, s.chains)
 
 	input := handlers.SigningBody{
-		DepositId:     "1000",
-		Protocol:      "across",
-		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		DepositId:        "1000",
+		Protocol:         "across",
+		LiquidityPool:    "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:           "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:            &handlers.BigInt{big.NewInt(1001)},
+		RepaymentChainId: 5,
 	}
 	body, _ := json.Marshal(input)
 
@@ -282,6 +283,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 	go func() {
 		msg := <-msgChn
 		ad := msg[0].Data.(*across.AcrossData)
+		s.Equal(ad.RepaymentChainID, uint64(5))
 		ad.ErrChn <- nil
 	}()
 
