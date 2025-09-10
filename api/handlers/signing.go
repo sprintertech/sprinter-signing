@@ -23,15 +23,16 @@ const (
 )
 
 type SigningBody struct {
-	ChainId       uint64
-	DepositId     string       `json:"depositId"`
-	Nonce         *BigInt      `json:"nonce"`
-	Protocol      ProtocolType `json:"protocol"`
-	LiquidityPool string       `json:"liquidityPool"`
-	Caller        string       `json:"caller"`
-	Calldata      string       `json:"calldata"`
-	DepositTxHash string       `json:"depositTxHash"`
-	BorrowAmount  *BigInt      `json:"borrowAmount"`
+	ChainId          uint64
+	DepositId        string       `json:"depositId"`
+	Nonce            *BigInt      `json:"nonce"`
+	Protocol         ProtocolType `json:"protocol"`
+	LiquidityPool    string       `json:"liquidityPool"`
+	Caller           string       `json:"caller"`
+	Calldata         string       `json:"calldata"`
+	DepositTxHash    string       `json:"depositTxHash"`
+	BorrowAmount     *BigInt      `json:"borrowAmount"`
+	RepaymentChainId uint64       `jsoin:"repaymentChainId"`
 }
 
 type SigningHandler struct {
@@ -71,14 +72,15 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		{
 			depositId, _ := new(big.Int).SetString(b.DepositId, 10)
 			m = evmMessage.NewAcrossMessage(0, b.ChainId, &evmMessage.AcrossData{
-				DepositId:     depositId,
-				Nonce:         b.Nonce.Int,
-				LiquidityPool: common.HexToAddress(b.LiquidityPool),
-				Caller:        common.HexToAddress(b.Caller),
-				Source:        0,
-				Destination:   b.ChainId,
-				ErrChn:        errChn,
-				DepositTxHash: common.HexToHash(b.DepositTxHash),
+				DepositId:        depositId,
+				Nonce:            b.Nonce.Int,
+				LiquidityPool:    common.HexToAddress(b.LiquidityPool),
+				Caller:           common.HexToAddress(b.Caller),
+				Source:           0,
+				Destination:      b.ChainId,
+				ErrChn:           errChn,
+				DepositTxHash:    common.HexToHash(b.DepositTxHash),
+				RepaymentChainID: b.RepaymentChainId,
 			})
 		}
 	case MayanProtocol:
