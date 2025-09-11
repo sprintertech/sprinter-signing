@@ -4,11 +4,13 @@
 package p2p
 
 import (
-	"fmt"
+	"context"
 	"sync"
 
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,13 +20,15 @@ import (
 type StreamManager struct {
 	streamsBySessionID map[string]map[peer.ID]network.Stream
 	streamLocker       *sync.Mutex
+	host               host.Host
 }
 
 // NewStreamManager creates new StreamManager
-func NewStreamManager() *StreamManager {
+func NewStreamManager(host host.Host) *StreamManager {
 	return &StreamManager{
 		streamsBySessionID: make(map[string]map[peer.ID]network.Stream),
 		streamLocker:       &sync.Mutex{},
+		host:               host,
 	}
 }
 
@@ -39,6 +43,10 @@ func (sm *StreamManager) ReleaseStreams(sessionID string) {
 	}
 
 	for peer, stream := range streams {
+		if stream.Conn() != nil {
+			_ = stream.Conn().Close()
+		}
+
 		err := stream.Close()
 		if err != nil {
 			log.Err(err).Msgf("Cannot close stream to peer %s", peer.String())
@@ -67,14 +75,21 @@ func (sm *StreamManager) AddStream(sessionID string, peerID peer.ID, stream netw
 }
 
 // Stream fetches stream by peer and session ID
-func (sm *StreamManager) Stream(sessionID string, peerID peer.ID) (network.Stream, error) {
+func (sm *StreamManager) Stream(sessionID string, peerID peer.ID, protocolID protocol.ID) (network.Stream, error) {
 	sm.streamLocker.Lock()
-	defer sm.streamLocker.Unlock()
 
 	stream, ok := sm.streamsBySessionID[sessionID][peerID]
 	if !ok {
-		return nil, fmt.Errorf("no stream for peerID %s", peerID)
+		stream, err := sm.host.NewStream(context.TODO(), peerID, protocolID)
+		if err != nil {
+			return nil, err
+		}
+
+		sm.streamLocker.Unlock()
+		sm.AddStream(sessionID, peerID, stream)
+		return stream, nil
 	}
 
+	sm.streamLocker.Unlock()
 	return stream, nil
 }
