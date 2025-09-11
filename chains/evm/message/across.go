@@ -141,6 +141,20 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
+	fmt.Println("=== UnlockHash Call Results ===")
+	fmt.Printf("Returned hash   : %s\n", common.Bytes2Hex(unlockHash))
+	fmt.Printf("Error (if any)  : %v\n", err)
+
+	fmt.Println("\n=== Input Values ===")
+	fmt.Printf("calldata                : %s\n", common.Bytes2Hex(calldata))
+	fmt.Printf("OutputAmount            : %d\n", d.OutputAmount)
+	fmt.Printf("OutputToken (slice[12:]): %s\n", common.BytesToAddress(d.OutputToken[12:]).Hex())
+	fmt.Printf("DestinationChainId      : %s\n", d.DestinationChainId.String())
+	fmt.Printf("Pool address            : %s\n", h.pools[d.DestinationChainId.Uint64()].Hex())
+	fmt.Printf("Caller                  : %s\n", data.Caller.Hex())
+	fmt.Printf("LiquidityPool           : %s\n", data.LiquidityPool.Hex())
+	fmt.Printf("Nonce                   : %d\n", data.Nonce)
+
 	sessionID := fmt.Sprintf("%d-%s", sourceChainID, data.DepositId)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
