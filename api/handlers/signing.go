@@ -32,7 +32,7 @@ type SigningBody struct {
 	Calldata         string       `json:"calldata"`
 	DepositTxHash    string       `json:"depositTxHash"`
 	BorrowAmount     *BigInt      `json:"borrowAmount"`
-	RepaymentChainId uint64       `jsoin:"repaymentChainId"`
+	RepaymentChainId uint64       `json:"repaymentChainId"`
 }
 
 type SigningHandler struct {
