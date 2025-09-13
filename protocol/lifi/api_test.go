@@ -1,78 +1,58 @@
-package mayan_test
+package lifi_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"testing"
 
-	"github.com/sprintertech/sprinter-signing/protocol/mayan"
+	"github.com/sprintertech/sprinter-signing/protocol/lifi"
+	"github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
 )
 
-// roundTripperFunc allows mocking HTTP transport
 type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-func Test_MayanExplorer_GetSwap(t *testing.T) {
+func Test_LifiAPI_GetOrder(t *testing.T) {
 	tests := []struct {
 		name         string
-		hash         string
+		id           string
 		mockResponse []byte
 		statusCode   int
 		mockError    error
-		wantResult   *mayan.MayanSwap
+		wantResult   []byte
 		wantErr      bool
 	}{
 		{
-			name: "successful response",
-			hash: "testhash",
-			mockResponse: []byte(`{
-                "orderHash": "0x123",
-                "randomKey": "key",
-                "mayanBps": 10,
-                "auctionMode": 1,
-                "redeemRelayerFee": "0.1",
-                "refundRelayerFee": "0.05",
-                "trader": "0xTrader",
-                "minAmountOut64": "100",
-				"sourceTxHash": "0xhash",
-				"createTxHash": "0xcreatehash"
-            }`),
-			statusCode: http.StatusOK,
-			wantResult: &mayan.MayanSwap{
-				OrderHash:        "0x123",
-				RandomKey:        "key",
-				MayanBps:         10,
-				AuctionMode:      1,
-				RedeemRelayerFee: "0.1",
-				RefundRelayerFee: "0.05",
-				Trader:           "0xTrader",
-				MinAmountOut64:   "100",
-				SourceTxHash:     "0xhash",
-				CreateTxHash:     "0xcreatehash",
-			},
+			name:         "successful response",
+			id:           "testhash",
+			mockResponse: []byte(mock.LifiMockResponse),
+			statusCode:   http.StatusOK,
+			wantResult:   []byte(mock.ExpectedLifiResponse),
 		},
 		{
 			name:      "HTTP error",
-			hash:      "errorhash",
+			id:        "errorhash",
 			mockError: errors.New("connection refused"),
 			wantErr:   true,
 		},
 		{
 			name:         "non-200 status",
-			hash:         "badstatus",
+			id:           "badstatus",
 			mockResponse: []byte("Not found"),
 			statusCode:   http.StatusNotFound,
 			wantErr:      true,
 		},
 		{
 			name:         "invalid JSON",
-			hash:         "badjson",
+			id:           "badjson",
 			mockResponse: []byte("{invalid"),
 			statusCode:   http.StatusOK,
 			wantErr:      true,
@@ -81,10 +61,9 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			client := mayan.NewMayanExplorer()
+			client := lifi.NewLifiAPI()
 			client.HTTPClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-				// Verify URL construction
-				expectedURL := fmt.Sprintf("%s/v3/swap/order-id/%s", mayan.MAYAN_EXPLORER_URL, tc.hash)
+				expectedURL := fmt.Sprintf("%s/orders?onChainOrderId=%s", lifi.LIFI_URL, tc.id)
 				if req.URL.String() != expectedURL {
 					return nil, fmt.Errorf("unexpected URL: got %s, want %s", req.URL.String(), expectedURL)
 				}
@@ -100,7 +79,7 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
 				}, nil
 			})
 
-			got, err := client.GetSwap(tc.hash)
+			got, err := client.GetOrder(tc.id)
 
 			if tc.wantErr {
 				if err == nil {
@@ -114,7 +93,10 @@ func Test_MayanExplorer_GetSwap(t *testing.T) {
 				if got == nil {
 					t.Fatal("expected non-nil result, got nil")
 				}
-				if *got != *tc.wantResult {
+
+				var want *lifi.LifiOrder
+				_ = json.Unmarshal(tc.wantResult, &want)
+				if !reflect.DeepEqual(got, want) {
 					t.Errorf("expected %+v, got %+v", tc.wantResult, got)
 				}
 			} else if got != nil {
