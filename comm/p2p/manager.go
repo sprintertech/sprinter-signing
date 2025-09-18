@@ -49,7 +49,7 @@ func (sm *StreamManager) ReleaseStreams(sessionID string) {
 
 		err := stream.Close()
 		if err != nil {
-			log.Err(err).Msgf("Cannot close stream to peer %s", peer.String())
+			log.Debug().Msgf("Cannot close stream to peer %s, err: %s", peer.String(), err.Error())
 		}
 	}
 
