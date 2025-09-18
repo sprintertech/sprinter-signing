@@ -68,6 +68,10 @@ func (h *AcrossDepositFetcher) fetchDepositByHash(ctx context.Context, hash comm
 			continue
 		}
 
+		if len(l.Topics) < 3 {
+			continue
+		}
+
 		if l.Topics[0] != events.AcrossDepositSig.GetTopic() {
 			continue
 		}
