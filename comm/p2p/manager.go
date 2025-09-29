@@ -43,13 +43,10 @@ func (sm *StreamManager) ReleaseStreams(sessionID string) {
 	}
 
 	for peer, stream := range streams {
-		if stream.Conn() != nil {
-			_ = stream.Conn().Close()
-		}
-
 		err := stream.Close()
 		if err != nil {
 			log.Debug().Msgf("Cannot close stream to peer %s, err: %s", peer.String(), err.Error())
+			_ = stream.Reset()
 		}
 	}
 

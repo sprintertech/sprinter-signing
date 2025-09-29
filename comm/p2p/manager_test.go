@@ -35,8 +35,6 @@ func (s *StreamManagerTestSuite) Test_ManagingSubscriptions_Success() {
 	streamManager := p2p.NewStreamManager(s.mockHost)
 
 	mockConn := mock_network.NewMockConn(s.mockController)
-	mockConn.EXPECT().Close().Return(nil).Times(2)
-
 	stream1 := mock_network.NewMockStream(s.mockController)
 	stream1.EXPECT().Conn().Return(mockConn).AnyTimes()
 	stream2 := mock_network.NewMockStream(s.mockController)
