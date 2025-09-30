@@ -43,7 +43,7 @@ type LifiCompactMessageHandlerTestSuite struct {
 
 	mockOrderFetcher *mock_message.MockOrderFetcher
 	mockCompact      *mock_message.MockCompact
-	handler          *message.LifiCompactMessageHandler
+	handler          *message.LifiEscrowMessageHandler
 }
 
 func TestRunLifiCompactMessageHandlerTestSuite(t *testing.T) {
@@ -83,9 +83,11 @@ func (s *LifiCompactMessageHandlerTestSuite) SetupTest() {
 		Address:  common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"),
 		Decimals: 18,
 	}
-	tokenStore := config.TokenStore{
-		Tokens: tokens,
-	}
+	/*
+		tokenStore := config.TokenStore{
+			Tokens: tokens,
+		}
+	*/
 	confirmations := make(map[uint64]uint64)
 	confirmations[1000] = 100
 	confirmations[2000] = 200
@@ -93,8 +95,8 @@ func (s *LifiCompactMessageHandlerTestSuite) SetupTest() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
 		gomock.Any(),
-		comm.LifiMsg,
-		fmt.Sprintf("%d-%s", 8453, comm.LifiSessionID),
+		comm.LifiEscrowMsg,
+		fmt.Sprintf("%d-%s", 8453, comm.LifiEscrowSessionID),
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
@@ -124,25 +126,11 @@ func (s *LifiCompactMessageHandlerTestSuite) SetupTest() {
 
 	s.mockOrder.AllocatorSignature = "0x" + hex.EncodeToString(allocatorSig)
 	s.mockOrder.SponsorSignature = "0x" + hex.EncodeToString(sponsorSig)
-
-	s.handler = message.NewLifiCompactMessageHandler(
-		8453,
-		common.HexToAddress("0x0000000000000000000000000000000000000001"),
-		lifiAddresses,
-		tokenStore,
-		s.mockOrderFetcher,
-		s.mockCompact,
-		s.mockCoordinator,
-		s.mockHost,
-		s.mockCommunication,
-		s.mockFetcher,
-		s.sigChn,
-	)
 }
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderFetchingFails() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -170,7 +158,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderFetchingFai
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidFillDeadline() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -200,7 +188,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidFillDeadl
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidExpiry() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -229,7 +217,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidExpiry() 
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInputsNotWhitelisted() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -258,7 +246,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInputsNotWh
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidWithdrawalStatus() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -290,7 +278,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidWith
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidOutputs() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -323,7 +311,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidOutp
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExceedsAmount() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -355,7 +343,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExce
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidSignature() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
@@ -388,7 +376,7 @@ func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_InvalidSignature
 
 func (s *LifiCompactMessageHandlerTestSuite) Test_HandleMessage_ValidOrder() {
 	errChn := make(chan error, 1)
-	ad := &message.LifiData{
+	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),

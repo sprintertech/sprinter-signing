@@ -39,8 +39,8 @@ const (
 	AcrossMsg
 	// MayanMsg message type is used for the process coordinator to share mayan data
 	MayanMsg
-	// LifiMsg message type is used for the process coordinator to share lifi data
-	LifiMsg
+	// LifiEscrowMsg message type is used for the process coordinator to share lifi data
+	LifiEscrowMsg
 	// Rhinestone message type is used for the process coordinator to share rhinestone data
 	RhinestoneMsg
 	// Unknown message type
@@ -51,7 +51,7 @@ const (
 	SignatureSessionID  = "signatures"
 	AcrossSessionID     = "across"
 	MayanSessionID      = "mayan"
-	LifiSessionID       = "lifi"
+	LifiEscrowSessionID = "lifi-escrow"
 	RhinestoneSessionID = "rhinestone"
 )
 
@@ -90,6 +90,8 @@ func (msgType MessageType) String() string {
 		return "MayanMsg"
 	case RhinestoneMsg:
 		return "RhinestoneMsg"
+	case LifiEscrowMsg:
+		return "LifiEscrowMsg"
 	default:
 		return "UnknownMsg"
 	}

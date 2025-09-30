@@ -112,7 +112,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		}
 	case LifiCompact:
 		{
-			m = evmMessage.NewLifiData(0, b.ChainId, &evmMessage.LifiData{
+			m = evmMessage.NewLifiEscrowData(0, b.ChainId, &evmMessage.LifiEscrowData{
 				OrderID:       b.DepositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),

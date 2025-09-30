@@ -94,7 +94,7 @@ func NewRhinestoneMessage(source, destination uint64, rhinestoneData *Rhinestone
 	}
 }
 
-type LifiData struct {
+type LifiEscrowData struct {
 	ErrChn chan error `json:"-"`
 
 	OrderID       string
@@ -107,7 +107,7 @@ type LifiData struct {
 	Destination   uint64
 }
 
-func NewLifiData(source, destination uint64, lifiData *LifiData) *message.Message {
+func NewLifiEscrowData(source, destination uint64, lifiData *LifiEscrowData) *message.Message {
 	return &message.Message{
 		Source:      source,
 		Destination: destination,

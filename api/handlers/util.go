@@ -27,7 +27,7 @@ func (b *BigInt) UnmarshalJSON(data []byte) error {
 }
 
 func (b *BigInt) MarshalJSON() ([]byte, error) {
-	return []byte(b.String()), nil
+	return []byte(fmt.Sprintf("%s", b.String())), nil
 }
 
 func JSONError(w http.ResponseWriter, err error, code int) {

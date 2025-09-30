@@ -364,7 +364,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 
 	input := handlers.SigningBody{
 		DepositId:     "depositID",
-		Protocol:      "lifi-compact",
+		Protocol:      "lifi-escrow",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Calldata:      "0xbe5",
@@ -383,7 +383,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(*across.LifiData)
+		ad := msg[0].Data.(*across.LifiEscrowData)
 		ad.ErrChn <- nil
 	}()
 
