@@ -20,7 +20,7 @@ const (
 	AcrossProtocol     ProtocolType = "across"
 	MayanProtocol      ProtocolType = "mayan"
 	RhinestoneProtocol ProtocolType = "rhinestone"
-	LifiCompact        ProtocolType = "lifi-compact"
+	LifiEscrow         ProtocolType = "lifi-escrow"
 )
 
 type SigningBody struct {
@@ -110,7 +110,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
-	case LifiCompact:
+	case LifiEscrow:
 		{
 			m = evmMessage.NewLifiEscrowData(0, b.ChainId, &evmMessage.LifiEscrowData{
 				OrderID:       b.DepositId,
