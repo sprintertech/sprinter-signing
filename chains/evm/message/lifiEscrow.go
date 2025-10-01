@@ -31,7 +31,7 @@ type OrderFetcher interface {
 
 type LifiEscrowMessageHandler struct {
 	chainID             uint64
-	validator           lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder]
+	validator           *lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder]
 	orderPricer         pricing.OrderPricer
 	confirmationWatcher ConfirmationWatcher
 
@@ -46,6 +46,36 @@ type LifiEscrowMessageHandler struct {
 	comm        comm.Communication
 	fetcher     signing.SaveDataFetcher
 	sigChn      chan any
+}
+
+func NewLifiEscrowMessageHandler(
+	chainID uint64,
+	lifiAddresses map[uint64]common.Address,
+	coordinator Coordinator,
+	host host.Host,
+	comm comm.Communication,
+	fetcher signing.SaveDataFetcher,
+	confirmationWatcher ConfirmationWatcher,
+	tokenStore config.TokenStore,
+	orderFetcher OrderFetcher,
+	orderPricer pricing.OrderPricer,
+	validator *lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder],
+	sigChn chan any,
+) *LifiEscrowMessageHandler {
+	return &LifiEscrowMessageHandler{
+		chainID:             chainID,
+		lifiAddresses:       lifiAddresses,
+		coordinator:         coordinator,
+		host:                host,
+		comm:                comm,
+		fetcher:             fetcher,
+		confirmationWatcher: confirmationWatcher,
+		tokenStore:          tokenStore,
+		orderFetcher:        orderFetcher,
+		orderPricer:         orderPricer,
+		validator:           validator,
+		sigChn:              sigChn,
+	}
 }
 
 // HandleMessage verifies the lifi escrow order on-chain and signs

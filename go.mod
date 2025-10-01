@@ -99,6 +99,7 @@ require (
 	github.com/quic-go/webtransport-go v0.8.1-0.20241018022711-4ac2c9250e66 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/supranational/blst v0.3.14 // indirect
+	github.com/tmaxmax/go-sse v0.11.0 // indirect
 	github.com/vedhavyas/go-subkey/v2 v2.0.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect

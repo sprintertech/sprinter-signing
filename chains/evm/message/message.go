@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	AcrossMessage = "AcrossMessage"
-	MayanMessage  = "MayanMessage"
+	AcrossMessage     = "AcrossMessage"
+	MayanMessage      = "MayanMessage"
+	LifiEscrowMessage = "LifiEscrowMessage"
 
 	DOMAIN_NAME = "LiquidityPool"
 	VERSION     = "1.0.0"
