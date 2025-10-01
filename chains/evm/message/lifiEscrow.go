@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -24,12 +23,6 @@ import (
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	lifiValidation "github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
-)
-
-const (
-	EXPIRY          = time.Hour
-	FILL_DEADLINE   = time.Minute * 5
-	MAX_CALL_LENGTH = 65535
 )
 
 type OrderFetcher interface {
@@ -55,7 +48,7 @@ type LifiEscrowMessageHandler struct {
 	sigChn      chan any
 }
 
-// HandleMessage verifies the lifi order on-chain signs
+// HandleMessage verifies the lifi escrow order on-chain and signs
 // the order if it is valid
 func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(*LifiEscrowData)
