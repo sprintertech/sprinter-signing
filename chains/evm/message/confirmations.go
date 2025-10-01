@@ -41,8 +41,8 @@ func NewWatcher(
 	}
 }
 
-// WaitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
-func (w *Watcher) WaitForConfirmations(
+// WaitForTokenConfirmations blocks until the transaction hash has enough on-chain confirmations.
+func (w *Watcher) WaitForTokenConfirmations(
 	ctx context.Context,
 	chainID uint64,
 	txHash common.Hash,
@@ -52,11 +52,39 @@ func (w *Watcher) WaitForConfirmations(
 	ctx, cancel := context.WithTimeout(ctx, TIMEOUT)
 	defer cancel()
 
-	requiredConfirmations, err := w.minimalConfirmations(chainID, token, amount)
+	orderValue, err := w.orderValue(chainID, token, amount)
 	if err != nil {
 		return err
 	}
 
+	requiredConfirmations, err := w.minimalConfirmations(orderValue)
+	if err != nil {
+		return err
+	}
+
+	return w.wait(ctx, txHash, requiredConfirmations)
+}
+
+// WaitForConfirmations blocks until the transaction hash has enough on-chain confirmations.
+func (w *Watcher) WaitForOrderConfirmations(
+	ctx context.Context,
+	chainID uint64,
+	txHash common.Hash,
+	orderValue float64,
+) error {
+	ctx, cancel := context.WithTimeout(ctx, TIMEOUT)
+	defer cancel()
+
+	orderValueInt, _ := big.NewFloat(orderValue).Int(nil)
+	requiredConfirmations, err := w.minimalConfirmations(orderValueInt)
+	if err != nil {
+		return err
+	}
+
+	return w.wait(ctx, txHash, requiredConfirmations)
+}
+
+func (w *Watcher) wait(ctx context.Context, txHash common.Hash, requiredConfirmations uint64) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -96,15 +124,28 @@ func (w *Watcher) WaitForConfirmations(
 
 // minimalConfirmations calculates the minimal confirmations needed to wait for execution
 // of an order based on order size
-func (w *Watcher) minimalConfirmations(chainID uint64, token common.Address, amount *big.Int) (uint64, error) {
+func (w *Watcher) minimalConfirmations(orderValue *big.Int) (uint64, error) {
+
+	buckets := slices.Collect(maps.Keys(w.confirmations))
+	slices.Sort(buckets)
+	for _, bucket := range buckets {
+		if orderValue.Cmp(new(big.Int).SetUint64(bucket)) < 0 {
+			return w.confirmations[bucket], nil
+		}
+	}
+
+	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValue)
+}
+
+func (w *Watcher) orderValue(chainID uint64, token common.Address, amount *big.Int) (*big.Int, error) {
 	symbol, c, err := w.tokenStore.ConfigByAddress(chainID, token)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	price, err := w.tokenPricer.TokenPrice(symbol)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	orderValueInt := new(big.Int)
@@ -112,14 +153,5 @@ func (w *Watcher) minimalConfirmations(chainID uint64, token common.Address, amo
 		new(big.Float).Mul(big.NewFloat(price), new(big.Float).SetInt(amount)),
 		new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(c.Decimals)), nil)),
 	).Int(orderValueInt)
-
-	buckets := slices.Collect(maps.Keys(w.confirmations))
-	slices.Sort(buckets)
-	for _, bucket := range buckets {
-		if orderValueInt.Cmp(new(big.Int).SetUint64(bucket)) < 0 {
-			return w.confirmations[bucket], nil
-		}
-	}
-
-	return 0, fmt.Errorf("order value %f exceeds confirmation buckets", orderValueInt)
+	return orderValueInt, nil
 }

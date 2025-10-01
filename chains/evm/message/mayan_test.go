@@ -163,7 +163,7 @@ func (s *MayanMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 		Status:   contracts.OrderCreated,
 		AmountIn: 1000000,
 	}, nil)
-	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockWatcher.EXPECT().WaitForTokenConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	m := &coreMessage.Message{

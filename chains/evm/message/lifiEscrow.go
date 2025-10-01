@@ -16,11 +16,13 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
-	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
+
+	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	lifiValidation "github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
 )
 
 const (
@@ -34,11 +36,13 @@ type OrderFetcher interface {
 }
 
 type LifiEscrowMessageHandler struct {
-	chainID uint64
+	chainID             uint64
+	validator           lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder]
+	confirmationWatcher ConfirmationWatcher
 
-	mpcAddress    common.Address
 	lifiAddresses map[uint64]common.Address
 	tokenStore    config.TokenStore
+	mpcAddress    common.Address
 
 	orderFetcher OrderFetcher
 
@@ -64,7 +68,24 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	err = h.verifyOrder(order, data)
+	err = h.verifyOrder(order)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	orderValue, err := order.TotalInputsUSDValue(nil)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	err = h.confirmationWatcher.WaitForOrderConfirmations(
+		context.Background(),
+		h.chainID,
+		common.HexToHash(data.DepositTxHash),
+		orderValue,
+	)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -80,7 +101,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	unlockHash, err := unlockHash(
 		calldata,
 		data.BorrowAmount,
-		common.HexToAddress(order.Order.Outputs[0].Token),
+		common.BytesToAddress(order.Order.Outputs[0].Token[:]),
 		new(big.Int).SetUint64(chainID),
 		h.lifiAddresses[chainID],
 		uint64(order.Order.FillDeadline),
@@ -147,8 +168,8 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 }
 
 // verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
-func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder, data *LifiEscrowData) error {
-	return nil
+func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder) error {
+	return h.validator.Validate(order)
 }
 
 func (h *LifiEscrowMessageHandler) Listen(ctx context.Context) {

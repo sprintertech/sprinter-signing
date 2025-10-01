@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 )
 
 const (
@@ -13,7 +15,7 @@ const (
 )
 
 type Response struct {
-	Data []LifiOrder `json:"data"`
+	Data []lifi.LifiOrder `json:"data"`
 }
 
 type LifiAPI struct {
@@ -29,7 +31,7 @@ func NewLifiAPI() *LifiAPI {
 }
 
 // GetOrder fetches order from the LiFi API by its on-chain orderID
-func (a *LifiAPI) GetOrder(orderID string) (*LifiOrder, error) {
+func (a *LifiAPI) GetOrder(orderID string) (*lifi.LifiOrder, error) {
 	url := fmt.Sprintf("%s/orders?onChainOrderId=%s", LIFI_URL, orderID)
 	resp, err := a.HTTPClient.Get(url)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	lifiProtocol "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
 )
@@ -94,7 +95,7 @@ func Test_LifiAPI_GetOrder(t *testing.T) {
 					t.Fatal("expected non-nil result, got nil")
 				}
 
-				var want *lifi.LifiOrder
+				var want *lifiProtocol.LifiOrder
 				_ = json.Unmarshal(tc.wantResult, &want)
 				if !reflect.DeepEqual(got, want) {
 					t.Errorf("expected %+v, got %+v", tc.wantResult, got)

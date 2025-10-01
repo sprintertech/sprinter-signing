@@ -36,12 +36,17 @@ type Coordinator interface {
 }
 
 type ConfirmationWatcher interface {
-	WaitForConfirmations(
+	WaitForTokenConfirmations(
 		ctx context.Context,
 		chainID uint64,
 		txHash common.Hash,
 		token common.Address,
 		amount *big.Int) error
+	WaitForOrderConfirmations(
+		ctx context.Context,
+		chainID uint64,
+		txHash common.Hash,
+		orderValue float64) error
 }
 
 type DepositFetcher interface {
@@ -107,7 +112,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	err = h.confirmationWatcher.WaitForConfirmations(
+	err = h.confirmationWatcher.WaitForTokenConfirmations(
 		context.Background(),
 		h.chainID,
 		data.DepositTxHash,

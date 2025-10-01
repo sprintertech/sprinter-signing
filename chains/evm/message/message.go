@@ -101,6 +101,7 @@ type LifiEscrowData struct {
 	Coordinator   peer.ID
 	LiquidityPool common.Address
 	Caller        common.Address
+	DepositTxHash string
 	BorrowAmount  *big.Int
 	Nonce         *big.Int
 	Source        uint64
