@@ -160,7 +160,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	data.ErrChn <- nil
 
-	unlockHash, err := unlockHash(
+	unlockHash, err := borrowUnlockHash(
 		calldataBytes,
 		data.BorrowAmount,
 		destinationBorrowToken.Address,

@@ -2,7 +2,6 @@ package message
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
@@ -21,6 +21,7 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 
+	"github.com/sprintertech/lifi-solver/pkg/pricing"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	lifiValidation "github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
 )
@@ -38,6 +39,7 @@ type OrderFetcher interface {
 type LifiEscrowMessageHandler struct {
 	chainID             uint64
 	validator           lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder]
+	orderPricer         pricing.OrderPricer
 	confirmationWatcher ConfirmationWatcher
 
 	lifiAddresses map[uint64]common.Address
@@ -68,16 +70,23 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	err = h.verifyOrder(order)
+	err = h.verifyOrder(order, data.BorrowAmount)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
 
-	orderValue, err := order.TotalInputsUSDValue(nil)
+	orderValue, err := order.TotalInputsUSDValue(h.orderPricer)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
+	}
+
+	borrowToken, destChainID, err := h.borrowToken(order)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+
 	}
 
 	err = h.confirmationWatcher.WaitForOrderConfirmations(
@@ -97,13 +106,12 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	chainID, _ := strconv.ParseUint(order.Order.Outputs[0].ChainID, 10, 64)
-	unlockHash, err := unlockHash(
+	unlockHash, err := borrowManyUnlockHash(
 		calldata,
-		data.BorrowAmount,
-		common.BytesToAddress(order.Order.Outputs[0].Token[:]),
-		new(big.Int).SetUint64(chainID),
-		h.lifiAddresses[chainID],
+		[]*big.Int{data.BorrowAmount},
+		[]common.Address{borrowToken},
+		new(big.Int).SetUint64(destChainID),
+		h.lifiAddresses[destChainID],
 		uint64(order.Order.FillDeadline),
 		data.Caller,
 		data.LiquidityPool,
@@ -132,6 +140,26 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	return nil, nil
 }
 
+func (h *LifiEscrowMessageHandler) borrowToken(order *lifi.LifiOrder) (common.Address, uint64, error) {
+	destChainID, err := strconv.ParseUint(order.Order.Outputs[0].ChainID, 10, 64)
+	if err != nil {
+		return common.Address{}, 0, err
+	}
+
+	tokenIn := common.BytesToAddress(order.GenericInputs[0].TokenAddress[:])
+	symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
+	if err != nil {
+		return common.Address{}, destChainID, err
+	}
+
+	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainID, symbol)
+	if err != nil {
+		return common.Address{}, destChainID, err
+	}
+
+	return destinationBorrowToken.Address, destChainID, err
+}
+
 func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, error) {
 	type output struct {
 		Oracle    common.Hash
@@ -146,8 +174,14 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 	outputs := make([]output, len(order.Order.Outputs))
 	for i, o := range order.Order.Outputs {
 		chainID, _ := new(big.Int).SetString(o.ChainID, 10)
-		call, _ := hex.DecodeString(o.Call)
-		context, _ := hex.DecodeString(o.Context)
+		call, err := hexutil.Decode(o.Call)
+		if err != nil {
+			return nil, err
+		}
+		context, err := hexutil.Decode(o.Context)
+		if err != nil {
+			return nil, err
+		}
 		outputs[i] = output{
 			Oracle:    common.HexToHash(o.Oracle),
 			Settler:   common.HexToHash(o.Settler),
@@ -168,7 +202,20 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 }
 
 // verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
-func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder) error {
+func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder, borrowAmount *big.Int) error {
+	if len(order.Order.Inputs) > 1 || len(order.Order.Inputs) == 0 {
+		return fmt.Errorf("orders with multiple inputs not supported")
+	}
+
+	if len(order.Order.Outputs) > 1 {
+		return fmt.Errorf("orders with multiple outputs not supported")
+	}
+
+	if order.GenericInputs[0].Amount.Cmp(borrowAmount) == -1 {
+		return fmt.Errorf("order input is less than requested borrow amount")
+
+	}
+
 	return h.validator.Validate(order)
 }
 

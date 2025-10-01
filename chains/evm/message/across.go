@@ -131,7 +131,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	unlockHash, err := unlockHash(
+	unlockHash, err := borrowUnlockHash(
 		calldata,
 		d.OutputAmount,
 		common.BytesToAddress(d.OutputToken[12:]),
