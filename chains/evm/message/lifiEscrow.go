@@ -22,16 +22,19 @@ import (
 
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
-	lifiValidation "github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
 )
 
 type OrderFetcher interface {
 	GetOrder(orderID string) (*lifi.LifiOrder, error)
 }
 
+type OrderValidator interface {
+	Validate(order *lifi.LifiOrder) error
+}
+
 type LifiEscrowMessageHandler struct {
 	chainID             uint64
-	validator           *lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder]
+	validator           OrderValidator
 	orderPricer         pricing.OrderPricer
 	confirmationWatcher ConfirmationWatcher
 
@@ -59,7 +62,7 @@ func NewLifiEscrowMessageHandler(
 	tokenStore config.TokenStore,
 	orderFetcher OrderFetcher,
 	orderPricer pricing.OrderPricer,
-	validator *lifiValidation.LifiEscrowOrderValidator[lifi.LifiOrder],
+	validator OrderValidator,
 	sigChn chan any,
 ) *LifiEscrowMessageHandler {
 	return &LifiEscrowMessageHandler{

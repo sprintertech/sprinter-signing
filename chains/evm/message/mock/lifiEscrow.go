@@ -54,3 +54,41 @@ func (mr *MockOrderFetcherMockRecorder) GetOrder(orderID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrder", reflect.TypeOf((*MockOrderFetcher)(nil).GetOrder), orderID)
 }
+
+// MockOrderValidator is a mock of OrderValidator interface.
+type MockOrderValidator struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrderValidatorMockRecorder
+	isgomock struct{}
+}
+
+// MockOrderValidatorMockRecorder is the mock recorder for MockOrderValidator.
+type MockOrderValidatorMockRecorder struct {
+	mock *MockOrderValidator
+}
+
+// NewMockOrderValidator creates a new mock instance.
+func NewMockOrderValidator(ctrl *gomock.Controller) *MockOrderValidator {
+	mock := &MockOrderValidator{ctrl: ctrl}
+	mock.recorder = &MockOrderValidatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrderValidator) EXPECT() *MockOrderValidatorMockRecorder {
+	return m.recorder
+}
+
+// Validate mocks base method.
+func (m *MockOrderValidator) Validate(order *lifi.LifiOrder) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Validate", order)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Validate indicates an expected call of Validate.
+func (mr *MockOrderValidatorMockRecorder) Validate(order any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockOrderValidator)(nil).Validate), order)
+}

@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
 	lifiTypes "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
-	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -19,7 +17,6 @@ import (
 	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/keyshare"
-	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
 	"github.com/stretchr/testify/suite"
@@ -35,10 +32,15 @@ type LifiEscrowMessageHandlerTestSuite struct {
 	mockHost          *mock_host.MockHost
 	mockFetcher       *mock_tss.MockSaveDataFetcher
 	mockOrder         *lifiTypes.LifiOrder
-	sigChn            chan interface{}
+	mockWatcher       *mock_message.MockConfirmationWatcher
 
-	mockOrderFetcher *mock_message.MockOrderFetcher
-	handler          *message.LifiEscrowMessageHandler
+	sigChn chan interface{}
+
+	mockOrderFetcher   *mock_message.MockOrderFetcher
+	mockOrderPricer    *mock_message.MockOrderPricer
+	mockOrderValidator *mock_message.MockOrderValidator
+
+	handler *message.LifiEscrowMessageHandler
 }
 
 func TestRunLifiEscrowMessageHandlerTestSuite(t *testing.T) {
@@ -47,22 +49,6 @@ func TestRunLifiEscrowMessageHandlerTestSuite(t *testing.T) {
 
 func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
-
-	s.mockCommunication = mock_communication.NewMockCommunication(ctrl)
-	s.mockCoordinator = mock_message.NewMockCoordinator(ctrl)
-
-	s.mockHost = mock_host.NewMockHost(ctrl)
-	s.mockHost.EXPECT().ID().Return(peer.ID("")).AnyTimes()
-
-	s.mockFetcher = mock_tss.NewMockSaveDataFetcher(ctrl)
-	s.mockFetcher.EXPECT().UnlockKeyshare().AnyTimes()
-	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
-	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
-
-	s.mockOrderFetcher = mock_message.NewMockOrderFetcher(ctrl)
-	s.mockCompact = mock_message.NewMockCompact(ctrl)
-
-	s.sigChn = make(chan interface{}, 1)
 
 	lifiAddresses := make(map[uint64]common.Address)
 	lifiAddresses[8453] = common.HexToAddress("0x0000000000000000000000000000000000000010")
@@ -85,6 +71,23 @@ func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 	confirmations[1000] = 100
 	confirmations[2000] = 200
 
+	var order *lifiTypes.LifiOrder
+	_ = json.Unmarshal([]byte(mock.ExpectedLifiResponse), &order)
+	s.mockOrder = order
+
+	s.mockOrderPricer = mock_message.NewMockOrderPricer(ctrl)
+	s.mockOrderValidator = mock_message.NewMockOrderValidator(ctrl)
+	s.mockOrderFetcher = mock_message.NewMockOrderFetcher(ctrl)
+	s.mockWatcher = mock_message.NewMockConfirmationWatcher(ctrl)
+	s.mockCommunication = mock_communication.NewMockCommunication(ctrl)
+	s.mockCoordinator = mock_message.NewMockCoordinator(ctrl)
+	s.mockHost = mock_host.NewMockHost(ctrl)
+	s.mockHost.EXPECT().ID().Return(peer.ID("")).AnyTimes()
+	s.mockFetcher = mock_tss.NewMockSaveDataFetcher(ctrl)
+	s.mockFetcher.EXPECT().UnlockKeyshare().AnyTimes()
+	s.mockFetcher.EXPECT().LockKeyshare().AnyTimes()
+	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
+
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
 		gomock.Any(),
@@ -94,9 +97,23 @@ func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
-	var order *lifiTypes.LifiOrder
-	_ = json.Unmarshal([]byte(mock.ExpectedLifiResponse), &order)
-	s.mockOrder = order
+	s.sigChn = make(chan interface{}, 1)
+
+	s.handler = message.NewLifiEscrowMessageHandler(
+		8453,
+		lifiAddresses,
+		s.mockCoordinator,
+		s.mockHost,
+		s.mockCommunication,
+		s.mockFetcher,
+		s.mockWatcher,
+		tokenStore,
+		s.mockOrderFetcher,
+		s.mockOrderPricer,
+		s.mockOrderValidator,
+		s.sigChn,
+	)
+
 }
 
 func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_OrderFetchingFails() {
@@ -127,174 +144,15 @@ func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_OrderFetchingFail
 	s.NotNil(err)
 }
 
-func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_InvalidFillDeadline() {
-	errChn := make(chan error, 1)
-	ad := &message.LifiEscrowData{
-		ErrChn:        errChn,
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		BorrowAmount:  big.NewInt(2493365192379644),
-		OrderID:       "orderID",
-	}
-
-	// nolint:gosec
-	s.mockOrder.Order.FillDeadline = uint32(time.Now().Unix())
-	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
-
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      0,
-		Destination: 10,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
-func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_InvalidExpiry() {
-	errChn := make(chan error, 1)
-	ad := &message.LifiEscrowData{
-		ErrChn:        errChn,
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		BorrowAmount:  big.NewInt(2493365192379644),
-		OrderID:       "orderID",
-	}
-
-	s.mockOrder.Order.Expires = time.Now().Unix()
-	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
-
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      0,
-		Destination: 10,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
-func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_OrderInputsNotWhitelisted() {
-	errChn := make(chan error, 1)
-	ad := &message.LifiEscrowData{
-		ErrChn:        errChn,
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        s.sponsor,
-		BorrowAmount:  big.NewInt(2493365192379644),
-		OrderID:       "orderID",
-	}
-
-	s.mockOrder.Order.Inputs[0][0] = &lifi.BigInt{Int: big.NewInt(0)}
-	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
-
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      0,
-		Destination: 10,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
-func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidWithdrawalStatus() {
-	errChn := make(chan error, 1)
-	ad := &message.LifiEscrowData{
-		ErrChn:        errChn,
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        s.sponsor,
-		BorrowAmount:  big.NewInt(2493365192379644),
-		OrderID:       "orderID",
-	}
-
-	s.mockCompact.EXPECT().GetForcedWithdrawalStatus(
-		common.HexToAddress(s.mockOrder.Order.User),
-		gomock.Any(),
-	).Return(contracts.STATUS_PENDING, nil)
-	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
-
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      0,
-		Destination: 10,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
-func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_OrderInvalidOutputs() {
-	errChn := make(chan error, 1)
-	ad := &message.LifiEscrowData{
-		ErrChn:        errChn,
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        s.sponsor,
-		BorrowAmount:  big.NewInt(2493365192379644),
-		OrderID:       "orderID",
-	}
-
-	s.mockCompact.EXPECT().GetForcedWithdrawalStatus(
-		common.HexToAddress(s.mockOrder.Order.User),
-		gomock.Any(),
-	).Return(contracts.STATUS_DISABLED, nil)
-	s.mockOrder.Order.Outputs[0].Token = "0x000000000000000000000000036CbD53842c5426634e7929541eC2318f3dCF7b"
-	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
-
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      0,
-		Destination: 10,
-	}
-
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
 func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExceedsAmount() {
 	errChn := make(chan error, 1)
 	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        s.sponsor,
-		BorrowAmount:  big.NewInt(10001),
+		BorrowAmount:  big.NewInt(20001),
 		OrderID:       "orderID",
 	}
-
-	s.mockCompact.EXPECT().GetForcedWithdrawalStatus(
-		common.HexToAddress(s.mockOrder.Order.User),
-		gomock.Any(),
-	).Return(contracts.STATUS_DISABLED, nil)
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
 
 	m := &coreMessage.Message{
@@ -312,23 +170,17 @@ func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExcee
 	s.NotNil(err)
 }
 
-func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_InvalidSignature() {
+func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_ValidationError() {
 	errChn := make(chan error, 1)
 	ad := &message.LifiEscrowData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        s.sponsor,
-		BorrowAmount:  big.NewInt(9999),
+		BorrowAmount:  big.NewInt(10000),
 		OrderID:       "orderID",
 	}
-
-	s.mockCompact.EXPECT().GetForcedWithdrawalStatus(
-		gomock.Any(),
-		gomock.Any(),
-	).Return(contracts.STATUS_DISABLED, nil)
-	s.mockOrder.Order.User = "0xinvalid"
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
+	s.mockOrderValidator.EXPECT().Validate(s.mockOrder).Return(fmt.Errorf("error"))
 
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -351,19 +203,14 @@ func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_ValidOrder() {
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		Caller:        s.sponsor,
-		BorrowAmount:  big.NewInt(9999),
+		BorrowAmount:  big.NewInt(10000),
 		OrderID:       "orderID",
+		DepositTxHash: "0xhash",
 	}
-
-	s.mockOrder.Order.User = s.sponsor.Hex()
-	s.mockCompact.EXPECT().GetForcedWithdrawalStatus(
-		common.HexToAddress(s.mockOrder.Order.User),
-		gomock.Any(),
-	).Return(contracts.STATUS_DISABLED, nil)
-	s.mockCompact.EXPECT().Allocator(gomock.Any()).Return(s.allocator, nil)
-	s.mockCompact.EXPECT().HasConsumedAllocatorNonce(s.allocator, gomock.Any()).Return(false, nil)
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
+	s.mockOrderValidator.EXPECT().Validate(s.mockOrder).Return(nil)
+	s.mockOrderPricer.EXPECT().PriceInputs(gomock.Any()).Return(float64(1000), nil)
+	s.mockWatcher.EXPECT().WaitForOrderConfirmations(gomock.Any(), uint64(8453), common.HexToHash(ad.DepositTxHash), float64(1000)).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	m := &coreMessage.Message{
