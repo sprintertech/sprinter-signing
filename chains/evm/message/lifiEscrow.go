@@ -112,7 +112,6 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
-
 	}
 
 	err = h.confirmationWatcher.WaitForOrderConfirmations(
@@ -239,7 +238,6 @@ func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder, borrowAmou
 
 	if order.GenericInputs[0].Amount.Cmp(borrowAmount) == -1 {
 		return fmt.Errorf("order input is less than requested borrow amount")
-
 	}
 
 	return h.validator.Validate(order)

@@ -125,7 +125,6 @@ func (w *Watcher) wait(ctx context.Context, txHash common.Hash, requiredConfirma
 // minimalConfirmations calculates the minimal confirmations needed to wait for execution
 // of an order based on order size
 func (w *Watcher) minimalConfirmations(orderValue *big.Int) (uint64, error) {
-
 	buckets := slices.Collect(maps.Keys(w.confirmations))
 	slices.Sort(buckets)
 	for _, bucket := range buckets {

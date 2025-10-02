@@ -113,7 +113,6 @@ func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 		s.mockOrderValidator,
 		s.sigChn,
 	)
-
 }
 
 func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_OrderFetchingFails() {
