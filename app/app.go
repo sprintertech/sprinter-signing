@@ -159,7 +159,7 @@ func Run() error {
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
-	lifiEscrowAddresses := make(map[uint64]common.Address)
+	lifiOutputSettlers := make(map[uint64]common.Address)
 	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
 	for _, chainConfig := range configuration.ChainConfigs {
@@ -182,9 +182,9 @@ func Run() error {
 					mayanPools[*c.GeneralChainConfig.Id] = poolAddress
 				}
 
-				if c.LifiEscrow != "" {
-					lifiEscrowAddress := common.HexToAddress(c.LifiEscrow)
-					lifiEscrowAddresses[*c.GeneralChainConfig.Id] = lifiEscrowAddress
+				if c.LifiOutputSettler != "" {
+					settlerAddress := common.HexToAddress(c.LifiOutputSettler)
+					lifiOutputSettlers[*c.GeneralChainConfig.Id] = settlerAddress
 				}
 
 				if c.AcrossHubPool != "" {
@@ -280,7 +280,7 @@ func Run() error {
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
 
-				if c.LifiEscrow != "" {
+				if c.LifiOutputSettler != "" {
 					usdPricer := pyth.NewClient(ctx)
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
@@ -289,7 +289,7 @@ func Run() error {
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
 						*c.GeneralChainConfig.Id,
-						lifiEscrowAddresses,
+						lifiOutputSettlers,
 						coordinator,
 						host,
 						communication,

@@ -107,6 +107,9 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 					"eip155:1": "repayer",
 				},
 			},
+			Lifi: &solverConfig.LifiMetadata{
+				OutputSettler: "settler",
+			},
 		},
 	})
 
@@ -128,6 +131,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		AcrossPool:           "acrossPool",
 		AcrossHubPool:        "acrossHubPool",
 		MayanSwift:           "mayanSwift",
+		LifiOutputSettler:    "settler",
 		ConfirmationsByValue: make(map[uint64]uint64),
 		Tokens:               make(map[string]config.TokenConfig),
 	})
@@ -215,6 +219,9 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 					"eip155:1": "repayer",
 				},
 			},
+			Lifi: &solverConfig.LifiMetadata{
+				OutputSettler: "settler",
+			},
 		},
 	})
 
@@ -235,6 +242,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		AcrossPool:           "acrossPool",
 		AcrossHubPool:        "acrossHubPool",
 		MayanSwift:           "mayanSwift",
+		LifiOutputSettler:    "settler",
 		Repayer:              "repayer",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
