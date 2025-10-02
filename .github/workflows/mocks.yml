@@ -3,15 +3,20 @@
 
 on: [pull_request]
 name: Mocks check
+
 env:
   GO111MODULE: on
   GOPRIVATE: github.com/sprintertech
+  TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 
 jobs:
   mocks-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: setup git access to private repos
+        run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
 
       - uses: actions/setup-go@v2
         with:
