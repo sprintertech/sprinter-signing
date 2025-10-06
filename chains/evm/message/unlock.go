@@ -138,7 +138,7 @@ func (h *LifiUnlockHandler) lifiUnlockHash(data *LifiUnlockData) ([]byte, error)
 	msg := apitypes.TypedDataMessage{
 		"orderId":     common.HexToHash(data.OrderID),
 		"destination": common.HexToHash(repaymentAddress.Hex()),
-		"call":        "",
+		"call":        "0x",
 	}
 	chainId := math.HexOrDecimal256(*new(big.Int).SetUint64(h.chainID))
 	typedData := apitypes.TypedData{
