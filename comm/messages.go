@@ -91,7 +91,7 @@ func (msgType MessageType) String() string {
 	case RhinestoneMsg:
 		return "RhinestoneMsg"
 	case LifiUnlockMsg:
-		return "LifiUnlockMsgr"
+		return "LifiUnlockMsg"
 	default:
 		return "UnknownMsg"
 	}
