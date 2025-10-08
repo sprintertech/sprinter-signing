@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	AcrossMessage = "AcrossMessage"
-	MayanMessage  = "MayanMessage"
+	AcrossMessage     = "AcrossMessage"
+	MayanMessage      = "MayanMessage"
+	LifiUnlockMessage = "LifiUnlockMessage"
 
 	DOMAIN_NAME = "LiquidityPool"
 	VERSION     = "1.0.0"
@@ -91,6 +92,27 @@ func NewRhinestoneMessage(source, destination uint64, rhinestoneData *Rhinestone
 		Destination: destination,
 		Data:        rhinestoneData,
 		Type:        MayanMessage,
+		Timestamp:   time.Now(),
+	}
+}
+
+type LifiUnlockData struct {
+	SigChn chan interface{} `json:"-"`
+
+	OrderID string
+	Settler common.Address
+
+	Coordinator peer.ID
+	Source      uint64
+	Destination uint64
+}
+
+func NewLifiUnlockMessage(source, destination uint64, lifiData *LifiUnlockData) *message.Message {
+	return &message.Message{
+		Source:      source,
+		Destination: destination,
+		Data:        lifiData,
+		Type:        LifiUnlockMessage,
 		Timestamp:   time.Now(),
 	}
 }

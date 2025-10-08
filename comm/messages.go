@@ -41,6 +41,8 @@ const (
 	MayanMsg
 	// Rhinestone message type is used for the process coordinator to share rhinestone data
 	RhinestoneMsg
+	// LifiUnlockMsg message type is used for the process coordinator to share lifi unlock data
+	LifiUnlockMsg
 	// Unknown message type
 	Unknown
 )
@@ -50,6 +52,7 @@ const (
 	AcrossSessionID     = "across"
 	MayanSessionID      = "mayan"
 	RhinestoneSessionID = "rhinestone"
+	LifiUnlockSessionID = "lifi-unlock"
 )
 
 // String implements fmt.Stringer
@@ -87,6 +90,8 @@ func (msgType MessageType) String() string {
 		return "MayanMsg"
 	case RhinestoneMsg:
 		return "RhinestoneMsg"
+	case LifiUnlockMsg:
+		return "LifiUnlockMsg"
 	default:
 		return "UnknownMsg"
 	}

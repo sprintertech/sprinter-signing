@@ -14,10 +14,12 @@ func Serve(
 	ctx context.Context,
 	addr string,
 	signingHandler *handlers.SigningHandler,
+	unlockHandler *handlers.UnlockHandler,
 	statusHandler *handlers.StatusHandler,
 	confirmationsHandler *handlers.ConfirmationsHandler,
 ) {
 	r := mux.NewRouter()
+	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/unlocks", unlockHandler.HandleUnlock).Methods("POST")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning).Methods("POST")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest).Methods("GET")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/confirmations", confirmationsHandler.HandleRequest).Methods("GET")

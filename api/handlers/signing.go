@@ -20,6 +20,7 @@ const (
 	AcrossProtocol     ProtocolType = "across"
 	MayanProtocol      ProtocolType = "mayan"
 	RhinestoneProtocol ProtocolType = "rhinestone"
+	LifiProtocol       ProtocolType = "lifi"
 )
 
 type SigningBody struct {
