@@ -13,6 +13,7 @@ on:
         description: 'Signing version. Example: v2.0.0'
         required: true
         default: latest
+  pull_request: null
 
 env:
   PORTAINER_ENDPOINT_ID: 8
