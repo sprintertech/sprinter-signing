@@ -1,18 +1,19 @@
 services:
   relayer1:
     image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
-    command: >
-      mkdir -p /cfg/keyshares && 
-      echo ${CONFIG_FULL} | base64 --decode > ${CONFIG_PATH} &&
-      echo ${KEYSHARE} | base64 --decode > ${KEYSHARE_PATH} &&
-      /signing run --config ${CONFIG_PATH} --staging
+    command: 
+      - |
+        mkdir -p /cfg/keyshares
+        echo $${CONFIG_FULL} | base64 --decode > $${CONFIG_PATH}
+        echo $${KEYSHARE} | base64 --decode > $${KEYSHARE_PATH}
+        /signing run --config $${CONFIG_PATH} --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
       - CONFIG_FULL=${CONFIG_1_FULL}
       - KEYSHARE=${KEYSHARE_1}
       - CONFIG_PATH=/cfg/config_1.json
       - KEYSHARE_PATH=/cfg/keyshares/0.keyshare
-      - VIRTUAL_HOST=signing.stage.sprinter.tech
+      - VIRTUAL_HOST=${SPRINTER_SIGNING_DOMAIN}
     ports:
       - 3000:3000
     expose:
@@ -21,11 +22,12 @@ services:
 
   relayer2:
     image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
-    command: >
-      mkdir -p /cfg/keyshares && 
-      echo ${CONFIG_FULL} | base64 --decode > ${CONFIG_PATH} &&
-      echo ${KEYSHARE} | base64 --decode > ${KEYSHARE_PATH} &&
-      /signing run --config ${CONFIG_PATH} --staging
+    command: 
+      - |
+        mkdir -p /cfg/keyshares
+        echo $${CONFIG_FULL} | base64 --decode > $${CONFIG_PATH} 
+        echo $${KEYSHARE} | base64 --decode > $${KEYSHARE_PATH}
+        /signing run --config $${CONFIG_PATH} --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
       - CONFIG_FULL=${CONFIG_2_FULL}
@@ -38,11 +40,12 @@ services:
 
   relayer3:
     image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
-    command: >
-      mkdir -p /cfg/keyshares && 
-      echo ${CONFIG_FULL} | base64 --decode > ${CONFIG_PATH} &&
-      echo ${KEYSHARE} | base64 --decode > ${KEYSHARE_PATH} &&
-      /signing run --config ${CONFIG_PATH} --staging
+    command: 
+      - |
+        mkdir -p /cfg/keyshares
+        echo $${CONFIG_FULL} | base64 --decode > $${CONFIG_PATH}
+        echo $${KEYSHARE} | base64 --decode > $${KEYSHARE_PATH}
+        /signing run --config $${CONFIG_PATH} --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
       - CONFIG_FULL=${CONFIG_3_FULL}
@@ -58,6 +61,8 @@ services:
     image: jwilder/nginx-proxy:1.7.1
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /etc/nginx/ssl:/etc/nginx/certs
     restart: unless-stopped

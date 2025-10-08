@@ -61,6 +61,7 @@ jobs:
           KEYSHARE_1: ${{ secrets.KEYSHARE_1 }}
           KEYSHARE_2: ${{ secrets.KEYSHARE_2}}
           KEYSHARE_3: ${{ secrets.KEYSHARE_3 }}
+          SPRINTER_SIGNING_DOMAIN: ${{ secrets.SPRINTER_SIGNING_DOMAIN }}
         run: |
           envsubst < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
           echo "Rendered docker-compose"
