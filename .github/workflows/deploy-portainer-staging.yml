@@ -24,7 +24,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.inputs.image_version }}
     runs-on:
       group: portainer-deployment
-#    environment: staging
+    environment: staging
 
     steps:
       - name: Checkout code
