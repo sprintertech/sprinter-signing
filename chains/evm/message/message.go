@@ -17,6 +17,7 @@ const (
 	AcrossMessage     = "AcrossMessage"
 	MayanMessage      = "MayanMessage"
 	LifiEscrowMessage = "LifiEscrowMessage"
+	LifiUnlockMessage = "LifiUnlockMessage"
 
 	DOMAIN_NAME = "LiquidityPool"
 	VERSION     = "1.0.0"
@@ -27,14 +28,15 @@ const (
 type AcrossData struct {
 	ErrChn chan error `json:"-"`
 
-	DepositTxHash common.Hash
-	DepositId     *big.Int
-	Nonce         *big.Int
-	LiquidityPool common.Address
-	Caller        common.Address
-	Coordinator   peer.ID
-	Source        uint64
-	Destination   uint64
+	DepositTxHash    common.Hash
+	DepositId        *big.Int
+	Nonce            *big.Int
+	LiquidityPool    common.Address
+	RepaymentChainID uint64
+	Caller           common.Address
+	Coordinator      peer.ID
+	Source           uint64
+	Destination      uint64
 }
 
 func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *message.Message {
@@ -114,7 +116,28 @@ func NewLifiEscrowData(source, destination uint64, lifiData *LifiEscrowData) *me
 		Source:      source,
 		Destination: destination,
 		Data:        lifiData,
-		Type:        MayanMessage,
+		Type:        LifiEscrowMessage,
+		Timestamp:   time.Now(),
+	}
+}
+
+type LifiUnlockData struct {
+	SigChn chan interface{} `json:"-"`
+
+	OrderID string
+	Settler common.Address
+
+	Coordinator peer.ID
+	Source      uint64
+	Destination uint64
+}
+
+func NewLifiUnlockMessage(source, destination uint64, lifiData *LifiUnlockData) *message.Message {
+	return &message.Message{
+		Source:      source,
+		Destination: destination,
+		Data:        lifiData,
+		Type:        LifiUnlockMessage,
 		Timestamp:   time.Now(),
 	}
 }

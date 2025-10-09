@@ -71,6 +71,9 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	pools := make(map[uint64]common.Address)
 	pools[2] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
 
+	repayers := make(map[uint64]common.Address)
+	repayers[10] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C6")
+
 	s.sigChn = make(chan interface{}, 1)
 
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
@@ -83,6 +86,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	s.handler = message.NewAcrossMessageHandler(
 		1,
 		pools,
+		repayers,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,
@@ -91,6 +95,31 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 		s.mockWatcher,
 		s.sigChn,
 	)
+}
+
+func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_InvalidRepaymentAddress() {
+	errChn := make(chan error, 1)
+	ad := &message.AcrossData{
+		ErrChn:           errChn,
+		DepositId:        big.NewInt(100),
+		Nonce:            big.NewInt(101),
+		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:           common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		RepaymentChainID: 11,
+	}
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      1,
+		Destination: 2,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
 }
 
 func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedDepositQuery() {
@@ -106,11 +135,12 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedDepositQuery() 
 
 	errChn := make(chan error, 1)
 	ad := &message.AcrossData{
-		ErrChn:        errChn,
-		DepositId:     big.NewInt(100),
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		ErrChn:           errChn,
+		DepositId:        big.NewInt(100),
+		Nonce:            big.NewInt(101),
+		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:           common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		RepaymentChainID: 10,
 	}
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -162,11 +192,12 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
 
 	errChn := make(chan error, 1)
 	ad := &message.AcrossData{
-		ErrChn:        errChn,
-		DepositId:     big.NewInt(2595221),
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
+		ErrChn:           errChn,
+		DepositId:        big.NewInt(2595221),
+		Nonce:            big.NewInt(101),
+		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:           common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
+		RepaymentChainID: 10,
 	}
 	m := &coreMessage.Message{
 		Data:        ad,

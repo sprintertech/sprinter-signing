@@ -242,6 +242,7 @@ func Run() error {
 					acrossMh := evmMessage.NewAcrossMessageHandler(
 						*c.GeneralChainConfig.Id,
 						acrossPools,
+						repayerAddresses,
 						coordinator,
 						host,
 						communication,
@@ -306,6 +307,16 @@ func Run() error {
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
 
+				lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
+					*c.GeneralChainConfig.Id,
+					repayerAddresses,
+					coordinator,
+					host,
+					communication,
+					keyshareStore,
+				)
+				mh.RegisterMessageHandler(evmMessage.LifiUnlockMessage, lifiUnlockMh)
+
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener
 				eventHandlers := make([]coreListener.EventHandler, 0)
@@ -353,7 +364,14 @@ func Run() error {
 	signingHandler := handlers.NewSigningHandler(msgChan, supportedChains)
 	statusHandler := handlers.NewStatusHandler(signatureCache, supportedChains)
 	confirmationsHandler := handlers.NewConfirmationsHandler(confirmationsPerChain)
-	go api.Serve(ctx, configuration.RelayerConfig.ApiAddr, signingHandler, statusHandler, confirmationsHandler)
+	unlockHandler := handlers.NewUnlockHandler(msgChan, supportedChains)
+	go api.Serve(
+		ctx,
+		configuration.RelayerConfig.ApiAddr,
+		signingHandler,
+		unlockHandler,
+		statusHandler,
+		confirmationsHandler)
 
 	sig := <-sysErr
 	log.Info().Msgf("terminating got ` [%v] signal", sig)
