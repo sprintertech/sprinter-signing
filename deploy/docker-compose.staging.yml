@@ -14,6 +14,10 @@ services:
       - CONFIG_PATH=/cfg/config_1.json
       - KEYSHARE_PATH=/cfg/keyshares/0.keyshare
       - VIRTUAL_HOST=${SPRINTER_SIGNING_DOMAIN}
+    labels:
+      logging: "alloy"
+      logging_jobname: "containerlogs"
+      service_name: "signing_relayer_1_staging"
     ports:
       - 3000:3000
     expose:
@@ -34,6 +38,10 @@ services:
       - KEYSHARE=${KEYSHARE_2}
       - CONFIG_PATH=/cfg/config_2.json
       - KEYSHARE_PATH=/cfg/keyshares/1.keyshare
+    labels:
+      logging: "alloy"
+      logging_jobname: "containerlogs"
+      service_name: "signing_relayer_2_staging"
     restart: always
     ports:
       - 3001:3000
@@ -52,6 +60,10 @@ services:
       - KEYSHARE=${KEYSHARE_3}
       - CONFIG_PATH=/cfg/config_3.json
       - KEYSHARE_PATH=/cfg/keyshares/2.keyshare
+    labels:
+      logging: "alloy"
+      logging_jobname: "containerlogs"
+      service_name: "signing_relayer_3_staging"
     ports:
       - 3002:3000
     restart: always
