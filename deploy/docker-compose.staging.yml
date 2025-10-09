@@ -4,9 +4,9 @@ services:
     command: 
       - |
         mkdir -p /cfg/keyshares
-        echo ${${no_var}CONFIG_FULL} | base64 --decode > ${${no_var}CONFIG_PATH}
-        echo ${${no_var}KEYSHARE} | base64 --decode > ${${no_var}KEYSHARE_PATH}
-        /signing run --config ${${no_var}CONFIG_PATH} --staging
+        echo $${${no_var}CONFIG_FULL} | base64 --decode > $${${no_var}CONFIG_PATH}
+        echo $${${no_var}KEYSHARE} | base64 --decode > $${${no_var}KEYSHARE_PATH}
+        /signing run --config $${${no_var}CONFIG_PATH} --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
       - CONFIG_FULL=${CONFIG_1_FULL}
@@ -29,9 +29,9 @@ services:
     command: 
       - |
         mkdir -p /cfg/keyshares
-        echo ${${no_var}CONFIG_FULL} | base64 --decode > ${${no_var}CONFIG_PATH} 
-        echo ${${no_var}KEYSHARE} | base64 --decode > ${${no_var}KEYSHARE_PATH}
-        /signing run --config ${${no_var}CONFIG_PATH} --staging
+        echo $${${no_var}CONFIG_FULL} | base64 --decode > $${${no_var}CONFIG_PATH} 
+        echo $${${no_var}KEYSHARE} | base64 --decode > $${${no_var}KEYSHARE_PATH}
+        /signing run --config $${${no_var}CONFIG_PATH} --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
       - CONFIG_FULL=${CONFIG_2_FULL}
@@ -51,9 +51,9 @@ services:
     command: 
       - |
         mkdir -p /cfg/keyshares
-        echo ${${no_var}CONFIG_FULL} | base64 --decode > ${${no_var}CONFIG_PATH}
-        echo ${${no_var}KEYSHARE} | base64 --decode > ${${no_var}KEYSHARE_PATH}
-        /signing run --config ${${no_var}CONFIG_PATH} --staging
+        echo $${${no_var}CONFIG_FULL} | base64 --decode > $${${no_var}CONFIG_PATH}
+        echo $${${no_var}KEYSHARE} | base64 --decode > $${${no_var}KEYSHARE_PATH}
+        /signing run --config $${${no_var}CONFIG_PATH} --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
       - CONFIG_FULL=${CONFIG_3_FULL}
