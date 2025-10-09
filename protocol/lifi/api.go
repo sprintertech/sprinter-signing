@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	LIFI_URL = "https://order-dev.li.fi"
+	LIFI_URL = "https://order.li.fi"
 )
 
 type Response struct {
