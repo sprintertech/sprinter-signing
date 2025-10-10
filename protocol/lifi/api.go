@@ -32,7 +32,7 @@ func NewLifiAPI() *LifiAPI {
 
 // GetOrder fetches order from the LiFi API by its on-chain orderID
 func (a *LifiAPI) GetOrder(orderID string) (*lifi.LifiOrder, error) {
-	url := fmt.Sprintf("%s/orders/status?onChainOrderId=0x%s", LIFI_URL, orderID)
+	url := fmt.Sprintf("%s/orders/status?onChainOrderId=%s", LIFI_URL, orderID)
 	resp, err := a.HTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
