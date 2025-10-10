@@ -946,8 +946,12 @@ github.com/sprintertech/lifi-solver v0.0.0-20251001133701-76403ab387a0 h1:z6hwK1
 github.com/sprintertech/lifi-solver v0.0.0-20251001133701-76403ab387a0/go.mod h1:h8+7mUc7+adJCAhYf70jvSJp2mc38aLGulBu1zSUlQ8=
 github.com/sprintertech/lifi-solver v0.0.0-20251008075555-6feaf23baf0b h1:kjEY1836p/5xHhM+noJvzCwbcbfKdPFCY+H5V9snUpc=
 github.com/sprintertech/lifi-solver v0.0.0-20251008075555-6feaf23baf0b/go.mod h1:h8+7mUc7+adJCAhYf70jvSJp2mc38aLGulBu1zSUlQ8=
+github.com/sprintertech/lifi-solver v0.0.0-20251009144421-521a5d0efa84 h1:ZygoYNw7Dlnxc3U+o8trzmbSWkH+l7lIUlBSWYIrVvo=
+github.com/sprintertech/lifi-solver v0.0.0-20251009144421-521a5d0efa84/go.mod h1:EbAH3JJxioBVuHvyjaP5zTh6uPmumCpbE93WEjwpRm0=
 github.com/sprintertech/solver-config/go v0.0.0-20251002094949-6a71816a6ac9 h1:1LzvyGBjEATGzByECJjgY7bj7dPN979VEzyOQLphAmM=
 github.com/sprintertech/solver-config/go v0.0.0-20251002094949-6a71816a6ac9/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
+github.com/sprintertech/solver-config/go v0.0.0-20251003113310-77bd6669a2ef h1:WPyHT8WM/f5rRFmzxeuTvuI6MCqM7wvTeBsW/B7y3lk=
+github.com/sprintertech/solver-config/go v0.0.0-20251003113310-77bd6669a2ef/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
