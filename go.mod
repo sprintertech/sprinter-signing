@@ -20,7 +20,7 @@ require (
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/sprintertech/lifi-solver v0.0.0-20251009144421-521a5d0efa84
+	github.com/sprintertech/lifi-solver v0.0.0-20251010142703-ff6f20f8b6eb
 	github.com/sprintertech/solver-config/go v0.0.0-20251003113310-77bd6669a2ef
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
