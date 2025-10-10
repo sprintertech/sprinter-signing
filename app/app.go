@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethereumCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -114,6 +115,8 @@ func Run() error {
 	}
 	blockstore := store.NewBlockStore(db)
 	keyshareStore := keyshare.NewECDSAKeyshareStore(configuration.RelayerConfig.MpcConfig.KeysharePath)
+	keyshare, err := keyshareStore.GetKeyshare()
+	panicOnError(err)
 
 	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL)
 	panicOnError(err)
@@ -290,6 +293,7 @@ func Run() error {
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
 						*c.GeneralChainConfig.Id,
+						ethereumCrypto.PubkeyToAddress(*keyshare.Key.ECDSAPub.ToBtcecPubKey().ToECDSA()),
 						lifiOutputSettlers,
 						coordinator,
 						host,

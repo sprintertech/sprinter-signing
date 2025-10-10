@@ -53,6 +53,7 @@ type LifiEscrowMessageHandler struct {
 
 func NewLifiEscrowMessageHandler(
 	chainID uint64,
+	mpcAddress common.Address,
 	lifiAddresses map[uint64]common.Address,
 	coordinator Coordinator,
 	host host.Host,
@@ -70,6 +71,7 @@ func NewLifiEscrowMessageHandler(
 		lifiAddresses:       lifiAddresses,
 		coordinator:         coordinator,
 		host:                host,
+		mpcAddress:          mpcAddress,
 		comm:                comm,
 		fetcher:             fetcher,
 		confirmationWatcher: confirmationWatcher,
@@ -220,10 +222,10 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 
 	return consts.LifiABI.Pack(
 		"fillOrderOutputs",
-		order.Order.FillDeadline,
 		common.HexToHash(order.Meta.OnChainOrderID),
 		outputs,
-		common.HexToHash(h.mpcAddress.Hex()))
+		new(big.Int).SetUint64(uint64(order.Order.FillDeadline)),
+		common.HexToHash(h.mpcAddress.Hex()).Bytes())
 }
 
 // verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
