@@ -217,7 +217,7 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 
 	return consts.LifiABI.Pack(
 		"fillOrderOutputs",
-		common.HexToHash(order.Meta.OnChainOrderID),
+		order.Meta.OnChainOrderID,
 		outputs,
 		big.NewInt(order.Order.FillDeadline.Unix()),
 		common.HexToHash(h.mpcAddress.Hex()).Bytes())
