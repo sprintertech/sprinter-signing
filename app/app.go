@@ -18,6 +18,11 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"github.com/sprintertech/lifi-solver/pkg/pricing"
+	lifiTypes "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
+	"github.com/sprintertech/lifi-solver/pkg/token"
+	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/pyth"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
 	"github.com/sprintertech/sprinter-signing/api"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
@@ -36,6 +41,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
 	"github.com/sprintertech/sprinter-signing/protocol/across"
+	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -153,6 +159,7 @@ func Run() error {
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	mayanPools := make(map[uint64]common.Address)
+	lifiOutputSettlers := make(map[uint64]common.Address)
 	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
 	for _, chainConfig := range configuration.ChainConfigs {
@@ -173,6 +180,11 @@ func Run() error {
 				if c.MayanSwift != "" {
 					poolAddress := common.HexToAddress(c.MayanSwift)
 					mayanPools[*c.GeneralChainConfig.Id] = poolAddress
+				}
+
+				if c.LifiOutputSettler != "" {
+					settlerAddress := common.HexToAddress(c.LifiOutputSettler)
+					lifiOutputSettlers[*c.GeneralChainConfig.Id] = settlerAddress
 				}
 
 				if c.AcrossHubPool != "" {
@@ -265,6 +277,32 @@ func Run() error {
 					go mayanMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
+					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
+					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
+				}
+
+				if c.LifiOutputSettler != "" {
+					usdPricer := pyth.NewClient(ctx)
+					resolver := token.NewTokenResolver(solverConfig, usdPricer)
+					orderPricer := pricing.NewStandardPricer(resolver)
+					lifiApi := lifi.NewLifiAPI()
+					lifiValidator := validation.NewLifiEscrowOrderValidator[lifiTypes.LifiOrder](solverConfig, orderPricer)
+
+					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
+						*c.GeneralChainConfig.Id,
+						lifiOutputSettlers,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						watcher,
+						tokenStore,
+						lifiApi,
+						orderPricer,
+						lifiValidator,
+						sigChn,
+					)
+					mh.RegisterMessageHandler(evmMessage.LifiEscrowMessage, lifiMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}

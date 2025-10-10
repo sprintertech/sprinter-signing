@@ -109,7 +109,7 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	}
 	data.ErrChn <- nil
 
-	unlockHash, err := unlockHash(
+	unlockHash, err := borrowUnlockHash(
 		calldata,
 		data.BorrowAmount,
 		borrowToken,

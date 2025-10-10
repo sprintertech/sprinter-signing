@@ -20,6 +20,7 @@ const (
 	AcrossProtocol     ProtocolType = "across"
 	MayanProtocol      ProtocolType = "mayan"
 	RhinestoneProtocol ProtocolType = "rhinestone"
+	LifiEscrow         ProtocolType = "lifi-escrow"
 	LifiProtocol       ProtocolType = "lifi"
 )
 
@@ -103,6 +104,19 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		{
 			m = evmMessage.NewRhinestoneMessage(0, b.ChainId, &evmMessage.RhinestoneData{
 				BundleID:      b.DepositId,
+				Nonce:         b.Nonce.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				ErrChn:        errChn,
+				Source:        0,
+				Destination:   b.ChainId,
+				BorrowAmount:  b.BorrowAmount.Int,
+			})
+		}
+	case LifiEscrow:
+		{
+			m = evmMessage.NewLifiEscrowData(0, b.ChainId, &evmMessage.LifiEscrowData{
+				OrderID:       b.DepositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),

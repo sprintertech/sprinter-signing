@@ -21,10 +21,11 @@ type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
 	Admin              string
 
-	AcrossPool    string
-	AcrossHubPool string
-	MayanSwift    string
-	Repayer       string
+	AcrossPool        string
+	AcrossHubPool     string
+	MayanSwift        string
+	LifiOutputSettler string
+	Repayer           string
 
 	Tokens map[string]config.TokenConfig
 	// usd bucket -> confirmations
@@ -101,6 +102,8 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		AcrossHubPool: solverConfig.ProtocolsMetadata.Across.HubPools[id],
 
 		MayanSwift: solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
+
+		LifiOutputSettler: solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
 
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,

@@ -147,7 +147,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		return nil, err
 	}
 
-	err = h.confirmationWatcher.WaitForConfirmations(
+	err = h.confirmationWatcher.WaitForTokenConfirmations(
 		context.Background(),
 		h.chainID,
 		common.HexToHash(swap.CreateTxHash),
@@ -160,7 +160,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 
 	data.ErrChn <- nil
 
-	unlockHash, err := unlockHash(
+	unlockHash, err := borrowUnlockHash(
 		calldataBytes,
 		data.BorrowAmount,
 		destinationBorrowToken.Address,

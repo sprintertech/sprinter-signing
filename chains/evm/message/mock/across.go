@@ -154,18 +154,32 @@ func (m *MockConfirmationWatcher) EXPECT() *MockConfirmationWatcherMockRecorder 
 	return m.recorder
 }
 
-// WaitForConfirmations mocks base method.
-func (m *MockConfirmationWatcher) WaitForConfirmations(ctx context.Context, chainID uint64, txHash common.Hash, token common.Address, amount *big.Int) error {
+// WaitForOrderConfirmations mocks base method.
+func (m *MockConfirmationWatcher) WaitForOrderConfirmations(ctx context.Context, chainID uint64, txHash common.Hash, orderValue float64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForConfirmations", ctx, chainID, txHash, token, amount)
+	ret := m.ctrl.Call(m, "WaitForOrderConfirmations", ctx, chainID, txHash, orderValue)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// WaitForConfirmations indicates an expected call of WaitForConfirmations.
-func (mr *MockConfirmationWatcherMockRecorder) WaitForConfirmations(ctx, chainID, txHash, token, amount any) *gomock.Call {
+// WaitForOrderConfirmations indicates an expected call of WaitForOrderConfirmations.
+func (mr *MockConfirmationWatcherMockRecorder) WaitForOrderConfirmations(ctx, chainID, txHash, orderValue any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForConfirmations), ctx, chainID, txHash, token, amount)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForOrderConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForOrderConfirmations), ctx, chainID, txHash, orderValue)
+}
+
+// WaitForTokenConfirmations mocks base method.
+func (m *MockConfirmationWatcher) WaitForTokenConfirmations(ctx context.Context, chainID uint64, txHash common.Hash, token common.Address, amount *big.Int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitForTokenConfirmations", ctx, chainID, txHash, token, amount)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WaitForTokenConfirmations indicates an expected call of WaitForTokenConfirmations.
+func (mr *MockConfirmationWatcherMockRecorder) WaitForTokenConfirmations(ctx, chainID, txHash, token, amount any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForTokenConfirmations", reflect.TypeOf((*MockConfirmationWatcher)(nil).WaitForTokenConfirmations), ctx, chainID, txHash, token, amount)
 }
 
 // MockDepositFetcher is a mock of DepositFetcher interface.

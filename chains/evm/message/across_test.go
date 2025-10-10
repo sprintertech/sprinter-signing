@@ -187,7 +187,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
 	}
 	s.mockDepositFetcher.EXPECT().Deposit(gomock.Any(), gomock.Any(), gomock.Any()).Return(deposit, nil)
 
-	s.mockWatcher.EXPECT().WaitForConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	s.mockWatcher.EXPECT().WaitForTokenConfirmations(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
