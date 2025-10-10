@@ -1,3 +1,4 @@
+//nolint:gocognit
 package lifi_test
 
 import (
