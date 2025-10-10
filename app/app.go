@@ -285,6 +285,9 @@ func Run() error {
 
 				if c.LifiOutputSettler != "" {
 					usdPricer := pyth.NewClient(ctx)
+					err = usdPricer.Start(ctx)
+					panicOnError(err)
+
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiAPI()
