@@ -101,6 +101,7 @@ func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 
 	s.handler = message.NewLifiEscrowMessageHandler(
 		8453,
+		common.Address{},
 		lifiAddresses,
 		s.mockCoordinator,
 		s.mockHost,

@@ -11,7 +11,6 @@ var LifiABI, _ = abi.JSON(strings.NewReader(`[{
   "type": "function",
   "stateMutability": "nonpayable",
   "inputs": [
-    {"name": "fillDeadline", "type": "uint32"},
     {"name": "orderId", "type": "bytes32"},
     {
       "name": "outputs",
@@ -27,7 +26,8 @@ var LifiABI, _ = abi.JSON(strings.NewReader(`[{
         {"name": "context", "type": "bytes"}
       ]
     },
-    {"name": "proposedSolver", "type": "bytes32"}
+    {"name": "fillDeadline", "type": "uint48"},
+    {"name": "fillerData", "type": "bytes"}
   ],
   "outputs": []
 }]`))
