@@ -1,0 +1,99 @@
+name: Deploy to staging
+
+run-name: Deploy Sprinter signing with Portainer to staging - ${{ github.event.inputs.image_version || 'latest' }} by @${{ github.actor }}
+
+on:
+  workflow_run:
+    workflows: ["Publish Latest Docker Image"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      image_version:
+        description: 'Signing version. Example: v2.0.0'
+        required: true
+        default: latest
+env:
+  PORTAINER_ENDPOINT_ID: 8
+  STACK_NAME: sprinter-signing-staging
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.inputs.image_version }}
+    runs-on:
+      group: portainer-deployment
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Check if stack exists in Portainer
+        id: check_stack
+        env:
+          PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
+          PORTAINER_API_TOKEN: ${{ secrets.PORTAINER_API_TOKEN }}
+        run: |
+          RESPONSE=$(curl -s -H "X-API-Key: ${{ secrets.PORTAINER_API_TOKEN }}" "${{ secrets.PORTAINER_URL }}/api/stacks")
+          STACK_ID=$(echo "$RESPONSE" | jq -r --arg name "$STACK_NAME" '.[] | select(.Name == $name) | .Id')
+          
+          if [ -n "$STACK_ID" ]; then
+            echo "Stack exists. ID: $STACK_ID"
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "stack_id=$STACK_ID" >> $GITHUB_OUTPUT
+          else
+            echo "Stack does not exist."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Render docker-compose.yml with envsubst
+        env:
+          DOCKER_COMPOSE_PATH: ./deploy/docker-compose.staging.yml
+          # export here all secrets used in the docker-compose environment
+          SIGNING_IMAGE_VERSION: ${{ github.event.inputs.image_version || 'latest' }}
+          CONFIG_1_FULL: ${{ secrets.CONFIG_1_FULL }}
+          CONFIG_2_FULL: ${{ secrets.CONFIG_2_FULL }}
+          CONFIG_3_FULL: ${{ secrets.CONFIG_3_FULL }}
+          KEYSHARE_1: ${{ secrets.KEYSHARE_1 }}
+          KEYSHARE_2: ${{ secrets.KEYSHARE_2}}
+          KEYSHARE_3: ${{ secrets.KEYSHARE_3 }}
+          SPRINTER_SIGNING_DOMAIN: ${{ secrets.SPRINTER_SIGNING_DOMAIN }}
+        run: |
+          envsubst < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
+          echo "Rendered docker-compose"
+
+      - name: Deploy stack (create or update)
+        env:
+          PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
+          PORTAINER_API_TOKEN: ${{ secrets.PORTAINER_API_TOKEN }}
+        run: |
+          ESCAPED_COMPOSE=$(cat docker-compose.rendered.yml | jq -Rs .)
+          STACK_EXISTS="${{ steps.check_stack.outputs.exists }}"
+          STACK_ID="${{ steps.check_stack.outputs.stack_id }}"
+
+          if [ "$STACK_EXISTS" = "true" ]; then
+            echo "Updating existing stack with ID: $STACK_ID"
+
+            echo "{\"stackFileContent\": $ESCAPED_COMPOSE, \"prune\": true, \"pullImage\": true, \"env\": []}" > payload.json
+
+            curl -s -X PUT "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$PORTAINER_ENDPOINT_ID" \
+              -H "X-API-Key: $PORTAINER_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @payload.json \
+              --fail
+          else
+            echo "Creating new stack: $STACK_NAME"
+
+            echo "{\"name\": \"$STACK_NAME\", \"fromAppTemplate\": false, \"stackFileContent\": $ESCAPED_COMPOSE, \"env\": []}" > payload.json
+            cat payload.json
+            curl -v -s -X POST "$PORTAINER_URL/api/stacks/create/standalone/string?endpointId=$PORTAINER_ENDPOINT_ID" \
+              -H "X-API-Key: $PORTAINER_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @payload.json \
+              --fail
+          fi
+
+      - name: Cleanup
+        run: rm -rf docker-compose.rendered.yml payload.json
