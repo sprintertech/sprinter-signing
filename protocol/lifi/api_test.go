@@ -64,7 +64,7 @@ func Test_LifiAPI_GetOrder(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			client := lifi.NewLifiAPI()
 			client.HTTPClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-				expectedURL := fmt.Sprintf("%s/orders?onChainOrderId=%s", lifi.LIFI_URL, tc.id)
+				expectedURL := fmt.Sprintf("%s/orders/status?onChainOrderId=0x%s", lifi.LIFI_URL, tc.id)
 				if req.URL.String() != expectedURL {
 					return nil, fmt.Errorf("unexpected URL: got %s, want %s", req.URL.String(), expectedURL)
 				}
@@ -96,7 +96,10 @@ func Test_LifiAPI_GetOrder(t *testing.T) {
 				}
 
 				var want *lifiProtocol.LifiOrder
-				_ = json.Unmarshal(tc.wantResult, &want)
+				err = json.Unmarshal(tc.wantResult, &want)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 				if !reflect.DeepEqual(got, want) {
 					t.Errorf("expected %+v, got %+v", tc.wantResult, got)
 				}

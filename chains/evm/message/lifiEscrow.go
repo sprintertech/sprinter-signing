@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -139,7 +138,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		[]common.Address{borrowToken},
 		new(big.Int).SetUint64(destChainID),
 		h.lifiAddresses[destChainID],
-		uint64(order.Order.FillDeadline),
+		big.NewInt(order.Order.FillDeadline.Unix()).Uint64(),
 		data.Caller,
 		data.LiquidityPool,
 		data.Nonce,
@@ -168,11 +167,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 }
 
 func (h *LifiEscrowMessageHandler) borrowToken(order *lifi.LifiOrder) (common.Address, uint64, error) {
-	destChainID, err := strconv.ParseUint(order.Order.Outputs[0].ChainID, 10, 64)
-	if err != nil {
-		return common.Address{}, 0, err
-	}
-
+	destChainID := order.Order.Outputs[0].ChainID
 	tokenIn := common.BytesToAddress(order.GenericInputs[0].TokenAddress[:])
 	symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
 	if err != nil {
@@ -200,7 +195,7 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 	}
 	outputs := make([]output, len(order.Order.Outputs))
 	for i, o := range order.Order.Outputs {
-		chainID, _ := new(big.Int).SetString(o.ChainID, 10)
+		chainID := new(big.Int).SetUint64(o.ChainID)
 		call, err := hexutil.Decode(o.Call)
 		if err != nil {
 			return nil, err
@@ -210,11 +205,11 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 			return nil, err
 		}
 		outputs[i] = output{
-			Oracle:    common.HexToHash(o.Oracle),
-			Settler:   common.HexToHash(o.Settler),
+			Oracle:    *o.Oracle,
+			Settler:   *o.Settler,
 			ChainId:   chainID,
 			Amount:    o.Amount.Int,
-			Recipient: common.HexToHash(o.Recipient),
+			Recipient: *o.Recipient,
 			Call:      call,
 			Context:   context,
 		}
@@ -224,7 +219,7 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 		"fillOrderOutputs",
 		common.HexToHash(order.Meta.OnChainOrderID),
 		outputs,
-		new(big.Int).SetUint64(uint64(order.Order.FillDeadline)),
+		big.NewInt(order.Order.FillDeadline.Unix()),
 		common.HexToHash(h.mpcAddress.Hex()).Bytes())
 }
 

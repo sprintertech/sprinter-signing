@@ -32,7 +32,7 @@ func NewLifiAPI() *LifiAPI {
 
 // GetOrder fetches order from the LiFi API by its on-chain orderID
 func (a *LifiAPI) GetOrder(orderID string) (*lifi.LifiOrder, error) {
-	url := fmt.Sprintf("%s/orders?onChainOrderId=%s", LIFI_URL, orderID)
+	url := fmt.Sprintf("%s/orders/status?onChainOrderId=0x%s", LIFI_URL, orderID)
 	resp, err := a.HTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
@@ -48,13 +48,10 @@ func (a *LifiAPI) GetOrder(orderID string) (*lifi.LifiOrder, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	s := new(Response)
+	s := new(lifi.LifiOrder)
 	if err := json.Unmarshal(body, s); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-	if len(s.Data) == 0 {
-		return nil, fmt.Errorf("no order found")
-	}
 
-	return &s.Data[0], nil
+	return s, nil
 }

@@ -20,7 +20,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
-	lifiTypes "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
 	"github.com/sprintertech/lifi-solver/pkg/token"
 	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/pyth"
@@ -289,7 +288,7 @@ func Run() error {
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiAPI()
-					lifiValidator := validation.NewLifiEscrowOrderValidator[lifiTypes.LifiOrder](solverConfig, orderPricer)
+					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, orderPricer)
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
 						*c.GeneralChainConfig.Id,
