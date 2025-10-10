@@ -55,14 +55,14 @@ func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 
 	tokens := make(map[uint64]map[string]config.TokenConfig)
 	tokens[42161] = make(map[string]config.TokenConfig)
-	tokens[42161]["WETH"] = config.TokenConfig{
-		Address:  common.HexToAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e"),
-		Decimals: 18,
+	tokens[42161]["USDC"] = config.TokenConfig{
+		Address:  common.HexToAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
+		Decimals: 6,
 	}
 	tokens[8453] = make(map[string]config.TokenConfig)
-	tokens[8453]["WETH"] = config.TokenConfig{
-		Address:  common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"),
-		Decimals: 18,
+	tokens[8453]["USDC"] = config.TokenConfig{
+		Address:  common.HexToAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
+		Decimals: 6,
 	}
 	tokenStore := config.TokenStore{
 		Tokens: tokens,
@@ -150,7 +150,7 @@ func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExcee
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
-		BorrowAmount:  big.NewInt(20001),
+		BorrowAmount:  big.NewInt(100001),
 		OrderID:       "orderID",
 	}
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
