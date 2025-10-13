@@ -88,7 +88,7 @@ func (w *Watcher) wait(ctx context.Context, txHash common.Hash, requiredConfirma
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("timed out waiting for confirmations")
+			return fmt.Errorf("timed out waiting for confirmations %s", txHash.Hex())
 		default:
 			txReceipt, err := w.client.TransactionReceipt(ctx, txHash)
 			if err != nil {
