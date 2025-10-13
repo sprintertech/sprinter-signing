@@ -321,6 +321,7 @@ func Run() error {
 					communication,
 					keyshareStore,
 				)
+				go lifiUnlockMh.Listen(ctx)
 				mh.RegisterMessageHandler(evmMessage.LifiUnlockMessage, lifiUnlockMh)
 
 				var startBlock *big.Int
