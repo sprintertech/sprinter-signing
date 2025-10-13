@@ -118,7 +118,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	err = h.confirmationWatcher.WaitForOrderConfirmations(
 		context.Background(),
 		h.chainID,
-		common.HexToHash(data.DepositTxHash),
+		*order.Meta.OrderInitiatedTxHash,
 		orderValue,
 	)
 	if err != nil {
