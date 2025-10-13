@@ -308,6 +308,7 @@ func Run() error {
 						lifiValidator,
 						sigChn,
 					)
+					go lifiMh.Listen(ctx)
 					mh.RegisterMessageHandler(evmMessage.LifiEscrowMessage, lifiMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
