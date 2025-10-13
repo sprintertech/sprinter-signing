@@ -205,12 +205,11 @@ func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_ValidOrder() {
 		LiquidityPool: common.HexToAddress("0xe59aaf21c4D9Cf92d9eD4537f4404BA031f83b23"),
 		BorrowAmount:  big.NewInt(10000),
 		OrderID:       "orderID",
-		DepositTxHash: "0xhash",
 	}
 	s.mockOrderFetcher.EXPECT().GetOrder("orderID").Return(s.mockOrder, nil)
 	s.mockOrderValidator.EXPECT().Validate(s.mockOrder).Return(nil)
 	s.mockOrderPricer.EXPECT().PriceInputs(gomock.Any()).Return(float64(1000), nil)
-	s.mockWatcher.EXPECT().WaitForOrderConfirmations(gomock.Any(), uint64(8453), common.HexToHash(ad.DepositTxHash), float64(1000)).Return(nil)
+	s.mockWatcher.EXPECT().WaitForOrderConfirmations(gomock.Any(), uint64(8453), gomock.Any(), float64(1000)).Return(nil)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	m := &coreMessage.Message{
