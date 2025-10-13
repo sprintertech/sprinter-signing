@@ -147,7 +147,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("%d-%s", h.chainID, order.Order.Nonce)
+	sessionID := fmt.Sprintf("%d-%s", h.chainID, data.OrderID)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,
