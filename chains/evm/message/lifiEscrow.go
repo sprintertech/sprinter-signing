@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -131,6 +132,23 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	if err != nil {
 		return nil, err
 	}
+
+	log.Debug().Msgf(`
+		Siging lifi unlock hash.
+		Calldata: %s
+		Amount: %s
+		Borrow token: %s,
+		Target: %s
+		Nonce: %s
+		Filldeadline: %d
+	`,
+		hex.EncodeToString(calldata),
+		data.BorrowAmount,
+		borrowToken.Hex(),
+		h.lifiAddresses[destChainID].Hex(),
+		data.Nonce,
+		big.NewInt(order.Order.FillDeadline.Unix()).Uint64(),
+	)
 
 	unlockHash, err := borrowUnlockHash(
 		calldata,
