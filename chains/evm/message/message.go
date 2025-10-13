@@ -208,6 +208,7 @@ func borrowUnlockHash(
 	return crypto.Keccak256(rawData), nil
 }
 
+/*
 // borrowManyUnlockHash calculates the hash that has to be signed and submitted on-chain to the liquidity
 // pool contract.
 func borrowManyUnlockHash(
@@ -278,3 +279,4 @@ func borrowManyUnlockHash(
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(messageHash)))
 	return crypto.Keccak256(rawData), nil
 }
+*/
