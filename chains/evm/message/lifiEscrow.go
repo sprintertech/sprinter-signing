@@ -132,10 +132,10 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	unlockHash, err := borrowManyUnlockHash(
+	unlockHash, err := borrowUnlockHash(
 		calldata,
-		[]*big.Int{data.BorrowAmount},
-		[]common.Address{borrowToken},
+		data.BorrowAmount,
+		borrowToken,
 		new(big.Int).SetUint64(destChainID),
 		h.lifiAddresses[destChainID],
 		big.NewInt(order.Order.FillDeadline.Unix()).Uint64(),
