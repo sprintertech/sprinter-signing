@@ -230,6 +230,7 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 			Recipient: *o.Recipient,
 			Call:      call,
 			Context:   context,
+			Token:     *o.Token,
 		}
 	}
 
