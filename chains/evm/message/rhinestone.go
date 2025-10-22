@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/contracts"
+	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/protocol/rhinestone"
@@ -109,7 +110,7 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	}
 	data.ErrChn <- nil
 
-	unlockHash, err := borrowUnlockHash(
+	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
 		data.BorrowAmount,
 		borrowToken,

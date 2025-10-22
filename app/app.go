@@ -32,6 +32,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/comm/elector"
 	"github.com/sprintertech/sprinter-signing/comm/p2p"
 	"github.com/sprintertech/sprinter-signing/config"
@@ -254,7 +255,7 @@ func Run() error {
 						sigChn)
 					go acrossMh.Listen(ctx)
 
-					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
+					mh.RegisterMessageHandler(message.MessageType(comm.AcrossMsg.String()), acrossMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
@@ -278,7 +279,7 @@ func Run() error {
 						sigChn)
 					go mayanMh.Listen(ctx)
 
-					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
+					mh.RegisterMessageHandler(message.MessageType(comm.MayanMsg.String()), mayanMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
@@ -309,7 +310,7 @@ func Run() error {
 						sigChn,
 					)
 					go lifiMh.Listen(ctx)
-					mh.RegisterMessageHandler(evmMessage.LifiEscrowMessage, lifiMh)
+					mh.RegisterMessageHandler(message.MessageType(comm.LifiEscrowMsg.String()), lifiMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
@@ -323,7 +324,7 @@ func Run() error {
 					keyshareStore,
 				)
 				go lifiUnlockMh.Listen(ctx)
-				mh.RegisterMessageHandler(evmMessage.LifiUnlockMessage, lifiUnlockMh)
+				mh.RegisterMessageHandler(message.MessageType(comm.LifiUnlockMsg.String()), lifiUnlockMh)
 
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener
