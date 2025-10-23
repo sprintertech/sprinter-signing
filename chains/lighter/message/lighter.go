@@ -5,26 +5,44 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
+	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/protocol/lighter"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
 
+var (
+	ARBITRUM_CHAIN_ID = big.NewInt(42161)
+	FILL_DEADLINE     = time.Minute * 5
+)
+
 type Coordinator interface {
 	Execute(ctx context.Context, tssProcesses []tss.TssProcess, resultChn chan interface{}, coordinator peer.ID) error
 }
 
+type TxFetcher interface {
+	GetTx(hash string) (*lighter.LighterTx, error)
+}
+
 type LighterMessageHandler struct {
-	coordinator Coordinator
-	host        host.Host
-	comm        comm.Communication
-	fetcher     signing.SaveDataFetcher
+	coordinator    Coordinator
+	host           host.Host
+	comm           comm.Communication
+	fetcher        signing.SaveDataFetcher
+	lighterAddress common.Address
+	usdcAddress    common.Address
+
+	txFether TxFetcher
 
 	sigChn chan any
 }
@@ -40,7 +58,33 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	unlockHash := []byte{}
+	tx, err := h.txFether.GetTx(data.DepositTxHash)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+	data.ErrChn <- nil
+
+	calldata, err := h.calldata(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	unlockHash, err := signature.BorrowUnlockHash(
+		calldata,
+		new(big.Int).SetUint64(tx.Transfer.USDCAmount-tx.Transfer.Fee),
+		h.usdcAddress,
+		ARBITRUM_CHAIN_ID,
+		h.lighterAddress,
+		uint64(time.Now().Add(FILL_DEADLINE).Unix()),
+		data.Caller,
+		data.LiquidityPool,
+		data.Nonce)
+	if err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
 	sessionID := fmt.Sprintf("lighter-%s", "")
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
@@ -60,8 +104,12 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 	return nil, nil
 }
 
-func (h *LighterMessageHandler) verifyOrder() error {
-	return nil
+func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
+	return consts.LifiABI.Pack(
+		"withdraw",
+		common.HexToHash(tx.Hash),
+		common.HexToAddress(tx.L1Address),
+		new(big.Int).SetUint64(tx.Transfer.USDCAmount-tx.Transfer.Fee))
 }
 
 func (h *LighterMessageHandler) Listen(ctx context.Context) {
