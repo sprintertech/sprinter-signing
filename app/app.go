@@ -32,6 +32,8 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/chains/lighter"
+	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/comm/elector"
 	"github.com/sprintertech/sprinter-signing/comm/p2p"
@@ -43,6 +45,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/price"
 	"github.com/sprintertech/sprinter-signing/protocol/across"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
+	lighterAPI "github.com/sprintertech/sprinter-signing/protocol/lighter"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -349,6 +352,23 @@ func Run() error {
 			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))
 		}
 	}
+
+	lighterConfig, err := lighter.NewLighterConfig(*solverConfig)
+	panicOnError(err)
+	lighterAPI := lighterAPI.NewLighterAPI()
+	lighterMessageHandler := lighterMessage.NewLighterMessageHandler(
+		lighterConfig.WithdrawalAddress,
+		lighterConfig.UsdcAddress,
+		lighterAPI,
+		coordinator,
+		host,
+		communication,
+		keyshareStore,
+		sigChn,
+	)
+	go lighterMessageHandler.Listen(ctx)
+	lighterChain := lighter.NewLighterChain(lighterMessageHandler)
+	domains[lighter.LIGHTER_DOMAIN_ID] = lighterChain
 
 	go jobs.StartCommunicationHealthCheckJob(host, configuration.RelayerConfig.MpcConfig.CommHealthCheckInterval, sygmaMetrics)
 

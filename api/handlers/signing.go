@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
@@ -20,8 +21,9 @@ const (
 	AcrossProtocol     ProtocolType = "across"
 	MayanProtocol      ProtocolType = "mayan"
 	RhinestoneProtocol ProtocolType = "rhinestone"
-	LifiEscrow         ProtocolType = "lifi-escrow"
+	LifiEscrowProtocol ProtocolType = "lifi-escrow"
 	LifiProtocol       ProtocolType = "lifi"
+	LighterProtocol    ProtocolType = "lighter"
 )
 
 type SigningBody struct {
@@ -113,7 +115,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
-	case LifiEscrow:
+	case LifiEscrowProtocol:
 		{
 			m = evmMessage.NewLifiEscrowData(0, b.ChainId, &evmMessage.LifiEscrowData{
 				OrderID:       b.DepositId,
@@ -124,6 +126,18 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Source:        0,
 				Destination:   b.ChainId,
 				BorrowAmount:  b.BorrowAmount.Int,
+			})
+		}
+	case LighterProtocol:
+		{
+			m = lighterMessage.NewLighterMessage(0, b.ChainId, &lighterMessage.LighterData{
+				OrderHash:     b.DepositId,
+				Nonce:         b.Nonce.Int,
+				LiquidityPool: common.HexToAddress(b.LiquidityPool),
+				Caller:        common.HexToAddress(b.Caller),
+				ErrChn:        errChn,
+				Source:        0,
+				Destination:   b.ChainId,
 			})
 		}
 	default:
