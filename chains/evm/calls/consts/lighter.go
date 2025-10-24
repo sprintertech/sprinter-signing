@@ -13,7 +13,7 @@ var LighterABI, _ = abi.JSON(strings.NewReader(`[{
   "inputs": [
     {"name": "txHash", "type": "bytes32"},
     {"name": "toAddress", "type": "address"},
-    {"name": "amount", "type": "uint256"},
+    {"name": "amount", "type": "uint256"}
   ],
   "outputs": []
 }]`))

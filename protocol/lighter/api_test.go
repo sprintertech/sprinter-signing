@@ -62,6 +62,7 @@ func Test_LighterAPI_GetTx(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+
 			client := lighter.NewLighterAPI()
 			client.HTTPClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				expectedURL := fmt.Sprintf("%s/v1/tx?by=hash&value=%s", lighter.LIGHTER_URL, tc.id)

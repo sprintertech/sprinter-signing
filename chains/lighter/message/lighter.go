@@ -37,15 +37,37 @@ type TxFetcher interface {
 }
 
 type LighterMessageHandler struct {
-	coordinator    Coordinator
-	host           host.Host
-	comm           comm.Communication
-	fetcher        signing.SaveDataFetcher
+	coordinator Coordinator
+	host        host.Host
+	comm        comm.Communication
+	fetcher     signing.SaveDataFetcher
+	sigChn      chan any
+
 	lighterAddress common.Address
 	usdcAddress    common.Address
+	txFetcher      TxFetcher
+}
 
-	txFether TxFetcher
-	sigChn   chan any
+func NewLighterMessageHandler(
+	lighterAddress common.Address,
+	usdcAddress common.Address,
+	txFetcher TxFetcher,
+	coordinator Coordinator,
+	host host.Host,
+	comm comm.Communication,
+	fetcher signing.SaveDataFetcher,
+	sigChn chan any,
+) *LighterMessageHandler {
+	return &LighterMessageHandler{
+		txFetcher:      txFetcher,
+		usdcAddress:    usdcAddress,
+		lighterAddress: lighterAddress,
+		coordinator:    coordinator,
+		host:           host,
+		comm:           comm,
+		fetcher:        fetcher,
+		sigChn:         sigChn,
+	}
 }
 
 // HandleMessage finds the Mayan deposit with the according deposit ID and starts
@@ -59,7 +81,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	tx, err := h.txFether.GetTx(data.DepositTxHash)
+	tx, err := h.txFetcher.GetTx(data.OrderHash)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -79,7 +101,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 
 	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
-		new(big.Int).SetUint64(tx.Transfer.USDCAmount-tx.Transfer.Fee),
+		new(big.Int).SetUint64(tx.Transfer.USDCAmount),
 		h.usdcAddress,
 		ARBITRUM_CHAIN_ID,
 		h.lighterAddress,
@@ -124,11 +146,11 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 }
 
 func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
-	return consts.LifiABI.Pack(
+	return consts.LighterABI.Pack(
 		"withdraw",
 		common.HexToHash(tx.Hash),
 		common.HexToAddress(tx.L1Address),
-		new(big.Int).SetUint64(tx.Transfer.USDCAmount-tx.Transfer.Fee))
+		new(big.Int).SetUint64(tx.Transfer.USDCAmount))
 }
 
 func (h *LighterMessageHandler) Listen(ctx context.Context) {
