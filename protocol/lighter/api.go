@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	LIGHTER_URL = "https://mainnet.zklighter.elliot.ai/api/"
+	LIGHTER_URL = "https://mainnet.zklighter.elliot.ai/api"
 )
 
 type TxType uint64
@@ -81,6 +81,8 @@ func (a *LighterAPI) GetTx(hash string) (*LighterTx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
+
+	fmt.Println(string(body))
 
 	s := new(LighterTx)
 	if err := json.Unmarshal(body, s); err != nil {

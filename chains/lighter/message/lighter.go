@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -22,8 +23,9 @@ import (
 )
 
 var (
-	ARBITRUM_CHAIN_ID = big.NewInt(42161)
-	FILL_DEADLINE     = time.Minute * 5
+	ARBITRUM_CHAIN_ID        = big.NewInt(42161)
+	FILL_DEADLINE            = time.Minute * 5
+	WITHDRAWAL_ACCOUNT_INDEX = 3
 )
 
 type Coordinator interface {
@@ -43,8 +45,7 @@ type LighterMessageHandler struct {
 	usdcAddress    common.Address
 
 	txFether TxFetcher
-
-	sigChn chan any
+	sigChn   chan any
 }
 
 // HandleMessage finds the Mayan deposit with the according deposit ID and starts
@@ -63,6 +64,12 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		data.ErrChn <- err
 		return nil, err
 	}
+
+	if err = h.verifyWithdrawal(tx); err != nil {
+		data.ErrChn <- err
+		return nil, err
+	}
+
 	data.ErrChn <- nil
 
 	calldata, err := h.calldata(tx)
@@ -102,6 +109,18 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
+	if tx.Type != lighter.TxTypeL2Transfer {
+		return errors.New("invalid transaction type")
+	}
+
+	if tx.Transfer.ToAccountIndex != uint64(WITHDRAWAL_ACCOUNT_INDEX) {
+		return errors.New("transfer account index invalid")
+	}
+
+	return nil
 }
 
 func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
