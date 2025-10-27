@@ -23,9 +23,9 @@ import (
 )
 
 var (
-	ARBITRUM_CHAIN_ID        = big.NewInt(42161)
-	FILL_DEADLINE            = time.Minute * 5
-	WITHDRAWAL_ACCOUNT_INDEX = 3
+	ARBITRUM_CHAIN_ID               = big.NewInt(42161)
+	FILL_DEADLINE                   = time.Minute * 5
+	WITHDRAWAL_ACCOUNT_INDEX uint64 = 3
 )
 
 type Coordinator interface {
@@ -105,6 +105,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		h.usdcAddress,
 		ARBITRUM_CHAIN_ID,
 		h.lighterAddress,
+		//nolint:gosec
 		uint64(time.Now().Add(FILL_DEADLINE).Unix()),
 		data.Caller,
 		data.LiquidityPool,
@@ -138,7 +139,7 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 		return errors.New("invalid transaction type")
 	}
 
-	if tx.Transfer.ToAccountIndex != uint64(WITHDRAWAL_ACCOUNT_INDEX) {
+	if tx.Transfer.ToAccountIndex != WITHDRAWAL_ACCOUNT_INDEX {
 		return errors.New("transfer account index invalid")
 	}
 
