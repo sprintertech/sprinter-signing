@@ -90,21 +90,21 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		return nil, err
 	}
 
-	if err = h.verifyWithdrawal(tx, data.BorrowAmount); err != nil {
+	if err = h.verifyWithdrawal(tx); err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
 
 	data.ErrChn <- nil
 
-	calldata, err := h.calldata(tx, data.BorrowAmount)
+	calldata, err := h.calldata(tx)
 	if err != nil {
 		return nil, err
 	}
 
 	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
-		data.BorrowAmount,
+		new(big.Int).SetUint64(tx.Transfer.USDCAmount),
 		h.usdcAddress,
 		ARBITRUM_CHAIN_ID,
 		h.lighterAddress,
@@ -137,7 +137,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 	return nil, nil
 }
 
-func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAmount *big.Int) error {
+func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 	if tx.Type != lighter.TxTypeL2Transfer {
 		return errors.New("invalid transaction type")
 	}
@@ -146,19 +146,15 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAm
 		return errors.New("transfer account index invalid")
 	}
 
-	if borrowAmount.Cmp(new(big.Int).SetUint64(tx.Transfer.USDCAmount)) != -1 {
-		return errors.New("borrow amount exceeds withdrawal value")
-	}
-
 	return nil
 }
 
-func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx, borrowAmount *big.Int) ([]byte, error) {
+func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
 	return consts.LighterABI.Pack(
 		"withdraw",
 		common.HexToHash(tx.Hash),
 		common.HexToAddress(tx.L1Address),
-		borrowAmount)
+		new(big.Int).SetUint64(tx.Transfer.USDCAmount))
 }
 
 func (h *LighterMessageHandler) Listen(ctx context.Context) {
