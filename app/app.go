@@ -359,6 +359,7 @@ func Run() error {
 	lighterMessageHandler := lighterMessage.NewLighterMessageHandler(
 		lighterConfig.WithdrawalAddress,
 		lighterConfig.UsdcAddress,
+		lighterConfig.RepaymentAddress,
 		lighterAPI,
 		coordinator,
 		host,
