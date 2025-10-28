@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	LIGHTER_DOMAIN_ID uint64 = 1513889025
+	LIGHTER_DOMAIN_ID uint64 = 1701984817 // lower 32bits of sha256 hash of lighter caip ("lighter:1")
 )
 
 type MessageHandler interface {
