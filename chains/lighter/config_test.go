@@ -80,6 +80,7 @@ func (s *NewLighterConfigTestSuite) Test_ValidConfig() {
 		Chains: solverChains,
 		ProtocolsMetadata: solverConfig.ProtocolsMetadata{
 			Lighter: &solverConfig.Lighter{
+				RepaymentAddress: "3",
 				FastWithdrawalContract: map[string]string{
 					"eip155:42161": "withdrawal",
 				},
@@ -91,5 +92,6 @@ func (s *NewLighterConfigTestSuite) Test_ValidConfig() {
 	s.Equal(config, &lighter.LighterConfig{
 		WithdrawalAddress: common.HexToAddress("withdrawal"),
 		UsdcAddress:       common.HexToAddress("usdc"),
+		RepaymentAddress:  "3",
 	})
 }

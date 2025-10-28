@@ -950,6 +950,8 @@ github.com/sprintertech/lifi-solver v0.0.0-20251023154209-4cf9ac1ab166 h1:mCcKOx
 github.com/sprintertech/lifi-solver v0.0.0-20251023154209-4cf9ac1ab166/go.mod h1:EbAH3JJxioBVuHvyjaP5zTh6uPmumCpbE93WEjwpRm0=
 github.com/sprintertech/solver-config/go v0.0.0-20251024140304-ee77ffefd608 h1:J5RxJUhqMGfoIUb8XnSjDBlUMH658nM9NIjXft+DjkA=
 github.com/sprintertech/solver-config/go v0.0.0-20251024140304-ee77ffefd608/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
+github.com/sprintertech/solver-config/go v0.0.0-20251027142430-7f32bdd5da1e h1:5sSP6GbqCT/ApxxZmUtav6GHy5Ke98zh5oqQxewhJd4=
+github.com/sprintertech/solver-config/go v0.0.0-20251027142430-7f32bdd5da1e/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

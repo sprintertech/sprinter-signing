@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,9 +24,8 @@ import (
 )
 
 var (
-	ARBITRUM_CHAIN_ID               = big.NewInt(42161)
-	FILL_DEADLINE                   = time.Minute * 5
-	WITHDRAWAL_ACCOUNT_INDEX uint64 = 3
+	ARBITRUM_CHAIN_ID = big.NewInt(42161)
+	FILL_DEADLINE     = time.Minute * 5
 )
 
 type Coordinator interface {
@@ -43,14 +43,16 @@ type LighterMessageHandler struct {
 	fetcher     signing.SaveDataFetcher
 	sigChn      chan any
 
-	lighterAddress common.Address
-	usdcAddress    common.Address
-	txFetcher      TxFetcher
+	lighterAddress   common.Address
+	usdcAddress      common.Address
+	repaymentAccount string
+	txFetcher        TxFetcher
 }
 
 func NewLighterMessageHandler(
 	lighterAddress common.Address,
 	usdcAddress common.Address,
+	repaymentAccount string,
 	txFetcher TxFetcher,
 	coordinator Coordinator,
 	host host.Host,
@@ -59,14 +61,15 @@ func NewLighterMessageHandler(
 	sigChn chan any,
 ) *LighterMessageHandler {
 	return &LighterMessageHandler{
-		txFetcher:      txFetcher,
-		usdcAddress:    usdcAddress,
-		lighterAddress: lighterAddress,
-		coordinator:    coordinator,
-		host:           host,
-		comm:           comm,
-		fetcher:        fetcher,
-		sigChn:         sigChn,
+		txFetcher:        txFetcher,
+		usdcAddress:      usdcAddress,
+		repaymentAccount: repaymentAccount,
+		lighterAddress:   lighterAddress,
+		coordinator:      coordinator,
+		host:             host,
+		comm:             comm,
+		fetcher:          fetcher,
+		sigChn:           sigChn,
 	}
 }
 
@@ -139,7 +142,7 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAm
 		return errors.New("invalid transaction type")
 	}
 
-	if tx.Transfer.ToAccountIndex != WITHDRAWAL_ACCOUNT_INDEX {
+	if strconv.Itoa(tx.Transfer.ToAccountIndex) != h.repaymentAccount {
 		return errors.New("transfer account index invalid")
 	}
 

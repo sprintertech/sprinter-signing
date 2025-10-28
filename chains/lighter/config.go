@@ -18,6 +18,7 @@ var (
 type LighterConfig struct {
 	WithdrawalAddress common.Address
 	UsdcAddress       common.Address
+	RepaymentAddress  string
 }
 
 func NewLighterConfig(solverConfig solverConfig.SolverConfig) (*LighterConfig, error) {
@@ -38,6 +39,7 @@ func NewLighterConfig(solverConfig solverConfig.SolverConfig) (*LighterConfig, e
 
 	return &LighterConfig{
 		WithdrawalAddress: common.HexToAddress(withdrawalAddress),
+		RepaymentAddress:  solverConfig.ProtocolsMetadata.Lighter.RepaymentAddress,
 		UsdcAddress:       common.HexToAddress(usdcConfig.Address),
 	}, nil
 }

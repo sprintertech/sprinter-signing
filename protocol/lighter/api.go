@@ -22,7 +22,7 @@ const (
 type Transfer struct {
 	USDCAmount       uint64
 	FromAccountIndex uint64
-	ToAccountIndex   uint64
+	ToAccountIndex   int
 	Fee              uint64
 }
 

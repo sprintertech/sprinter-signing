@@ -58,6 +58,7 @@ func (s *LighterMessageHandlerTestSuite) SetupTest() {
 	s.handler = message.NewLighterMessageHandler(
 		common.Address{},
 		common.Address{},
+		"3",
 		s.mockTxFetcher,
 		s.mockCoordinator,
 		s.mockHost,
