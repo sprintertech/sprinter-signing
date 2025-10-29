@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
+	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -150,7 +151,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		big.NewInt(order.Order.FillDeadline.Unix()).Uint64(),
 	)
 
-	unlockHash, err := borrowUnlockHash(
+	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
 		data.BorrowAmount,
 		borrowToken,
