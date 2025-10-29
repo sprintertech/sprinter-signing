@@ -20,8 +20,8 @@ require (
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/sprintertech/lifi-solver v0.0.0-20251010142703-ff6f20f8b6eb
-	github.com/sprintertech/solver-config/go v0.0.0-20251003113310-77bd6669a2ef
+	github.com/sprintertech/lifi-solver v0.0.0-20251023154209-4cf9ac1ab166
+	github.com/sprintertech/solver-config/go v0.0.0-20251027142430-7f32bdd5da1e
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	go.opentelemetry.io/otel v1.16.0

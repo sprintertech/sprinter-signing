@@ -32,6 +32,9 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/chains/lighter"
+	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
+	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/comm/elector"
 	"github.com/sprintertech/sprinter-signing/comm/p2p"
 	"github.com/sprintertech/sprinter-signing/config"
@@ -42,6 +45,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/price"
 	"github.com/sprintertech/sprinter-signing/protocol/across"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
+	lighterAPI "github.com/sprintertech/sprinter-signing/protocol/lighter"
 	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -254,7 +258,7 @@ func Run() error {
 						sigChn)
 					go acrossMh.Listen(ctx)
 
-					mh.RegisterMessageHandler(evmMessage.AcrossMessage, acrossMh)
+					mh.RegisterMessageHandler(message.MessageType(comm.AcrossMsg.String()), acrossMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
@@ -278,7 +282,7 @@ func Run() error {
 						sigChn)
 					go mayanMh.Listen(ctx)
 
-					mh.RegisterMessageHandler(evmMessage.MayanMessage, mayanMh)
+					mh.RegisterMessageHandler(message.MessageType(comm.MayanMsg.String()), mayanMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
@@ -291,7 +295,7 @@ func Run() error {
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiAPI()
-					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, orderPricer)
+					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, orderPricer, resolver)
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
 						*c.GeneralChainConfig.Id,
@@ -309,7 +313,7 @@ func Run() error {
 						sigChn,
 					)
 					go lifiMh.Listen(ctx)
-					mh.RegisterMessageHandler(evmMessage.LifiEscrowMessage, lifiMh)
+					mh.RegisterMessageHandler(message.MessageType(comm.LifiEscrowMsg.String()), lifiMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
@@ -323,7 +327,7 @@ func Run() error {
 					keyshareStore,
 				)
 				go lifiUnlockMh.Listen(ctx)
-				mh.RegisterMessageHandler(evmMessage.LifiUnlockMessage, lifiUnlockMh)
+				mh.RegisterMessageHandler(message.MessageType(comm.LifiUnlockMsg.String()), lifiUnlockMh)
 
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener
@@ -348,6 +352,24 @@ func Run() error {
 			panic(fmt.Errorf("type '%s' not recognized", chainConfig["type"]))
 		}
 	}
+
+	lighterConfig, err := lighter.NewLighterConfig(*solverConfig)
+	panicOnError(err)
+	lighterAPI := lighterAPI.NewLighterAPI()
+	lighterMessageHandler := lighterMessage.NewLighterMessageHandler(
+		lighterConfig.WithdrawalAddress,
+		lighterConfig.UsdcAddress,
+		lighterConfig.RepaymentAddress,
+		lighterAPI,
+		coordinator,
+		host,
+		communication,
+		keyshareStore,
+		sigChn,
+	)
+	go lighterMessageHandler.Listen(ctx)
+	lighterChain := lighter.NewLighterChain(lighterMessageHandler)
+	domains[lighter.LIGHTER_DOMAIN_ID] = lighterChain
 
 	go jobs.StartCommunicationHealthCheckJob(host, configuration.RelayerConfig.MpcConfig.CommHealthCheckInterval, sygmaMetrics)
 

@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
@@ -157,9 +158,9 @@ func (h *LifiUnlockHandler) lifiUnlockHash(data *LifiUnlockData) ([]byte, error)
 		},
 		PrimaryType: "AllowOpen",
 		Domain: apitypes.TypedDataDomain{
-			Name:              DOMAIN_NAME,
+			Name:              signature.DOMAIN_NAME,
 			ChainId:           &chainId,
-			Version:           VERSION,
+			Version:           signature.VERSION,
 			VerifyingContract: data.Settler.Hex(),
 		},
 		Message: msg,
