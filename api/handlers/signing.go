@@ -132,6 +132,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		{
 			m = lighterMessage.NewLighterMessage(0, b.ChainId, &lighterMessage.LighterData{
 				OrderHash:     b.DepositId,
+				DepositTxHash: b.DepositTxHash,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
