@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -78,7 +79,9 @@ func BorrowUnlockHash(
 	}
 
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(messageHash)))
-	return crypto.Keccak256(rawData), nil
+	unlockHash := crypto.Keccak256(rawData)
+	log.Debug().Msgf("Created unlock hash %s with data: %+v", common.Bytes2Hex(unlockHash), msg)
+	return unlockHash, nil
 }
 
 // BorrowManyUnlockHash calculates the hash that has to be signed and submitted on-chain to the liquidity
