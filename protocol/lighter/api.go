@@ -82,8 +82,6 @@ func (a *LighterAPI) GetTx(hash string) (*LighterTx, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	fmt.Println(string(body))
-
 	s := new(LighterTx)
 	if err := json.Unmarshal(body, s); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
