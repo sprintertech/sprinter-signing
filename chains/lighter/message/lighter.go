@@ -84,7 +84,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	tx, err := h.txFetcher.GetTx(data.OrderHash)
+	tx, err := h.txFetcher.GetTx(data.DepositTxHash)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
