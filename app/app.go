@@ -370,6 +370,7 @@ func Run() error {
 	go lighterMessageHandler.Listen(ctx)
 	lighterChain := lighter.NewLighterChain(lighterMessageHandler)
 	domains[lighter.LIGHTER_DOMAIN_ID] = lighterChain
+	supportedChains[lighter.LIGHTER_DOMAIN_ID] = struct{}{}
 
 	go jobs.StartCommunicationHealthCheckJob(host, configuration.RelayerConfig.MpcConfig.CommHealthCheckInterval, sygmaMetrics)
 
