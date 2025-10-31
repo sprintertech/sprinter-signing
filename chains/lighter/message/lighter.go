@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
+	lighterChain "github.com/sprintertech/sprinter-signing/chains/lighter"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/protocol/lighter"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -118,7 +119,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("lighter-%s", "")
+	sessionID := fmt.Sprintf("%d-%s", lighterChain.LIGHTER_DOMAIN_ID, data.OrderHash)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,
@@ -147,7 +148,7 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAm
 	}
 
 	if borrowAmount.Cmp(new(big.Int).SetUint64(tx.Transfer.USDCAmount)) != -1 {
-		return errors.New("borrow amount higher transfer amount")
+		return errors.New("borrow amount higher than transfer amount")
 	}
 
 	return nil

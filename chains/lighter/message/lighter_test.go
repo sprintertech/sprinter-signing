@@ -85,6 +85,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
 		BorrowAmount:  big.NewInt(1900000),
 	}
 
@@ -128,6 +129,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidTxType() {
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
 		BorrowAmount:  big.NewInt(1900000),
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
@@ -169,6 +171,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAccount() {
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
 		BorrowAmount:  big.NewInt(1900000),
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
@@ -210,6 +213,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_MissingTx() {
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
 		BorrowAmount:  big.NewInt(1900000),
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(nil, fmt.Errorf("not found"))
@@ -245,6 +249,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountTooHigh(
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
 		BorrowAmount:  big.NewInt(2000000),
 	}
 
