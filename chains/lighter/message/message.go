@@ -21,6 +21,7 @@ type LighterData struct {
 	Calldata      string
 	Nonce         *big.Int
 	BorrowAmount  *big.Int
+	Deadline      uint64
 	Source        uint64
 	Destination   uint64
 }
