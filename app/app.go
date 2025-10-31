@@ -372,6 +372,7 @@ func Run() error {
 	domains[lighter.LIGHTER_DOMAIN_ID] = lighterChain
 	supportedChains[lighter.LIGHTER_DOMAIN_ID] = struct{}{}
 
+
 	go jobs.StartCommunicationHealthCheckJob(host, configuration.RelayerConfig.MpcConfig.CommHealthCheckInterval, sygmaMetrics)
 
 	r := relayer.NewRelayer(domains, sygmaMetrics)
