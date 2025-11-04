@@ -131,7 +131,7 @@ func (h *LifiUnlockHandler) notify(data *LifiUnlockData) error {
 	return h.comm.Broadcast(
 		h.host.Peerstore().Peers(),
 		msgBytes, comm.LifiUnlockMsg,
-		fmt.Sprintf("%d-%s", h.chainID, comm.LifiUnlockMsg))
+		fmt.Sprintf("%d-%s", h.chainID, comm.LifiUnlockSessionID))
 }
 
 func (h *LifiUnlockHandler) lifiUnlockHash(data *LifiUnlockData) ([]byte, error) {
