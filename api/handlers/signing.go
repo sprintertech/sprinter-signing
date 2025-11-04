@@ -22,7 +22,6 @@ const (
 	MayanProtocol      ProtocolType = "mayan"
 	RhinestoneProtocol ProtocolType = "rhinestone"
 	LifiEscrowProtocol ProtocolType = "lifi-escrow"
-	LifiProtocol       ProtocolType = "lifi"
 	LighterProtocol    ProtocolType = "lighter"
 )
 

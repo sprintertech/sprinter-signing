@@ -38,7 +38,7 @@ func (s *UnlockHandlerTestSuite) Test_HandleUnlock_InvalidRequest() {
 	handler := handlers.NewUnlockHandler(msgChn, s.chains)
 
 	input := handlers.UnlockBody{
-		Protocol: "lifi",
+		Protocol: "lifi-escrow",
 		OrderID:  "id",
 		Settler:  "settler",
 	}
@@ -95,7 +95,7 @@ func (s *UnlockHandlerTestSuite) Test_HandleUnlock_ValidRequest() {
 	handler := handlers.NewUnlockHandler(msgChn, s.chains)
 
 	input := handlers.UnlockBody{
-		Protocol: "lifi",
+		Protocol: "lifi-escrow",
 		OrderID:  "id",
 		Settler:  "settler",
 	}

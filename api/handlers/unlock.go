@@ -62,7 +62,7 @@ func (h *UnlockHandler) HandleUnlock(w http.ResponseWriter, r *http.Request) {
 	sigChn := make(chan interface{}, 1)
 	var m *message.Message
 	switch b.Protocol {
-	case LifiProtocol:
+	case LifiEscrowProtocol:
 		{
 			m = evmMessage.NewLifiUnlockMessage(0, b.ChainId, &evmMessage.LifiUnlockData{
 				Source:      0,

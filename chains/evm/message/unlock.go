@@ -13,12 +13,16 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
+)
+
+const (
+	DOMAIN_NAME = "OIFEscrowLIFI"
+	VERSION     = "1"
 )
 
 type LifiUnlockHandler struct {
@@ -158,9 +162,9 @@ func (h *LifiUnlockHandler) lifiUnlockHash(data *LifiUnlockData) ([]byte, error)
 		},
 		PrimaryType: "AllowOpen",
 		Domain: apitypes.TypedDataDomain{
-			Name:              signature.DOMAIN_NAME,
+			Name:              DOMAIN_NAME,
 			ChainId:           &chainId,
-			Version:           signature.VERSION,
+			Version:           VERSION,
 			VerifyingContract: data.Settler.Hex(),
 		},
 		Message: msg,
