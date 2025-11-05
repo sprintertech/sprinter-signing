@@ -155,7 +155,7 @@ func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx, borrowAmount *bi
 	return consts.LighterABI.Pack(
 		"withdraw",
 		common.HexToHash(tx.Hash),
-		common.HexToAddress(tx.L1Address),
+		common.BytesToAddress(tx.Transfer.Memo[:20]),
 		borrowAmount)
 }
 
