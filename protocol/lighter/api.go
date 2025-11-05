@@ -24,6 +24,7 @@ type Transfer struct {
 	FromAccountIndex uint64
 	ToAccountIndex   int
 	Fee              uint64
+	Memo             []byte
 }
 
 type LighterTx struct {

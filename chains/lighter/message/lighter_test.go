@@ -95,6 +95,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 		Transfer: &lighter.Transfer{
 			USDCAmount:     2000000,
 			ToAccountIndex: 3,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}, nil)
 
@@ -137,6 +138,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidTxType() {
 		Transfer: &lighter.Transfer{
 			USDCAmount:     2000000,
 			ToAccountIndex: 3,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}, nil)
 
@@ -179,6 +181,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAccount() {
 		Transfer: &lighter.Transfer{
 			USDCAmount:     2000000,
 			ToAccountIndex: 5,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}, nil)
 
@@ -258,6 +261,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountTooHigh(
 		Transfer: &lighter.Transfer{
 			USDCAmount:     2000000,
 			ToAccountIndex: 3,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}, nil)
 
