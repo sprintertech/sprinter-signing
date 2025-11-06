@@ -148,7 +148,7 @@ func (c *Coordinator) handleError(ctx context.Context, err error, tssProcesses [
 		}
 		rp.Go(func(ctx context.Context) error { return c.retry(ctx, tssProcesses, resultChn, excludedPeers) })
 	} else if errors.As(err, &subsetError) {
-		// wait for start message if existing singing process fails
+		// wait for start message if existing signing process fails
 		rp.Go(func(ctx context.Context) error {
 			return c.waitForStart(ctx, tssProcesses, resultChn, peer.ID(""))
 		})
@@ -316,7 +316,7 @@ func (c *Coordinator) waitForStart(
 				log.Debug().Str("SessionID", tssProcess.SessionID()).Msgf("received start message from %s", startMsg.From)
 
 				// having startMsg.From as "" is special case when peer is not selected in subset
-				// but should wait for start message if existing singing process fails
+				// but should wait for start message if existing signing process fails
 				if coordinator != "" && startMsg.From != coordinator {
 					log.Warn().Msgf("Received start message from a peer %s that is not the coordinator %s", startMsg.From.String(), coordinator.String())
 					continue
