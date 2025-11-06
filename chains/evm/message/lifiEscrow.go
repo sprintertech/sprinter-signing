@@ -23,6 +23,7 @@ import (
 
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	"github.com/sprintertech/lifi-solver/pkg/router"
 )
 
 type OrderFetcher interface {
@@ -30,13 +31,14 @@ type OrderFetcher interface {
 }
 
 type OrderValidator interface {
-	Validate(order *lifi.LifiOrder) error
+	Validate(order *lifi.AugmentedLifiOrder) error
 }
 
 type LifiEscrowMessageHandler struct {
 	chainID             uint64
 	validator           OrderValidator
 	orderPricer         pricing.OrderPricer
+	router              router.OrderRouter
 	confirmationWatcher ConfirmationWatcher
 
 	lifiAddresses map[uint64]common.Address
@@ -64,6 +66,7 @@ func NewLifiEscrowMessageHandler(
 	tokenStore config.TokenStore,
 	orderFetcher OrderFetcher,
 	orderPricer pricing.OrderPricer,
+	router router.OrderRouter,
 	validator OrderValidator,
 	sigChn chan any,
 ) *LifiEscrowMessageHandler {
@@ -81,6 +84,7 @@ func NewLifiEscrowMessageHandler(
 		orderPricer:         orderPricer,
 		validator:           validator,
 		sigChn:              sigChn,
+		router:              router,
 	}
 }
 
@@ -257,7 +261,11 @@ func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder, borrowAmou
 		return fmt.Errorf("order input is less than requested borrow amount")
 	}
 
-	return h.validator.Validate(order)
+	augmentedOrder, err := order.AugmentedOrder(h.orderPricer, h.router)
+	if err != nil {
+		return err
+	}
+	return h.validator.Validate(augmentedOrder)
 }
 
 func (h *LifiEscrowMessageHandler) Listen(ctx context.Context) {

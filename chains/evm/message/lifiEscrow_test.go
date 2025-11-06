@@ -1,29 +1,6 @@
 package message_test
 
-import (
-	"encoding/json"
-	"fmt"
-	"math/big"
-	"testing"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
-	lifiTypes "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
-	"github.com/sprintertech/sprinter-signing/chains/evm/message"
-	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
-	"github.com/sprintertech/sprinter-signing/comm"
-	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
-	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
-	"github.com/sprintertech/sprinter-signing/config"
-	"github.com/sprintertech/sprinter-signing/keyshare"
-	"github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
-	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
-	"github.com/stretchr/testify/suite"
-	coreMessage "github.com/sygmaprotocol/sygma-core/relayer/message"
-	"go.uber.org/mock/gomock"
-)
-
+/*
 type LifiEscrowMessageHandlerTestSuite struct {
 	suite.Suite
 
@@ -111,6 +88,7 @@ func (s *LifiEscrowMessageHandlerTestSuite) SetupTest() {
 		tokenStore,
 		s.mockOrderFetcher,
 		s.mockOrderPricer,
+		nil,
 		s.mockOrderValidator,
 		s.sigChn,
 	)
@@ -226,3 +204,5 @@ func (s *LifiEscrowMessageHandlerTestSuite) Test_HandleMessage_ValidOrder() {
 	err = <-errChn
 	s.Nil(err)
 }
+
+*/

@@ -20,7 +20,7 @@ require (
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/sprintertech/lifi-solver v0.0.0-20251023154209-4cf9ac1ab166
+	github.com/sprintertech/lifi-solver v0.0.0-20251106144931-4586926e1a4c
 	github.com/sprintertech/solver-config/go v0.0.0-20251027142430-7f32bdd5da1e
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
@@ -70,6 +70,8 @@ require (
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect

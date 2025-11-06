@@ -54,7 +54,7 @@ func (s *LifiUnlockHandlerTestSuite) SetupTest() {
 		gomock.Any(),
 		gomock.Any(),
 		comm.LifiUnlockMsg,
-		fmt.Sprintf("%d-%s", 10, comm.LifiUnlockMsg),
+		fmt.Sprintf("%d-%s", 10, comm.LifiUnlockSessionID),
 	).Return(nil)
 
 	s.handler = message.NewLifiUnlockHandler(
