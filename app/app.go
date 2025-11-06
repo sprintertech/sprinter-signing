@@ -20,7 +20,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
+	"github.com/sprintertech/lifi-solver/pkg/protocols"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
+	"github.com/sprintertech/lifi-solver/pkg/router"
 	"github.com/sprintertech/lifi-solver/pkg/token"
 	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/pyth"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
@@ -32,6 +34,8 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+
+	lifiConfig "github.com/sprintertech/lifi-solver/pkg/config"
 	"github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -292,10 +296,13 @@ func Run() error {
 					err = usdPricer.Start(ctx)
 					panicOnError(err)
 
+					lifiConfig, err := lifiConfig.GetSolverConfig(protocols.LifiEscrow, lifiConfig.PulsarSolver, solverConfig)
+					panicOnError(err)
+
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiAPI()
-					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, orderPricer, resolver)
+					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, resolver)
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
 						*c.GeneralChainConfig.Id,
@@ -309,6 +316,7 @@ func Run() error {
 						tokenStore,
 						lifiApi,
 						orderPricer,
+						router.NewRouter(resolver, nil, nil, lifiConfig.Routes),
 						lifiValidator,
 						sigChn,
 					)

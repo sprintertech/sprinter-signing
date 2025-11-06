@@ -80,7 +80,7 @@ func (m *MockOrderValidator) EXPECT() *MockOrderValidatorMockRecorder {
 }
 
 // Validate mocks base method.
-func (m *MockOrderValidator) Validate(order *lifi.LifiOrder) error {
+func (m *MockOrderValidator) Validate(order *lifi.AugmentedLifiOrder) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validate", order)
 	ret0, _ := ret[0].(error)
