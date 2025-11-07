@@ -207,19 +207,19 @@ func (h *LifiEscrowMessageHandler) borrowToken(order *lifi.LifiOrder) (common.Ad
 
 func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, error) {
 	type output struct {
-		Oracle    common.Hash
-		Settler   common.Hash
-		Recipient common.Hash
-		ChainId   *big.Int
-		Token     common.Hash
-		Amount    *big.Int
-		Call      []byte
-		Context   []byte
+		Oracle       common.Hash
+		Settler      common.Hash
+		Recipient    common.Hash
+		ChainId      *big.Int
+		Token        common.Hash
+		Amount       *big.Int
+		CallbackData []byte
+		Context      []byte
 	}
 	outputs := make([]output, len(order.Order.Outputs))
 	for i, o := range order.Order.Outputs {
 		chainID := new(big.Int).SetUint64(o.ChainID)
-		call, err := hexutil.Decode(o.Call)
+		callbackData, err := hexutil.Decode(o.CallbackData)
 		if err != nil {
 			return nil, err
 		}
@@ -228,14 +228,14 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 			return nil, err
 		}
 		outputs[i] = output{
-			Oracle:    *o.Oracle,
-			Settler:   *o.Settler,
-			ChainId:   chainID,
-			Amount:    o.Amount.Int,
-			Recipient: *o.Recipient,
-			Call:      call,
-			Context:   context,
-			Token:     *o.Token,
+			Oracle:       *o.Oracle,
+			Settler:      *o.Settler,
+			ChainId:      chainID,
+			Amount:       o.Amount.Int,
+			Recipient:    *o.Recipient,
+			CallbackData: callbackData,
+			Context:      context,
+			Token:        *o.Token,
 		}
 	}
 
