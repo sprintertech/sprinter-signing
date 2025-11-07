@@ -22,7 +22,7 @@ var LifiABI, _ = abi.JSON(strings.NewReader(`[{
         {"name": "token", "type": "bytes32"},
         {"name": "amount", "type": "uint256"},
         {"name": "recipient", "type": "bytes32"},
-        {"name": "call", "type": "bytes"},
+        {"name": "callbackData", "type": "bytes"},
         {"name": "context", "type": "bytes"}
       ]
     },
