@@ -136,8 +136,6 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Nonce:         b.Nonce.Int,
 				Deadline:      b.Deadline,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
-				Caller:        common.HexToAddress(b.Caller),
-				BorrowAmount:  b.BorrowAmount.Int,
 				ErrChn:        errChn,
 				Source:        0,
 				Destination:   b.ChainId,
