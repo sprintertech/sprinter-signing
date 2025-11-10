@@ -16,11 +16,9 @@ type LighterData struct {
 	OrderHash     string
 	Coordinator   peer.ID
 	LiquidityPool common.Address
-	Caller        common.Address
 	DepositTxHash string
 	Calldata      string
 	Nonce         *big.Int
-	BorrowAmount  *big.Int
 	Deadline      uint64
 	Source        uint64
 	Destination   uint64

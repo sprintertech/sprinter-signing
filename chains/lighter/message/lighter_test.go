@@ -83,17 +83,15 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
 		DepositTxHash: "orderHash",
-		BorrowAmount:  big.NewInt(1900000),
 	}
 
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Transfer,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000000,
+			USDCAmount:     2000001,
 			ToAccountIndex: 3,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
@@ -113,6 +111,48 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 	s.Nil(err)
 }
 
+func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_FeeHigherThanAmount() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.LighterMsg,
+		"lighter",
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.LighterData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
+	}
+
+	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
+		Type: lighter.TxTypeL2Transfer,
+		Transfer: &lighter.Transfer{
+			USDCAmount:     2000000,
+			ToAccountIndex: 3,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	}, nil)
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
+}
+
 func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidTxType() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
@@ -128,15 +168,13 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidTxType() {
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
 		DepositTxHash: "orderHash",
-		BorrowAmount:  big.NewInt(1900000),
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Withdraw,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000000,
+			USDCAmount:     2000001,
 			ToAccountIndex: 3,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
@@ -171,15 +209,13 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAccount() {
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
 		DepositTxHash: "orderHash",
-		BorrowAmount:  big.NewInt(1900000),
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Transfer,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000000,
+			USDCAmount:     2000001,
 			ToAccountIndex: 5,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
@@ -214,56 +250,10 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_MissingTx() {
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		OrderHash:     "orderHash",
 		DepositTxHash: "orderHash",
-		BorrowAmount:  big.NewInt(1900000),
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(nil, fmt.Errorf("not found"))
-
-	m := &coreMessage.Message{
-		Data:        ad,
-		Source:      0,
-		Destination: 10,
-	}
-	prop, err := s.handler.HandleMessage(m)
-
-	s.Nil(prop)
-	s.NotNil(err)
-
-	err = <-errChn
-	s.NotNil(err)
-}
-
-func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountTooHigh() {
-	s.mockCommunication.EXPECT().Broadcast(
-		gomock.Any(),
-		gomock.Any(),
-		comm.LighterMsg,
-		"lighter",
-	).Return(nil)
-	p, _ := pstoremem.NewPeerstore()
-	s.mockHost.EXPECT().Peerstore().Return(p)
-
-	errChn := make(chan error, 1)
-	ad := &message.LighterData{
-		ErrChn:        errChn,
-		Nonce:         big.NewInt(101),
-		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		Caller:        common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
-		OrderHash:     "orderHash",
-		DepositTxHash: "orderHash",
-		BorrowAmount:  big.NewInt(2000000),
-	}
-
-	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
-		Type: lighter.TxTypeL2Transfer,
-		Transfer: &lighter.Transfer{
-			USDCAmount:     2000000,
-			ToAccountIndex: 3,
-			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		},
-	}, nil)
 
 	m := &coreMessage.Message{
 		Data:        ad,

@@ -25,6 +25,7 @@ import (
 
 var (
 	ARBITRUM_CHAIN_ID = big.NewInt(42161)
+	FEE               = big.NewInt(2000000)
 )
 
 type Coordinator interface {
@@ -89,14 +90,14 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		return nil, err
 	}
 
-	if err = h.verifyWithdrawal(tx, data.BorrowAmount); err != nil {
+	if err = h.verifyWithdrawal(tx); err != nil {
 		data.ErrChn <- err
 		return nil, err
 	}
 
 	data.ErrChn <- nil
 
-	calldata, err := h.calldata(tx, data.BorrowAmount)
+	calldata, err := h.calldata(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +109,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		ARBITRUM_CHAIN_ID,
 		h.lighterAddress,
 		data.Deadline,
-		data.Caller,
+		h.lighterAddress,
 		data.LiquidityPool,
 		data.Nonce)
 	if err != nil {
@@ -135,7 +136,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 	return nil, nil
 }
 
-func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAmount *big.Int) error {
+func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 	if tx.Type != lighter.TxTypeL2Transfer {
 		return errors.New("invalid transaction type")
 	}
@@ -144,14 +145,15 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAm
 		return errors.New("transfer account index invalid")
 	}
 
-	if borrowAmount.Cmp(new(big.Int).SetUint64(tx.Transfer.USDCAmount)) != -1 {
-		return errors.New("borrow amount higher than transfer amount")
+	if tx.Transfer.USDCAmount <= FEE.Uint64() {
+		return errors.New("fee higher than withdrawal amount")
 	}
 
 	return nil
 }
 
-func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx, borrowAmount *big.Int) ([]byte, error) {
+func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
+	borrowAmount := new(big.Int).Sub(new(big.Int).SetUint64(tx.Transfer.USDCAmount), FEE)
 	return consts.LighterABI.Pack(
 		"fulfillWithdraw",
 		common.HexToHash(tx.Hash),
