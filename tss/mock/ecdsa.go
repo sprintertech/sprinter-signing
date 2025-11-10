@@ -68,17 +68,17 @@ func (mr *MockECDSAKeyshareStorerMockRecorder) LockKeyshare() *gomock.Call {
 }
 
 // StoreKeyshare mocks base method.
-func (m *MockECDSAKeyshareStorer) StoreKeyshare(keyshare keyshare.ECDSAKeyshare) error {
+func (m *MockECDSAKeyshareStorer) StoreKeyshare(arg0 keyshare.ECDSAKeyshare) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreKeyshare", keyshare)
+	ret := m.ctrl.Call(m, "StoreKeyshare", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StoreKeyshare indicates an expected call of StoreKeyshare.
-func (mr *MockECDSAKeyshareStorerMockRecorder) StoreKeyshare(keyshare any) *gomock.Call {
+func (mr *MockECDSAKeyshareStorerMockRecorder) StoreKeyshare(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreKeyshare", reflect.TypeOf((*MockECDSAKeyshareStorer)(nil).StoreKeyshare), keyshare)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreKeyshare", reflect.TypeOf((*MockECDSAKeyshareStorer)(nil).StoreKeyshare), arg0)
 }
 
 // UnlockKeyshare mocks base method.

@@ -10,9 +10,9 @@
 package mock_tss
 
 import (
-	big "math/big"
 	reflect "reflect"
 
+	int "github.com/binance-chain/tss-lib/common/int"
 	tss "github.com/binance-chain/tss-lib/tss"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -56,10 +56,10 @@ func (mr *MockMessageMockRecorder) GetFrom() *gomock.Call {
 }
 
 // GetSessionId mocks base method.
-func (m *MockMessage) GetSessionId() *big.Int {
+func (m *MockMessage) GetSessionId() *int.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSessionId")
-	ret0, _ := ret[0].(*big.Int)
+	ret0, _ := ret[0].(*int.Int)
 	return ret0
 }
 

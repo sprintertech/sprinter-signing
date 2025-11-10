@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
+	"github.com/sprintertech/sprinter-signing/health"
 )
 
 func Serve(
@@ -23,6 +24,7 @@ func Serve(
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning).Methods("POST")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest).Methods("GET")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/confirmations", confirmationsHandler.HandleRequest).Methods("GET")
+	r.HandleFunc("/health", health.HealthHandler()).Methods("GET")
 
 	server := &http.Server{
 		Addr:        addr,
