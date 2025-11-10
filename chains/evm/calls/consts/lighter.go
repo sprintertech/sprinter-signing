@@ -7,7 +7,7 @@ import (
 )
 
 var LighterABI, _ = abi.JSON(strings.NewReader(`[{
-  "name": "withdraw",
+  "name": "fulfillWithdraw",
   "type": "function",
   "stateMutability": "nonpayable",
   "inputs": [
