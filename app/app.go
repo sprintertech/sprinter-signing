@@ -42,7 +42,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/comm/elector"
 	"github.com/sprintertech/sprinter-signing/comm/p2p"
 	"github.com/sprintertech/sprinter-signing/config"
-	"github.com/sprintertech/sprinter-signing/health"
 	"github.com/sprintertech/sprinter-signing/jobs"
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	"github.com/sprintertech/sprinter-signing/metrics"
@@ -109,8 +108,6 @@ func Run() error {
 	host, err := p2p.NewHost(priv, networkTopology, connectionGate, configuration.RelayerConfig.MpcConfig.Port)
 	panicOnError(err)
 	log.Info().Str("peerID", host.ID().String()).Msg("Successfully created libp2p host")
-
-	go health.StartHealthEndpoint(configuration.RelayerConfig.HealthPort)
 
 	communication := p2p.NewCommunication(host, "p2p/sprinter")
 	electorFactory := elector.NewCoordinatorElectorFactory(host, configuration.RelayerConfig.BullyConfig)
