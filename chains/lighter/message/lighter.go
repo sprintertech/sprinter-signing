@@ -153,7 +153,7 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx, borrowAm
 
 func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx, borrowAmount *big.Int) ([]byte, error) {
 	return consts.LighterABI.Pack(
-		"withdraw",
+		"fulfillWithdraw",
 		common.HexToHash(tx.Hash),
 		common.BytesToAddress(tx.Transfer.Memo[:20]),
 		borrowAmount)
