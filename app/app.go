@@ -293,7 +293,7 @@ func Run() error {
 					err = usdPricer.Start(ctx)
 					panicOnError(err)
 
-					lifiConfig, err := lifiConfig.GetSolverConfig(protocols.LifiEscrow, lifiConfig.PulsarSolver, solverConfig)
+					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
 					panicOnError(err)
 
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
