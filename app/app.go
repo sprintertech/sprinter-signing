@@ -119,8 +119,6 @@ func Run() error {
 	}
 	blockstore := store.NewBlockStore(db)
 	keyshareStore := keyshare.NewECDSAKeyshareStore(configuration.RelayerConfig.MpcConfig.KeysharePath)
-	keyshare, err := keyshareStore.GetKeyshare()
-	panicOnError(err)
 
 	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL)
 	panicOnError(err)
@@ -162,6 +160,14 @@ func Run() error {
 	}
 	solverConfig, err := solverConfig.FetchSolverConfig(ctx, solverConfigOpts...)
 	panicOnError(err)
+
+	keyshare, err := keyshareStore.GetKeyshare()
+	var mpcAddress common.Address
+	if err != nil {
+		mpcAddress = ethereumCrypto.PubkeyToAddress(*keyshare.Key.ECDSAPub.ToBtcecPubKey().ToECDSA())
+	} else {
+		mpcAddress = common.HexToAddress(solverConfig.ProtocolsMetadata.Sprinter.MpcAddress)
+	}
 
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
@@ -303,7 +309,7 @@ func Run() error {
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
 						*c.GeneralChainConfig.Id,
-						ethereumCrypto.PubkeyToAddress(*keyshare.Key.ECDSAPub.ToBtcecPubKey().ToECDSA()),
+						mpcAddress,
 						lifiOutputSettlers,
 						coordinator,
 						host,
