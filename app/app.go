@@ -163,7 +163,7 @@ func Run() error {
 
 	keyshare, err := keyshareStore.GetKeyshare()
 	var mpcAddress common.Address
-	if err != nil {
+	if err == nil {
 		mpcAddress = ethereumCrypto.PubkeyToAddress(*keyshare.Key.ECDSAPub.ToBtcecPubKey().ToECDSA())
 	} else {
 		mpcAddress = common.HexToAddress(solverConfig.ProtocolsMetadata.Sprinter.MpcAddress)
