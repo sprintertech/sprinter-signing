@@ -26,7 +26,7 @@ import (
 
 type EventListener interface {
 	FetchKeygenEvents(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]types.Log, error)
-	FetchRefreshEvents(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) ([]*events.Refresh, error)
+	FetchRefreshEvents(ctx context.Context, address common.Address, startBlock *big.Int, endBlock *big.Int) (*events.Refresh, types.Log, error)
 }
 
 type KeygenEventHandler struct {
@@ -143,22 +143,17 @@ func (eh *RefreshEventHandler) HandleEvents(
 	startBlock *big.Int,
 	endBlock *big.Int,
 ) error {
-	refreshEvents, err := eh.eventListener.FetchRefreshEvents(
+	refreshEvent, l, err := eh.eventListener.FetchRefreshEvents(
 		context.Background(), eh.bridgeAddress, startBlock, endBlock,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to fetch keygen events because of: %+v", err)
 	}
-	if len(refreshEvents) == 0 {
+	if refreshEvent == nil {
 		return nil
 	}
 
-	hash := refreshEvents[len(refreshEvents)-1].Hash
-	if hash == "" {
-		log.Error().Msgf("Hash cannot be empty string")
-		return nil
-	}
-	topology, err := eh.topologyProvider.NetworkTopology(hash)
+	topology, err := eh.topologyProvider.NetworkTopology(refreshEvent.Hash)
 	if err != nil {
 		log.Error().Err(err).Msgf("Failed fetching network topology")
 		return nil
@@ -177,7 +172,7 @@ func (eh *RefreshEventHandler) HandleEvents(
 	)
 
 	resharing := resharing.NewResharing(
-		eh.sessionID(startBlock), topology.Threshold, eh.host, eh.communication, eh.ecdsaStorer,
+		eh.sessionID(new(big.Int).SetUint64(l.BlockNumber)), topology.Threshold, eh.host, eh.communication, eh.ecdsaStorer,
 	)
 	err = eh.coordinator.Execute(context.Background(), []tss.TssProcess{resharing}, make(chan interface{}, 1), peer.ID(""))
 	if err != nil {
