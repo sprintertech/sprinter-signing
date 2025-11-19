@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rs/zerolog/log"
 
@@ -46,10 +45,10 @@ func (l *Listener) FetchKeygenEvents(ctx context.Context, contractAddress common
 	return logs, nil
 }
 
-func (l *Listener) FetchRefreshEvents(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) (*Refresh, types.Log, error) {
+func (l *Listener) FetchRefreshEvents(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) (*Refresh, ethTypes.Log, error) {
 	logs, err := l.client.FetchEventLogs(ctx, contractAddress, string(KeyRefreshSig), startBlock, endBlock)
 	if err != nil {
-		return nil, types.Log{}, err
+		return nil, ethTypes.Log{}, err
 	}
 
 	for _, re := range logs {
@@ -62,7 +61,7 @@ func (l *Listener) FetchRefreshEvents(ctx context.Context, contractAddress commo
 		return r, re, nil
 	}
 
-	return nil, types.Log{}, nil
+	return nil, ethTypes.Log{}, nil
 }
 
 func (l *Listener) UnpackRefresh(abi abi.ABI, data []byte) (*Refresh, error) {
