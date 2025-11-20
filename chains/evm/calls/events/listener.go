@@ -45,12 +45,11 @@ func (l *Listener) FetchKeygenEvents(ctx context.Context, contractAddress common
 	return logs, nil
 }
 
-func (l *Listener) FetchRefreshEvents(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) ([]*Refresh, error) {
+func (l *Listener) FetchRefreshEvents(ctx context.Context, contractAddress common.Address, startBlock *big.Int, endBlock *big.Int) (*Refresh, ethTypes.Log, error) {
 	logs, err := l.client.FetchEventLogs(ctx, contractAddress, string(KeyRefreshSig), startBlock, endBlock)
 	if err != nil {
-		return nil, err
+		return nil, ethTypes.Log{}, err
 	}
-	refreshEvents := make([]*Refresh, 0)
 
 	for _, re := range logs {
 		r, err := l.UnpackRefresh(l.abi, re.Data)
@@ -59,10 +58,10 @@ func (l *Listener) FetchRefreshEvents(ctx context.Context, contractAddress commo
 			continue
 		}
 
-		refreshEvents = append(refreshEvents, r)
+		return r, re, nil
 	}
 
-	return refreshEvents, nil
+	return nil, ethTypes.Log{}, nil
 }
 
 func (l *Listener) UnpackRefresh(abi abi.ABI, data []byte) (*Refresh, error) {
