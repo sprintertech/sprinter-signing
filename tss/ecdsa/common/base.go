@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"runtime/debug"
+	"time"
 
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -33,6 +34,7 @@ type BaseTss struct {
 	Communication comm.Communication
 	Peers         []peer.ID
 	Log           zerolog.Logger
+	TssTimeout    time.Duration
 
 	Cancel context.CancelFunc
 }
@@ -127,4 +129,8 @@ func (b *BaseTss) BroadcastPeers(msg tss.Message) ([]peer.ID, error) {
 
 func (b *BaseTss) SessionID() string {
 	return b.SID
+}
+
+func (b *BaseTss) Timeout() time.Duration {
+	return b.TssTimeout
 }

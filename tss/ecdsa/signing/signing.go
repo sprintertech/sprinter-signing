@@ -74,6 +74,7 @@ func NewSigning(
 			SID:           sessionID,
 			Log:           log.With().Str("SessionID", sessionID).Str("messageID", messageID).Str("Process", "signing").Logger(),
 			Cancel:        func() {},
+			TssTimeout:    time.Second * 30,
 		},
 		key: key,
 		msg: msg,

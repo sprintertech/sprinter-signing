@@ -156,7 +156,7 @@ func (s *SigningTestSuite) Test_SigningTimeout() {
 		}
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
 		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
-		coordinator.TssTimeout = time.Nanosecond
+		signing.TssTimeout = time.Nanosecond
 		coordinators = append(coordinators, coordinator)
 		processes = append(processes, signing)
 	}

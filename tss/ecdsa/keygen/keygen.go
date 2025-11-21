@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
@@ -51,6 +52,7 @@ func NewKeygen(
 			SID:           sessionID,
 			Log:           log.With().Str("SessionID", sessionID).Str("Process", "keygen").Logger(),
 			Cancel:        func() {},
+			TssTimeout:    time.Minute * 10,
 		},
 		storer:    storer,
 		threshold: threshold,
