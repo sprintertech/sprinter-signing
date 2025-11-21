@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/ecdsa/resharing"
@@ -68,6 +69,7 @@ func NewResharing(
 			SID:           sessionID,
 			Log:           log.With().Str("SessionID", sessionID).Str("Process", "resharing").Logger(),
 			Cancel:        func() {},
+			TssTimeout:    time.Minute * 10,
 		},
 		key:          key,
 		storer:       storer,

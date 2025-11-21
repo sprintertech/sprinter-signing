@@ -24,7 +24,6 @@ import (
 
 var (
 	initiatePeriod = 1 * time.Second
-	tssTimeout     = 30 * time.Second
 )
 
 type TssProcess interface {
@@ -35,6 +34,7 @@ type TssProcess interface {
 	StartParams(readyPeers []peer.ID) []byte
 	SessionID() string
 	ValidCoordinators() []peer.ID
+	Timeout() time.Duration
 }
 
 type Coordinator struct {
@@ -46,7 +46,6 @@ type Coordinator struct {
 	processLock      sync.Mutex
 
 	CoordinatorTimeout time.Duration
-	TssTimeout         time.Duration
 	InitiatePeriod     time.Duration
 }
 
@@ -62,7 +61,6 @@ func NewCoordinator(
 
 		pendingProcesses: make(map[string]bool),
 
-		TssTimeout:     tssTimeout,
 		InitiatePeriod: initiatePeriod,
 	}
 }
@@ -162,7 +160,7 @@ func (c *Coordinator) handleError(ctx context.Context, err error, tssProcesses [
 func (c *Coordinator) watchExecution(ctx context.Context, tssProcess TssProcess, coordinator peer.ID, cancel context.CancelFunc) error {
 	failChn := make(chan *comm.WrappedMessage)
 	subscriptionID := c.communication.Subscribe(tssProcess.SessionID(), comm.TssFailMsg, failChn)
-	ticker := time.NewTicker(c.TssTimeout)
+	ticker := time.NewTicker(tssProcess.Timeout())
 	defer func() {
 		ticker.Stop()
 		c.communication.UnSubscribe(subscriptionID)
