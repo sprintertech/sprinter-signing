@@ -18,6 +18,7 @@ const (
 	TX_NOT_FOUND_RETRIES    = 3
 	TX_NOT_FOUND_RETRY_WAIT = 500 * time.Millisecond
 	TX_NOT_FOUND_ERROR_CODE = 21500
+	TX_FOUND_STATUS_CODE    = 200
 )
 
 type TxType uint64
@@ -113,9 +114,13 @@ func lighterCheckRetry(ctx context.Context, resp *http.Response, err error) (boo
 		resp.Body.Close()
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 
-		var lighterErr LighterError
-		if err := json.Unmarshal(body, &lighterErr); err == nil {
-			if lighterErr.Code == TX_NOT_FOUND_ERROR_CODE {
+		s := new(LighterTx)
+		if err := json.Unmarshal(body, s); err != nil {
+			e := new(LighterError)
+			if err := json.Unmarshal(body, e); err != nil {
+				return false, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
+			}
+			if e.Code == TX_NOT_FOUND_ERROR_CODE || e.Code == TX_FOUND_STATUS_CODE {
 				return true, nil
 			}
 		}
