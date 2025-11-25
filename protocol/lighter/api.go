@@ -9,7 +9,10 @@ import (
 )
 
 const (
-	LIGHTER_URL = "https://mainnet.zklighter.elliot.ai/api"
+	LIGHTER_URL                   = "https://mainnet.zklighter.elliot.ai/api"
+	TX_NOT_FOUND_RETRIES          = 3
+	TX_NOT_FOUND_RETRY_TIMEOUT    = 1 * time.Second
+	TX_NOT_FOUND_ERROR_CODE       = 21500
 )
 
 type TxType uint64
@@ -76,30 +79,47 @@ func NewLighterAPI() *LighterAPI {
 
 // GetTx fetches transaction from the lighter API
 func (a *LighterAPI) GetTx(hash string) (*LighterTx, error) {
-	url := fmt.Sprintf("%s/v1/tx?by=hash&value=%s", LIGHTER_URL, hash)
-	resp, err := a.HTTPClient.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
+	var lastErr error
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d, %s", resp.StatusCode, url)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	s := new(LighterTx)
-	if err := json.Unmarshal(body, s); err != nil {
-		e := new(LighterError)
-		if err := json.Unmarshal(body, e); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
+	for attempt := 0; attempt < TX_NOT_FOUND_RETRIES; attempt++ {
+		if attempt > 0 {
+			time.Sleep(TX_NOT_FOUND_RETRY_TIMEOUT)
 		}
-		return nil, e.Error()
+
+		url := fmt.Sprintf("%s/v1/tx?by=hash&value=%s", LIGHTER_URL, hash)
+		resp, err := a.HTTPClient.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("request failed: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("unexpected status code: %d, %s", resp.StatusCode, url)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		s := new(LighterTx)
+		if err := json.Unmarshal(body, s); err != nil {
+			e := new(LighterError)
+			if err := json.Unmarshal(body, e); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
+			}
+
+			// Retry if transaction not found
+			if e.Code == TX_NOT_FOUND_ERROR_CODE {
+				lastErr = e.Error()
+				continue
+			}
+
+			return nil, e.Error()
+		}
+
+		return s, nil
 	}
 
-	return s, nil
+	return nil, lastErr
 }
