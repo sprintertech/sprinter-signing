@@ -282,7 +282,7 @@ func (h *LifiEscrowMessageHandler) Listen(ctx context.Context) {
 				d := &LifiEscrowData{}
 				err := json.Unmarshal(wMsg.Payload, d)
 				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
+					log.Warn().Msgf("Failed unmarshaling LiFi message: %s", err)
 					continue
 				}
 
@@ -290,7 +290,7 @@ func (h *LifiEscrowMessageHandler) Listen(ctx context.Context) {
 				msg := NewLifiEscrowData(d.Source, d.Destination, d)
 				_, err = h.HandleMessage(msg)
 				if err != nil {
-					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", msg, err)
+					log.Err(err).Msgf("Failed handling LiFi message %+v because of: %s", msg, err)
 				}
 			}
 		case <-ctx.Done():
