@@ -36,6 +36,15 @@ type LighterTx struct {
 	Transfer  *Transfer
 }
 
+type LighterError struct {
+	Code    uint64 `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e *LighterError) Error() error {
+	return fmt.Errorf("lighter error: code %d, message: %s", e.Code, e.Message)
+}
+
 func (tx *LighterTx) UnmarshalJSON(data []byte) error {
 	type t LighterTx
 	if err := json.Unmarshal(data, (*t)(tx)); err != nil {
@@ -85,7 +94,11 @@ func (a *LighterAPI) GetTx(hash string) (*LighterTx, error) {
 
 	s := new(LighterTx)
 	if err := json.Unmarshal(body, s); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
+		e := new(LighterError)
+		if err := json.Unmarshal(body, e); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
+		}
+		return nil, e.Error()
 	}
 
 	return s, nil
