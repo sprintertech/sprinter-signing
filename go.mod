@@ -11,6 +11,7 @@ require (
 	github.com/ethereum/go-ethereum v1.16.2
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.1
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/imdario/mergo v0.3.12
 	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/libp2p/go-libp2p v0.38.2
@@ -71,7 +72,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
