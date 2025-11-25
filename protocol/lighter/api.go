@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	LIGHTER_URL                   = "https://mainnet.zklighter.elliot.ai/api"
-	TX_NOT_FOUND_RETRIES          = 3
-	TX_NOT_FOUND_RETRY_TIMEOUT    = 1 * time.Second
-	TX_NOT_FOUND_ERROR_CODE       = 21500
+	LIGHTER_URL                = "https://mainnet.zklighter.elliot.ai/api"
+	TX_NOT_FOUND_RETRIES       = 3
+	TX_NOT_FOUND_RETRY_TIMEOUT = 1 * time.Second
+	TX_NOT_FOUND_ERROR_CODE    = 21500
 )
 
 type TxType uint64
