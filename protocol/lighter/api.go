@@ -59,12 +59,18 @@ func (tx *LighterTx) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if tx.Code != 200 {
+		return fmt.Errorf("lighter error: code %d, message: %s", tx.Code, tx.Info)
+	}
+
 	if tx.Type == TxTypeL2Transfer {
 		var t *Transfer
 		if err := json.Unmarshal([]byte(tx.Info), &t); err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal transfer: %w", err)
 		}
 		tx.Transfer = t
+	} else {
+		return fmt.Errorf("invalid transaction type: %d", tx.Type)
 	}
 
 	return nil
