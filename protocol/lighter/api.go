@@ -112,16 +112,14 @@ func LighterCheckRetry(ctx context.Context, resp *http.Response, err error) (boo
 		// First try to unmarshal as LighterError
 		e := new(LighterError)
 		if err := json.Unmarshal(body, e); err == nil && e.Code == TX_NOT_FOUND_ERROR_CODE {
-			// Retry on TX_NOT_FOUND_ERROR_CODE
 			return true, nil
 		}
 
-		// Check if it's a LighterTx with code 200 but missing info (before custom UnmarshalJSON runs)
+		// Check if it's a LighterTx with code 200 but missing info
 		var raw map[string]interface{}
 		if err := json.Unmarshal(body, &raw); err == nil {
 			if code, ok := raw["code"].(float64); ok && code == TX_FOUND_STATUS_CODE {
 				info, hasInfo := raw["info"].(string)
-				// Retry if info is missing or empty
 				if !hasInfo || info == "" {
 					return true, nil
 				}
