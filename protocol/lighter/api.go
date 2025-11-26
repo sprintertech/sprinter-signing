@@ -50,18 +50,14 @@ type LighterError struct {
 	Message string `json:"message"`
 }
 
-func (e *LighterError) Error() error {
-	return fmt.Errorf("lighter error: code %d, message: %s", e.Code, e.Message)
+func (e *LighterError) Error() string {
+	return fmt.Sprintf("lighter error: code %d, message: %s", e.Code, e.Message)
 }
 
 func (tx *LighterTx) UnmarshalJSON(data []byte) error {
 	type t LighterTx
 	if err := json.Unmarshal(data, (*t)(tx)); err != nil {
 		return err
-	}
-
-	if tx.Code != 200 {
-		return fmt.Errorf("lighter error: code %d, message: %s", tx.Code, tx.Info)
 	}
 
 	if tx.Type == TxTypeL2Transfer {
@@ -71,7 +67,7 @@ func (tx *LighterTx) UnmarshalJSON(data []byte) error {
 		}
 		tx.Transfer = t
 	} else {
-		return fmt.Errorf("invalid transaction type: %d", tx.Type)
+		return fmt.Errorf("unsupported transaction type: %d", tx.Type)
 	}
 
 	return nil
@@ -86,7 +82,7 @@ func NewLighterAPI() *LighterAPI {
 	retryClient.RetryMax = TX_NOT_FOUND_RETRIES - 1 // RetryMax is a number of retries after an initial attempt
 	retryClient.RetryWaitMin = TX_NOT_FOUND_RETRY_WAIT
 	retryClient.RetryWaitMax = TX_NOT_FOUND_RETRY_WAIT
-	retryClient.CheckRetry = lighterCheckRetry
+	retryClient.CheckRetry = LighterCheckRetry
 	retryClient.Logger = log.Logger
 
 	return &LighterAPI{
@@ -94,9 +90,9 @@ func NewLighterAPI() *LighterAPI {
 	}
 }
 
-// lighterCheckRetry checks if we should retry based on Lighter API error codes
-func lighterCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
-	// Don't retry on context cancellation or client errors
+// LighterCheckRetry checks if we should retry the request.
+// Retries when: error code is TX_NOT_FOUND_ERROR_CODE (21500) or response has code 200 but missing/empty info.
+func LighterCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	if ctx.Err() != nil {
 		return false, ctx.Err()
 	}
@@ -105,7 +101,6 @@ func lighterCheckRetry(ctx context.Context, resp *http.Response, err error) (boo
 		return false, err
 	}
 
-	// Only retry on 200 OK with transaction not found error
 	if resp.StatusCode == http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -114,14 +109,22 @@ func lighterCheckRetry(ctx context.Context, resp *http.Response, err error) (boo
 		resp.Body.Close()
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 
-		s := new(LighterTx)
-		if err := json.Unmarshal(body, s); err != nil {
-			e := new(LighterError)
-			if err := json.Unmarshal(body, e); err != nil {
-				return false, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
-			}
-			if e.Code == TX_NOT_FOUND_ERROR_CODE || e.Code == TX_FOUND_STATUS_CODE {
-				return true, nil
+		// First try to unmarshal as LighterError
+		e := new(LighterError)
+		if err := json.Unmarshal(body, e); err == nil && e.Code == TX_NOT_FOUND_ERROR_CODE {
+			// Retry on TX_NOT_FOUND_ERROR_CODE
+			return true, nil
+		}
+
+		// Check if it's a LighterTx with code 200 but missing info (before custom UnmarshalJSON runs)
+		var raw map[string]interface{}
+		if err := json.Unmarshal(body, &raw); err == nil {
+			if code, ok := raw["code"].(float64); ok && code == TX_FOUND_STATUS_CODE {
+				info, hasInfo := raw["info"].(string)
+				// Retry if info is missing or empty
+				if !hasInfo || info == "" {
+					return true, nil
+				}
 			}
 		}
 	}
@@ -149,11 +152,7 @@ func (a *LighterAPI) GetTx(hash string) (*LighterTx, error) {
 
 	s := new(LighterTx)
 	if err := json.Unmarshal(body, s); err != nil {
-		e := new(LighterError)
-		if err := json.Unmarshal(body, e); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response body: %s, with error: %w", string(body), err)
-		}
-		return nil, e.Error()
+		return nil, err
 	}
 
 	return s, nil
