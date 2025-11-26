@@ -63,7 +63,7 @@ func (tx *LighterTx) UnmarshalJSON(data []byte) error {
 	if tx.Type == TxTypeL2Transfer {
 		var t *Transfer
 		if err := json.Unmarshal([]byte(tx.Info), &t); err != nil {
-			return fmt.Errorf("failed to unmarshal transfer: %w", err)
+			return fmt.Errorf("failed to unmarshal info: %w", err)
 		}
 		tx.Transfer = t
 	} else {
