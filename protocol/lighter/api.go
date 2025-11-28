@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -83,7 +82,7 @@ func NewLighterAPI() *LighterAPI {
 	retryClient.RetryWaitMin = TX_NOT_FOUND_RETRY_WAIT
 	retryClient.RetryWaitMax = TX_NOT_FOUND_RETRY_WAIT
 	retryClient.CheckRetry = LighterCheckRetry
-	retryClient.Logger = log.Logger
+	retryClient.Logger = nil
 
 	return &LighterAPI{
 		HTTPClient: retryClient.StandardClient(),
