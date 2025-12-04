@@ -197,6 +197,48 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidTxType() {
 	s.NotNil(err)
 }
 
+func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAsset() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.LighterMsg,
+		"lighter",
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.LighterData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
+	}
+	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
+		Type: lighter.TxTypeL2Withdraw,
+		Transfer: &lighter.Transfer{
+			Amount:         2000001,
+			AssetIndex:     2,
+			ToAccountIndex: 3,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	}, nil)
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
+}
+
 func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAccount() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
