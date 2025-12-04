@@ -91,7 +91,8 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Transfer,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000001,
+			Amount:         2000001,
+			AssetIndex:     3,
 			ToAccountIndex: 3,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
@@ -133,7 +134,8 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_FeeHigherThanAmount(
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Transfer,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000000,
+			Amount:         2000000,
+			AssetIndex:     3,
 			ToAccountIndex: 3,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
@@ -174,7 +176,8 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidTxType() {
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Withdraw,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000001,
+			Amount:         2000001,
+			AssetIndex:     3,
 			ToAccountIndex: 3,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
@@ -215,7 +218,8 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAccount() {
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
 		Type: lighter.TxTypeL2Transfer,
 		Transfer: &lighter.Transfer{
-			USDCAmount:     2000001,
+			Amount:         2000001,
+			AssetIndex:     3,
 			ToAccountIndex: 5,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
