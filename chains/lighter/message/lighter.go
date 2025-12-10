@@ -24,8 +24,8 @@ import (
 )
 
 var (
-	ARBITRUM_CHAIN_ID  = big.NewInt(42161)
-	USDC_ACCOUNT_INDEX = 3
+	ARBITRUM_CHAIN_ID         = big.NewInt(42161)
+	USDC_ACCOUNT_INDEX uint64 = 3
 )
 
 type Coordinator interface {
@@ -145,7 +145,7 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 		return errors.New("transfer account index invalid")
 	}
 
-	if tx.Transfer.AssetIndex != uint64(USDC_ACCOUNT_INDEX) {
+	if tx.Transfer.AssetIndex != USDC_ACCOUNT_INDEX {
 		return errors.New("only usdc asset supported on lighter")
 	}
 
