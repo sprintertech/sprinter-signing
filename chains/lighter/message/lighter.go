@@ -25,7 +25,6 @@ import (
 
 var (
 	ARBITRUM_CHAIN_ID  = big.NewInt(42161)
-	FEE                = big.NewInt(2000000)
 	USDC_ACCOUNT_INDEX = 3
 )
 
@@ -150,20 +149,15 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 		return errors.New("only usdc asset supported on lighter")
 	}
 
-	if tx.Transfer.Amount <= FEE.Uint64() {
-		return errors.New("fee higher than withdrawal amount")
-	}
-
 	return nil
 }
 
 func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
-	borrowAmount := new(big.Int).Sub(new(big.Int).SetUint64(tx.Transfer.Amount), FEE)
 	return consts.LighterABI.Pack(
 		"fulfillWithdraw",
 		common.HexToHash(tx.Hash),
 		common.BytesToAddress(tx.Transfer.Memo[:20]),
-		borrowAmount)
+		new(big.Int).SetUint64(tx.Transfer.Amount))
 }
 
 func (h *LighterMessageHandler) Listen(ctx context.Context) {
