@@ -12,6 +12,7 @@ package mock_tss
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	peer "github.com/libp2p/go-libp2p/core/peer"
 	gomock "go.uber.org/mock/gomock"
@@ -122,6 +123,20 @@ func (m *MockTssProcess) Stop() {
 func (mr *MockTssProcessMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTssProcess)(nil).Stop))
+}
+
+// Timeout mocks base method.
+func (m *MockTssProcess) Timeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Timeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// Timeout indicates an expected call of Timeout.
+func (mr *MockTssProcessMockRecorder) Timeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timeout", reflect.TypeOf((*MockTssProcess)(nil).Timeout))
 }
 
 // ValidCoordinators mocks base method.
