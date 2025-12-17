@@ -21,8 +21,8 @@ require (
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/sprintertech/lifi-solver v1.0.5
-	github.com/sprintertech/solver-config/go v0.0.0-20251113121131-2347b1712859
+	github.com/sprintertech/lifi-solver v1.1.4-0.20251216105438-52c952a498e2
+	github.com/sprintertech/solver-config/go v0.0.0-20251210120259-9f98635b2dfd
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	go.opentelemetry.io/otel v1.16.0
@@ -72,6 +72,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
