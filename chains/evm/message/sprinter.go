@@ -83,8 +83,10 @@ func (h *SprinterRemoteCollateralMessageHandler) HandleMessage(m *message.Messag
 		data.Nonce,
 	)
 	if err != nil {
+		data.ErrChn <- err
 		return nil, err
 	}
+	data.ErrChn <- nil
 
 	sessionID := fmt.Sprintf("%d-%s", h.chainID, data.Nonce)
 	signing, err := signing.NewSigning(
