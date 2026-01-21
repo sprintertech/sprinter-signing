@@ -18,11 +18,12 @@ import (
 type ProtocolType string
 
 const (
-	AcrossProtocol     ProtocolType = "across"
-	MayanProtocol      ProtocolType = "mayan"
-	RhinestoneProtocol ProtocolType = "rhinestone"
-	LifiEscrowProtocol ProtocolType = "lifi-escrow"
-	LighterProtocol    ProtocolType = "lighter"
+	AcrossProtocol                   ProtocolType = "across"
+	MayanProtocol                    ProtocolType = "mayan"
+	RhinestoneProtocol               ProtocolType = "rhinestone"
+	LifiEscrowProtocol               ProtocolType = "lifi-escrow"
+	LighterProtocol                  ProtocolType = "lighter"
+	SprinterRemoteCollateralProtocol ProtocolType = "sprinter-remote-collateral"
 )
 
 type SigningBody struct {
@@ -117,7 +118,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		}
 	case LifiEscrowProtocol:
 		{
-			m = evmMessage.NewLifiEscrowData(0, b.ChainId, &evmMessage.LifiEscrowData{
+			m = evmMessage.NewLifiEscrowMessage(0, b.ChainId, &evmMessage.LifiEscrowData{
 				OrderID:       b.DepositId,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
@@ -140,6 +141,23 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Source:        0,
 				Destination:   b.ChainId,
 			})
+		}
+	case SprinterRemoteCollateralProtocol:
+		{
+			m = evmMessage.NewSprinterRemoteCollateralMessage(
+				0,
+				b.ChainId,
+				&evmMessage.SprinterRemoteCollateralData{
+					Nonce:         b.Nonce.Int,
+					LiquidityPool: common.HexToAddress(b.LiquidityPool),
+					Caller:        common.HexToAddress(b.Caller),
+					ErrChn:        errChn,
+					Source:        0,
+					Destination:   b.ChainId,
+					BorrowAmount:  b.BorrowAmount.Int,
+					Calldata:      b.Calldata,
+					Deadline:      b.Deadline,
+				})
 		}
 	default:
 		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
