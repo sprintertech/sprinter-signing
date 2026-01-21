@@ -26,6 +26,8 @@ type EVMConfig struct {
 	MayanSwift        string
 	LifiOutputSettler string
 	Repayer           string
+	// Liquidator contract per token address
+	Liquidators map[common.Address]common.Address
 
 	Tokens map[string]config.TokenConfig
 	// usd bucket -> confirmations
@@ -104,6 +106,8 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		MayanSwift: solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
 
 		LifiOutputSettler: solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
+
+		//TODO: fill liquidators when solver config is ready
 
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,
