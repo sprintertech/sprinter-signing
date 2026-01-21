@@ -49,10 +49,14 @@ func (s *SprinterRemoteCollateralMessageHandlerTestSuite) SetupTest() {
 	s.mockFetcher.EXPECT().GetKeyshare().AnyTimes().Return(keyshare.ECDSAKeyshare{}, nil)
 	s.sigChn = make(chan interface{}, 1)
 
+	liquidators := make(map[common.Address]common.Address)
+	token := common.HexToAddress("0x0000000000000000000000000000000000000001")
+	liquidator := common.HexToAddress("0x0000000000000000000000000000000000000002")
+	liquidators[token] = liquidator
+
 	s.handler = message.NewSprinterRemoteCollateralMessageHandler(
 		1,
-		common.HexToAddress("0x0000000000000000000000000000000000000001"),
-		common.HexToAddress("0x0000000000000000000000000000000000000002"),
+		liquidators,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,
@@ -61,12 +65,46 @@ func (s *SprinterRemoteCollateralMessageHandlerTestSuite) SetupTest() {
 	)
 }
 
+func (s *SprinterRemoteCollateralMessageHandlerTestSuite) Test_HandleMessage_InvalidToken() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.SprinterRemoteCollateralMsg,
+		fmt.Sprintf("%d-%s", 1, comm.SprinterRemoteCollateralSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.SprinterRemoteCollateralData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
+		BorrowAmount:  big.NewInt(150),
+		TokenOut:      "0x0000000000000000000000000000000000000002",
+	}
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      1,
+		Destination: 2,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
+}
+
 func (s *SprinterRemoteCollateralMessageHandlerTestSuite) Test_HandleMessage_ValidLiquidation() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
 		gomock.Any(),
 		comm.SprinterRemoteCollateralMsg,
-		fmt.Sprintf("%d-0x0000000000000000000000000000000000000002-%s", 1, comm.SprinterRemoteCollateralSessionID),
+		fmt.Sprintf("%d-%s", 1, comm.SprinterRemoteCollateralSessionID),
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
@@ -79,6 +117,7 @@ func (s *SprinterRemoteCollateralMessageHandlerTestSuite) Test_HandleMessage_Val
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:        common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
 		BorrowAmount:  big.NewInt(150),
+		TokenOut:      "0x0000000000000000000000000000000000000001",
 	}
 	m := &coreMessage.Message{
 		Data:        ad,

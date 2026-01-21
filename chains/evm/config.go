@@ -94,20 +94,22 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		confirmations[uint64(confirmation.MaxAmountUSD)] = uint64(confirmation.Confirmations)
 	}
 
+	liquidators := make(map[common.Address]common.Address)
+	sprinterContracts := solverConfig.ProtocolsMetadata.StashRemoteCollateral[id]
+	for _, c := range sprinterContracts {
+		liquidators[common.HexToAddress(c.Token)] = common.HexToAddress(*c.Liquidator)
+	}
+
 	c.ParseFlags()
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,
 		Repayer:            solverConfig.ProtocolsMetadata.Sprinter.Repayer[id],
-
-		AcrossPool:    solverConfig.ProtocolsMetadata.Across.SpokePools[id],
-		AcrossHubPool: solverConfig.ProtocolsMetadata.Across.HubPools[id],
-
-		MayanSwift: solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
-
-		LifiOutputSettler: solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
-
-		//TODO: fill liquidators when solver config is ready
+		AcrossPool:         solverConfig.ProtocolsMetadata.Across.SpokePools[id],
+		AcrossHubPool:      solverConfig.ProtocolsMetadata.Across.HubPools[id],
+		MayanSwift:         solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
+		LifiOutputSettler:  solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
+		Liquidators:        liquidators,
 
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,

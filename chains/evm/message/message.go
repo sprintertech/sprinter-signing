@@ -123,6 +123,7 @@ type SprinterRemoteCollateralData struct {
 	Coordinator   peer.ID
 	Source        uint64
 	Destination   uint64
+	TokenOut      string
 }
 
 func NewSprinterRemoteCollateralMessage(
@@ -133,7 +134,7 @@ func NewSprinterRemoteCollateralMessage(
 		Source:      source,
 		Destination: destination,
 		Data:        sprinterData,
-		Type:        message.MessageType(comm.LifiUnlockMsg.String()),
+		Type:        message.MessageType(comm.SprinterRemoteCollateralMsg.String()),
 		Timestamp:   time.Now(),
 	}
 }

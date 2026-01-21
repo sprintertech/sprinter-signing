@@ -22,8 +22,8 @@ import (
 type SprinterRemoteCollateralMessageHandler struct {
 	chainID uint64
 
-	liquidator common.Address
-	token      common.Address
+	liquidators map[common.Address]common.Address
+	token       common.Address
 
 	coordinator Coordinator
 	host        host.Host
@@ -34,8 +34,7 @@ type SprinterRemoteCollateralMessageHandler struct {
 
 func NewSprinterRemoteCollateralMessageHandler(
 	chainID uint64,
-	liquidator common.Address,
-	token common.Address,
+	liquidators map[common.Address]common.Address,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
@@ -45,7 +44,7 @@ func NewSprinterRemoteCollateralMessageHandler(
 	return &SprinterRemoteCollateralMessageHandler{
 		chainID:     chainID,
 		coordinator: coordinator,
-		token:       token,
+		liquidators: liquidators,
 		host:        host,
 		comm:        comm,
 		fetcher:     fetcher,
@@ -71,12 +70,19 @@ func (h *SprinterRemoteCollateralMessageHandler) HandleMessage(m *message.Messag
 		return nil, err
 	}
 
+	liquidator, ok := h.liquidators[common.HexToAddress(data.TokenOut)]
+	if !ok {
+		err := fmt.Errorf("no liquidator for token %s", data.TokenOut)
+		data.ErrChn <- err
+		return nil, err
+	}
+
 	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
 		data.BorrowAmount,
 		h.token,
 		new(big.Int).SetUint64(h.chainID),
-		h.liquidator,
+		liquidator,
 		data.Deadline,
 		data.Caller,
 		data.LiquidityPool,
@@ -156,5 +162,5 @@ func (h *SprinterRemoteCollateralMessageHandler) notify(data *SprinterRemoteColl
 		h.host.Peerstore().Peers(),
 		msgBytes,
 		comm.SprinterRemoteCollateralMsg,
-		fmt.Sprintf("%d-%s-%s", h.chainID, h.token.Hex(), comm.SprinterRemoteCollateralSessionID))
+		fmt.Sprintf("%d-%s", h.chainID, comm.SprinterRemoteCollateralSessionID))
 }

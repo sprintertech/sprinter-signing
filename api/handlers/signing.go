@@ -38,6 +38,7 @@ type SigningBody struct {
 	BorrowAmount     *BigInt      `json:"borrowAmount"`
 	RepaymentChainId uint64       `json:"repaymentChainId"`
 	Deadline         uint64       `json:"deadline"`
+	TokenOut         string       `json:"tokenOut"`
 }
 
 type SigningHandler struct {

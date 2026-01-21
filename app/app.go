@@ -330,21 +330,20 @@ func Run() error {
 				}
 
 				if len(c.Liquidators) != 0 {
-					for token, liquidator := range c.Liquidators {
-
-						lifiMh := evmMessage.NewSprinterRemoteCollateralMessageHandler(
-							*c.GeneralChainConfig.Id,
-							liquidator,
-							token,
-							coordinator,
-							host,
-							communication,
-							keyshareStore,
-							sigChn,
-						)
-						go lifiMh.Listen(ctx)
-						mh.RegisterMessageHandler(message.MessageType(comm.LifiEscrowMsg.String()), lifiMh)
-					}
+					srcMh := evmMessage.NewSprinterRemoteCollateralMessageHandler(
+						*c.GeneralChainConfig.Id,
+						c.Liquidators,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						sigChn,
+					)
+					go srcMh.Listen(ctx)
+					mh.RegisterMessageHandler(
+						message.MessageType(comm.SprinterRemoteCollateralMsg.String()),
+						srcMh,
+					)
 				}
 
 				lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
