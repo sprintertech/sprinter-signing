@@ -116,7 +116,7 @@ func (h *SprinterCreditMessageHandler) HandleMessage(m *message.Message) (*propo
 func (h *SprinterCreditMessageHandler) Listen(ctx context.Context) {
 	msgChn := make(chan *comm.WrappedMessage)
 	subID := h.comm.Subscribe(
-		fmt.Sprintf("%d-%s-%s", h.chainID, h.token.Hex(), comm.SprinterCreditSessionID),
+		fmt.Sprintf("%d-%s", h.chainID, comm.SprinterCreditSessionID),
 		comm.SprinterCreditMsg,
 		msgChn)
 
