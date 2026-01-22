@@ -329,6 +329,23 @@ func Run() error {
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
 
+				if len(c.Liquidators) != 0 {
+					srcMh := evmMessage.NewSprinterCreditMessageHandler(
+						*c.GeneralChainConfig.Id,
+						c.Liquidators,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+						sigChn,
+					)
+					go srcMh.Listen(ctx)
+					mh.RegisterMessageHandler(
+						message.MessageType(comm.SprinterCreditMsg.String()),
+						srcMh,
+					)
+				}
+
 				lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
 					*c.GeneralChainConfig.Id,
 					repayerAddresses,

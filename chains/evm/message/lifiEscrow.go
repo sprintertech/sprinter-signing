@@ -287,7 +287,7 @@ func (h *LifiEscrowMessageHandler) Listen(ctx context.Context) {
 				}
 
 				d.ErrChn = make(chan error, 1)
-				msg := NewLifiEscrowData(d.Source, d.Destination, d)
+				msg := NewLifiEscrowMessage(d.Source, d.Destination, d)
 				_, err = h.HandleMessage(msg)
 				if err != nil {
 					log.Err(err).Msgf("Failed handling LiFi message %+v because of: %s", msg, err)

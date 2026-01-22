@@ -101,12 +101,40 @@ type LifiEscrowData struct {
 	Destination   uint64
 }
 
-func NewLifiEscrowData(source, destination uint64, lifiData *LifiEscrowData) *message.Message {
+func NewLifiEscrowMessage(source, destination uint64, lifiData *LifiEscrowData) *message.Message {
 	return &message.Message{
 		Source:      source,
 		Destination: destination,
 		Data:        lifiData,
 		Type:        message.MessageType(comm.LifiEscrowMsg.String()),
+		Timestamp:   time.Now(),
+	}
+}
+
+type SprinterCreditData struct {
+	ErrChn chan error `json:"-"`
+
+	BorrowAmount  *big.Int
+	Calldata      string
+	Deadline      uint64
+	LiquidityPool common.Address
+	Caller        common.Address
+	Nonce         *big.Int
+	Coordinator   peer.ID
+	Source        uint64
+	Destination   uint64
+	TokenOut      string
+}
+
+func NewSprinterCreditMessage(
+	source,
+	destination uint64,
+	sprinterData *SprinterCreditData) *message.Message {
+	return &message.Message{
+		Source:      source,
+		Destination: destination,
+		Data:        sprinterData,
+		Type:        message.MessageType(comm.SprinterCreditMsg.String()),
 		Timestamp:   time.Now(),
 	}
 }

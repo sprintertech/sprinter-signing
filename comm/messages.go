@@ -37,6 +37,8 @@ const (
 	SignatureMsg
 	// AcrossMsg message type is used for the process coordinator to share across data
 	AcrossMsg
+	// SprinterCreditMsg message type is used for the process coordinator to share sprinter data
+	SprinterCreditMsg
 	// MayanMsg message type is used for the process coordinator to share mayan data
 	MayanMsg
 	// LighterMsg message type is used for the process coordinator to share lighter data
@@ -52,13 +54,14 @@ const (
 )
 
 const (
-	SignatureSessionID  = "signatures"
-	AcrossSessionID     = "across"
-	MayanSessionID      = "mayan"
-	LifiEscrowSessionID = "lifi-escrow"
-	RhinestoneSessionID = "rhinestone"
-	LighterSessionID    = "lighter"
-	LifiUnlockSessionID = "lifi-unlock"
+	SignatureSessionID      = "signatures"
+	AcrossSessionID         = "across"
+	SprinterCreditSessionID = "sprinter-credit"
+	MayanSessionID          = "mayan"
+	LifiEscrowSessionID     = "lifi-escrow"
+	RhinestoneSessionID     = "rhinestone"
+	LighterSessionID        = "lighter"
+	LifiUnlockSessionID     = "lifi-unlock"
 )
 
 // String implements fmt.Stringer
@@ -102,6 +105,8 @@ func (msgType MessageType) String() string {
 		return "LifiUnlockMsg"
 	case LighterMsg:
 		return "LighterMsg"
+	case SprinterCreditMsg:
+		return "SprinterCreditMsg"
 	default:
 		return "UnknownMsg"
 	}

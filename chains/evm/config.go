@@ -26,6 +26,8 @@ type EVMConfig struct {
 	MayanSwift        string
 	LifiOutputSettler string
 	Repayer           string
+	// Liquidator contract per token address
+	Liquidators map[common.Address]common.Address
 
 	Tokens map[string]config.TokenConfig
 	// usd bucket -> confirmations
@@ -92,18 +94,22 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		confirmations[uint64(confirmation.MaxAmountUSD)] = uint64(confirmation.Confirmations)
 	}
 
+	liquidators := make(map[common.Address]common.Address)
+	sprinterContracts := solverConfig.ProtocolsMetadata.SprinterCredit[id]
+	for _, c := range sprinterContracts {
+		liquidators[common.HexToAddress(c.Token)] = common.HexToAddress(c.Liquidator)
+	}
+
 	c.ParseFlags()
 	config := &EVMConfig{
 		GeneralChainConfig: c.GeneralChainConfig,
 		Admin:              c.Admin,
 		Repayer:            solverConfig.ProtocolsMetadata.Sprinter.Repayer[id],
-
-		AcrossPool:    solverConfig.ProtocolsMetadata.Across.SpokePools[id],
-		AcrossHubPool: solverConfig.ProtocolsMetadata.Across.HubPools[id],
-
-		MayanSwift: solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
-
-		LifiOutputSettler: solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
+		AcrossPool:         solverConfig.ProtocolsMetadata.Across.SpokePools[id],
+		AcrossHubPool:      solverConfig.ProtocolsMetadata.Across.HubPools[id],
+		MayanSwift:         solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
+		LifiOutputSettler:  solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
+		Liquidators:        liquidators,
 
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,

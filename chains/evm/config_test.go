@@ -86,6 +86,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		Confirmations: make([]solverConfig.Confirmations, 0),
 	}
 
+	liquidator := "0x13"
 	actualConfig, err := evm.NewEVMConfig(rawConfig, solverConfig.SolverConfig{
 		Chains: solverChains,
 		ProtocolsMetadata: solverConfig.ProtocolsMetadata{
@@ -109,6 +110,14 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 			},
 			Lifi: &solverConfig.LifiMetadata{
 				OutputSettler: "settler",
+			},
+			SprinterCredit: map[string][]solverConfig.SprinterCredit{
+				"eip155:1": {
+					{
+						Token:      "0x12",
+						Liquidator: liquidator,
+					},
+				},
 			},
 		},
 	})
@@ -134,6 +143,9 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		LifiOutputSettler:    "settler",
 		ConfirmationsByValue: make(map[uint64]uint64),
 		Tokens:               make(map[string]config.TokenConfig),
+		Liquidators: map[common.Address]common.Address{
+			common.HexToAddress("0x12"): common.HexToAddress(liquidator),
+		},
 	})
 }
 
@@ -246,5 +258,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		Repayer:              "repayer",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
+		Liquidators:          make(map[common.Address]common.Address),
 	})
 }
