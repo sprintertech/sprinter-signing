@@ -156,6 +156,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 					Source:        0,
 					Destination:   b.ChainId,
 					BorrowAmount:  b.BorrowAmount.Int,
+					TokenOut:      b.TokenOut,
 					Calldata:      b.Calldata,
 					Deadline:      b.Deadline,
 				})
