@@ -18,12 +18,12 @@ import (
 type ProtocolType string
 
 const (
-	AcrossProtocol                   ProtocolType = "across"
-	MayanProtocol                    ProtocolType = "mayan"
-	RhinestoneProtocol               ProtocolType = "rhinestone"
-	LifiEscrowProtocol               ProtocolType = "lifi-escrow"
-	LighterProtocol                  ProtocolType = "lighter"
-	SprinterRemoteCollateralProtocol ProtocolType = "sprinter-remote-collateral"
+	AcrossProtocol         ProtocolType = "across"
+	MayanProtocol          ProtocolType = "mayan"
+	RhinestoneProtocol     ProtocolType = "rhinestone"
+	LifiEscrowProtocol     ProtocolType = "lifi-escrow"
+	LighterProtocol        ProtocolType = "lighter"
+	SprinterCreditProtocol ProtocolType = "sprinter-credit"
 )
 
 type SigningBody struct {
@@ -143,12 +143,12 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Destination:   b.ChainId,
 			})
 		}
-	case SprinterRemoteCollateralProtocol:
+	case SprinterCreditProtocol:
 		{
-			m = evmMessage.NewSprinterRemoteCollateralMessage(
+			m = evmMessage.NewSprinterCreditMessage(
 				0,
 				b.ChainId,
-				&evmMessage.SprinterRemoteCollateralData{
+				&evmMessage.SprinterCreditData{
 					Nonce:         b.Nonce.Int,
 					LiquidityPool: common.HexToAddress(b.LiquidityPool),
 					Caller:        common.HexToAddress(b.Caller),

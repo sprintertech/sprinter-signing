@@ -435,7 +435,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_SprinterSuccess() {
 
 	input := handlers.SigningBody{
 		DepositId:     "depositID",
-		Protocol:      "sprinter-remote-collateral",
+		Protocol:      "sprinter-credit",
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Calldata:      "0xbe5",
@@ -454,7 +454,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_SprinterSuccess() {
 
 	go func() {
 		msg := <-msgChn
-		ad := msg[0].Data.(*across.SprinterRemoteCollateralData)
+		ad := msg[0].Data.(*across.SprinterCreditData)
 		ad.ErrChn <- nil
 	}()
 

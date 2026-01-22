@@ -19,7 +19,7 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 )
 
-type SprinterRemoteCollateralMessageHandler struct {
+type SprinterCreditMessageHandler struct {
 	chainID uint64
 
 	liquidators map[common.Address]common.Address
@@ -32,7 +32,7 @@ type SprinterRemoteCollateralMessageHandler struct {
 	sigChn      chan any
 }
 
-func NewSprinterRemoteCollateralMessageHandler(
+func NewSprinterCreditMessageHandler(
 	chainID uint64,
 	liquidators map[common.Address]common.Address,
 	coordinator Coordinator,
@@ -40,8 +40,8 @@ func NewSprinterRemoteCollateralMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	sigChn chan any,
-) *SprinterRemoteCollateralMessageHandler {
-	return &SprinterRemoteCollateralMessageHandler{
+) *SprinterCreditMessageHandler {
+	return &SprinterCreditMessageHandler{
 		chainID:     chainID,
 		coordinator: coordinator,
 		liquidators: liquidators,
@@ -54,8 +54,8 @@ func NewSprinterRemoteCollateralMessageHandler(
 
 // HandleMessage signs the liquidation request if the transaction
 // is going to the Liquidator contract.
-func (h *SprinterRemoteCollateralMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
-	data := m.Data.(*SprinterRemoteCollateralData)
+func (h *SprinterCreditMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
+	data := m.Data.(*SprinterCreditData)
 
 	log.Info().Msgf("Handling sprinter remote collateral message %+v", data)
 
@@ -113,18 +113,18 @@ func (h *SprinterRemoteCollateralMessageHandler) HandleMessage(m *message.Messag
 	return nil, nil
 }
 
-func (h *SprinterRemoteCollateralMessageHandler) Listen(ctx context.Context) {
+func (h *SprinterCreditMessageHandler) Listen(ctx context.Context) {
 	msgChn := make(chan *comm.WrappedMessage)
 	subID := h.comm.Subscribe(
-		fmt.Sprintf("%d-%s-%s", h.chainID, h.token.Hex(), comm.SprinterRemoteCollateralSessionID),
-		comm.SprinterRemoteCollateralMsg,
+		fmt.Sprintf("%d-%s-%s", h.chainID, h.token.Hex(), comm.SprinterCreditSessionID),
+		comm.SprinterCreditMsg,
 		msgChn)
 
 	for {
 		select {
 		case wMsg := <-msgChn:
 			{
-				d := &SprinterRemoteCollateralData{}
+				d := &SprinterCreditData{}
 				err := json.Unmarshal(wMsg.Payload, d)
 				if err != nil {
 					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
@@ -132,7 +132,7 @@ func (h *SprinterRemoteCollateralMessageHandler) Listen(ctx context.Context) {
 				}
 
 				d.ErrChn = make(chan error, 1)
-				msg := NewSprinterRemoteCollateralMessage(d.Source, d.Destination, d)
+				msg := NewSprinterCreditMessage(d.Source, d.Destination, d)
 				_, err = h.HandleMessage(msg)
 				if err != nil {
 					log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
@@ -147,7 +147,7 @@ func (h *SprinterRemoteCollateralMessageHandler) Listen(ctx context.Context) {
 	}
 }
 
-func (h *SprinterRemoteCollateralMessageHandler) notify(data *SprinterRemoteCollateralData) error {
+func (h *SprinterCreditMessageHandler) notify(data *SprinterCreditData) error {
 	if data.Coordinator != peer.ID("") {
 		return nil
 	}
@@ -161,6 +161,6 @@ func (h *SprinterRemoteCollateralMessageHandler) notify(data *SprinterRemoteColl
 	return h.comm.Broadcast(
 		h.host.Peerstore().Peers(),
 		msgBytes,
-		comm.SprinterRemoteCollateralMsg,
-		fmt.Sprintf("%d-%s", h.chainID, comm.SprinterRemoteCollateralSessionID))
+		comm.SprinterCreditMsg,
+		fmt.Sprintf("%d-%s", h.chainID, comm.SprinterCreditSessionID))
 }

@@ -111,11 +111,11 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 			Lifi: &solverConfig.LifiMetadata{
 				OutputSettler: "settler",
 			},
-			StashRemoteCollateral: map[string][]solverConfig.StashRemoteCollateral{
-				"eip155:1": []solverConfig.StashRemoteCollateral{
+			SprinterCredit: map[string][]solverConfig.SprinterCredit{
+				"eip155:1": {
 					{
 						Token:      "0x12",
-						Liquidator: &liquidator,
+						Liquidator: liquidator,
 					},
 				},
 			},

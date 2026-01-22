@@ -20,7 +20,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-type SprinterRemoteCollateralMessageHandlerTestSuite struct {
+type SprinterCreditMessageHandlerTestSuite struct {
 	suite.Suite
 
 	mockCommunication *mock_communication.MockCommunication
@@ -28,15 +28,15 @@ type SprinterRemoteCollateralMessageHandlerTestSuite struct {
 	mockHost          *mock_host.MockHost
 	mockFetcher       *mock_tss.MockSaveDataFetcher
 
-	handler *message.SprinterRemoteCollateralMessageHandler
+	handler *message.SprinterCreditMessageHandler
 	sigChn  chan interface{}
 }
 
-func TestRunSprinterRemoteCollateralMessageHandlerTestSuite(t *testing.T) {
-	suite.Run(t, new(SprinterRemoteCollateralMessageHandlerTestSuite))
+func TestRunSprinterCreditMessageHandlerTestSuite(t *testing.T) {
+	suite.Run(t, new(SprinterCreditMessageHandlerTestSuite))
 }
 
-func (s *SprinterRemoteCollateralMessageHandlerTestSuite) SetupTest() {
+func (s *SprinterCreditMessageHandlerTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 
 	s.mockCommunication = mock_communication.NewMockCommunication(ctrl)
@@ -54,7 +54,7 @@ func (s *SprinterRemoteCollateralMessageHandlerTestSuite) SetupTest() {
 	liquidator := common.HexToAddress("0x0000000000000000000000000000000000000002")
 	liquidators[token] = liquidator
 
-	s.handler = message.NewSprinterRemoteCollateralMessageHandler(
+	s.handler = message.NewSprinterCreditMessageHandler(
 		1,
 		liquidators,
 		s.mockCoordinator,
@@ -65,18 +65,18 @@ func (s *SprinterRemoteCollateralMessageHandlerTestSuite) SetupTest() {
 	)
 }
 
-func (s *SprinterRemoteCollateralMessageHandlerTestSuite) Test_HandleMessage_InvalidToken() {
+func (s *SprinterCreditMessageHandlerTestSuite) Test_HandleMessage_InvalidToken() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
 		gomock.Any(),
-		comm.SprinterRemoteCollateralMsg,
-		fmt.Sprintf("%d-%s", 1, comm.SprinterRemoteCollateralSessionID),
+		comm.SprinterCreditMsg,
+		fmt.Sprintf("%d-%s", 1, comm.SprinterCreditSessionID),
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 
 	errChn := make(chan error, 1)
-	ad := &message.SprinterRemoteCollateralData{
+	ad := &message.SprinterCreditData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
@@ -99,19 +99,19 @@ func (s *SprinterRemoteCollateralMessageHandlerTestSuite) Test_HandleMessage_Inv
 	s.NotNil(err)
 }
 
-func (s *SprinterRemoteCollateralMessageHandlerTestSuite) Test_HandleMessage_ValidLiquidation() {
+func (s *SprinterCreditMessageHandlerTestSuite) Test_HandleMessage_ValidLiquidation() {
 	s.mockCommunication.EXPECT().Broadcast(
 		gomock.Any(),
 		gomock.Any(),
-		comm.SprinterRemoteCollateralMsg,
-		fmt.Sprintf("%d-%s", 1, comm.SprinterRemoteCollateralSessionID),
+		comm.SprinterCreditMsg,
+		fmt.Sprintf("%d-%s", 1, comm.SprinterCreditSessionID),
 	).Return(nil)
 	p, _ := pstoremem.NewPeerstore()
 	s.mockHost.EXPECT().Peerstore().Return(p)
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	errChn := make(chan error, 1)
-	ad := &message.SprinterRemoteCollateralData{
+	ad := &message.SprinterCreditData{
 		ErrChn:        errChn,
 		Nonce:         big.NewInt(101),
 		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),

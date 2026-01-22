@@ -95,9 +95,9 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 	}
 
 	liquidators := make(map[common.Address]common.Address)
-	sprinterContracts := solverConfig.ProtocolsMetadata.StashRemoteCollateral[id]
+	sprinterContracts := solverConfig.ProtocolsMetadata.SprinterCredit[id]
 	for _, c := range sprinterContracts {
-		liquidators[common.HexToAddress(c.Token)] = common.HexToAddress(*c.Liquidator)
+		liquidators[common.HexToAddress(c.Token)] = common.HexToAddress(c.Liquidator)
 	}
 
 	c.ParseFlags()

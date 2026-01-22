@@ -22,7 +22,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
 	github.com/sprintertech/lifi-solver v1.1.4-0.20251216105438-52c952a498e2
-	github.com/sprintertech/solver-config/go v0.0.0-20260121161259-f3ffe27d5139
+	github.com/sprintertech/solver-config/go v0.0.0-20260122113136-6411c27edf48
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	go.opentelemetry.io/otel v1.16.0

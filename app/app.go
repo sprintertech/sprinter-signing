@@ -330,7 +330,7 @@ func Run() error {
 				}
 
 				if len(c.Liquidators) != 0 {
-					srcMh := evmMessage.NewSprinterRemoteCollateralMessageHandler(
+					srcMh := evmMessage.NewSprinterCreditMessageHandler(
 						*c.GeneralChainConfig.Id,
 						c.Liquidators,
 						coordinator,
@@ -341,7 +341,7 @@ func Run() error {
 					)
 					go srcMh.Listen(ctx)
 					mh.RegisterMessageHandler(
-						message.MessageType(comm.SprinterRemoteCollateralMsg.String()),
+						message.MessageType(comm.SprinterCreditMsg.String()),
 						srcMh,
 					)
 				}

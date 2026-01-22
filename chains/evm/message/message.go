@@ -111,7 +111,7 @@ func NewLifiEscrowMessage(source, destination uint64, lifiData *LifiEscrowData) 
 	}
 }
 
-type SprinterRemoteCollateralData struct {
+type SprinterCreditData struct {
 	ErrChn chan error `json:"-"`
 
 	BorrowAmount  *big.Int
@@ -126,15 +126,15 @@ type SprinterRemoteCollateralData struct {
 	TokenOut      string
 }
 
-func NewSprinterRemoteCollateralMessage(
+func NewSprinterCreditMessage(
 	source,
 	destination uint64,
-	sprinterData *SprinterRemoteCollateralData) *message.Message {
+	sprinterData *SprinterCreditData) *message.Message {
 	return &message.Message{
 		Source:      source,
 		Destination: destination,
 		Data:        sprinterData,
-		Type:        message.MessageType(comm.SprinterRemoteCollateralMsg.String()),
+		Type:        message.MessageType(comm.SprinterCreditMsg.String()),
 		Timestamp:   time.Now(),
 	}
 }

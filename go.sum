@@ -958,6 +958,8 @@ github.com/sprintertech/solver-config/go v0.0.0-20251210120259-9f98635b2dfd h1:h
 github.com/sprintertech/solver-config/go v0.0.0-20251210120259-9f98635b2dfd/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
 github.com/sprintertech/solver-config/go v0.0.0-20260121161259-f3ffe27d5139 h1:gXxMRapBaoWgE7bGwqD/5TPhd2yuRnF12cJnTMXeXVI=
 github.com/sprintertech/solver-config/go v0.0.0-20260121161259-f3ffe27d5139/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
+github.com/sprintertech/solver-config/go v0.0.0-20260122113136-6411c27edf48 h1:Id4+gLztZsi7tHZLq5Nx7Dt5z6MpLWAIMz6VFCCAxy0=
+github.com/sprintertech/solver-config/go v0.0.0-20260122113136-6411c27edf48/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
