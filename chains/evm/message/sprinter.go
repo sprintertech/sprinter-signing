@@ -94,7 +94,7 @@ func (h *SprinterCreditMessageHandler) HandleMessage(m *message.Message) (*propo
 	}
 	data.ErrChn <- nil
 
-	sessionID := fmt.Sprintf("%d-%s", h.chainID, data.Nonce)
+	sessionID := fmt.Sprintf("%d-%s", h.chainID, data.DepositID)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,
