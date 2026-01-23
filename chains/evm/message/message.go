@@ -114,6 +114,7 @@ func NewLifiEscrowMessage(source, destination uint64, lifiData *LifiEscrowData) 
 type SprinterCreditData struct {
 	ErrChn chan error `json:"-"`
 
+	DepositID     string
 	BorrowAmount  *big.Int
 	Calldata      string
 	Deadline      uint64

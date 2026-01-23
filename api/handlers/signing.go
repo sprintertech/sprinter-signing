@@ -159,6 +159,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 					TokenOut:      b.TokenOut,
 					Calldata:      b.Calldata,
 					Deadline:      b.Deadline,
+					DepositID:     b.DepositId,
 				})
 		}
 	default:
