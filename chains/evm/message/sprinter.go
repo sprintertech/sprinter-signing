@@ -23,7 +23,6 @@ type SprinterCreditMessageHandler struct {
 	chainID uint64
 
 	liquidators map[common.Address]common.Address
-	token       common.Address
 
 	coordinator Coordinator
 	host        host.Host
@@ -70,7 +69,8 @@ func (h *SprinterCreditMessageHandler) HandleMessage(m *message.Message) (*propo
 		return nil, err
 	}
 
-	liquidator, ok := h.liquidators[common.HexToAddress(data.TokenOut)]
+	token := common.HexToAddress(data.TokenOut)
+	liquidator, ok := h.liquidators[token]
 	if !ok {
 		err := fmt.Errorf("no liquidator for token %s", data.TokenOut)
 		data.ErrChn <- err
@@ -80,7 +80,7 @@ func (h *SprinterCreditMessageHandler) HandleMessage(m *message.Message) (*propo
 	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
 		data.BorrowAmount,
-		h.token,
+		token,
 		new(big.Int).SetUint64(h.chainID),
 		liquidator,
 		data.Deadline,
