@@ -21,7 +21,7 @@ require (
 	github.com/rs/zerolog v1.25.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/sprintertech/lifi-solver v1.1.4-0.20251216105438-52c952a498e2
+	github.com/sprintertech/lifi-solver v1.2.1-0.20260126164352-681ba9dbe72f
 	github.com/sprintertech/solver-config/go v0.0.0-20260122113136-6411c27edf48
 	github.com/stretchr/testify v1.10.0
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
@@ -75,7 +75,8 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
-	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/lmittmann/w3 v0.20.2 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onsi/ginkgo/v2 v2.22.0 // indirect
@@ -100,7 +101,7 @@ require (
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.48.2 // indirect
 	github.com/quic-go/webtransport-go v0.8.1-0.20241018022711-4ac2c9250e66 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/supranational/blst v0.3.14 // indirect
 	github.com/tmaxmax/go-sse v0.11.0 // indirect
 	github.com/vedhavyas/go-subkey/v2 v2.0.0 // indirect
@@ -108,6 +109,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
 	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 

@@ -304,7 +304,11 @@ func Run() error {
 
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
-					lifiApi := lifi.NewLifiAPI()
+					lifiApi := lifi.NewLifiEventFetcher(
+						*c.GeneralChainConfig.Id,
+						client,
+						common.HexToAddress(c.LifiInputSettlerEscrow),
+					)
 					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, resolver)
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(

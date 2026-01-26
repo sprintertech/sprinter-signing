@@ -27,7 +27,7 @@ import (
 )
 
 type OrderFetcher interface {
-	GetOrder(orderID string) (*lifi.LifiOrder, error)
+	Order(ctx context.Context, hash common.Hash, orderID common.Hash) (*lifi.LifiOrder, error)
 }
 
 type OrderValidator interface {
@@ -97,7 +97,10 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	order, err := h.orderFetcher.GetOrder(data.OrderID)
+	order, err := h.orderFetcher.Order(
+		context.Background(),
+		common.HexToHash(data.DepositTxHash),
+		common.HexToHash(data.OrderID))
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err

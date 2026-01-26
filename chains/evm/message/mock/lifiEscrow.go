@@ -10,8 +10,10 @@
 package mock_message
 
 import (
+	context "context"
 	reflect "reflect"
 
+	common "github.com/ethereum/go-ethereum/common"
 	lifi "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -40,19 +42,19 @@ func (m *MockOrderFetcher) EXPECT() *MockOrderFetcherMockRecorder {
 	return m.recorder
 }
 
-// GetOrder mocks base method.
-func (m *MockOrderFetcher) GetOrder(orderID string) (*lifi.LifiOrder, error) {
+// Order mocks base method.
+func (m *MockOrderFetcher) Order(ctx context.Context, hash, orderID common.Hash) (*lifi.LifiOrder, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrder", orderID)
+	ret := m.ctrl.Call(m, "Order", ctx, hash, orderID)
 	ret0, _ := ret[0].(*lifi.LifiOrder)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetOrder indicates an expected call of GetOrder.
-func (mr *MockOrderFetcherMockRecorder) GetOrder(orderID any) *gomock.Call {
+// Order indicates an expected call of Order.
+func (mr *MockOrderFetcherMockRecorder) Order(ctx, hash, orderID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrder", reflect.TypeOf((*MockOrderFetcher)(nil).GetOrder), orderID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Order", reflect.TypeOf((*MockOrderFetcher)(nil).Order), ctx, hash, orderID)
 }
 
 // MockOrderValidator is a mock of OrderValidator interface.
