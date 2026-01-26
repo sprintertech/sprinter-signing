@@ -10,31 +10,8 @@ import (
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	mock_lifi "github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
 	"github.com/stretchr/testify/suite"
-	"github.com/sygmaprotocol/sygma-core/chains/evm/client"
-	"github.com/sygmaprotocol/sygma-core/crypto/secp256k1"
 	"go.uber.org/mock/gomock"
 )
-
-// https://basescan.org/tx/0x0ced2a45ca8afdaaee83ae9b1c7c85be0a8b3b0b05b502886b6a11cc95ac580d#eventlog
-func Test_Integration(t *testing.T) {
-
-	kp, _ := secp256k1.GenerateKeypair()
-	client, err := client.NewEVMClient("https://base.drpc.org", kp)
-	if err != nil {
-		panic(err)
-	}
-
-	fetcher := lifi.NewLifiEventFetcher(client, common.HexToAddress("0x000025c3226C00B2Cdc200005a1600509f4e00C0"))
-	order, err := fetcher.Order(
-		context.Background(),
-		common.HexToHash("0x0ced2a45ca8afdaaee83ae9b1c7c85be0a8b3b0b05b502886b6a11cc95ac580d"),
-		common.HexToHash("0x696838617ea58d56a209e54b87240778a70fb6eb0a9da7ac6d0d9de1b1a5b775"))
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(order)
-}
 
 type OrderTestSuite struct {
 	suite.Suite
