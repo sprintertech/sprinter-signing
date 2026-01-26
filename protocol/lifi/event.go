@@ -9,11 +9,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	contracts "github.com/sprintertech/lifi-solver/pkg/protocols/lifi/contracts"
-	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 )
 
 const (
 	TRANSACTION_TIMEOUT = 30 * time.Second
+	OpenEventTopic      = "0x9ff74bd56d00785b881ef9fa3f03d7b598686a39a9bcff89a6008db588b18a7b"
 )
 
 type ReceiptFetcher interface {
@@ -21,18 +21,15 @@ type ReceiptFetcher interface {
 }
 
 type LifiEventFetcher struct {
-	chainID      uint64
 	client       ReceiptFetcher
 	inputSettler common.Address
 }
 
 func NewLifiEventFetcher(
-	chainID uint64,
 	client ReceiptFetcher,
 	inputSettler common.Address,
 ) *LifiEventFetcher {
 	return &LifiEventFetcher{
-		chainID:      chainID,
 		client:       client,
 		inputSettler: inputSettler,
 	}
@@ -61,11 +58,15 @@ func (h *LifiEventFetcher) fetchOpenEvent(ctx context.Context, hash common.Hash,
 			continue
 		}
 
-		if len(l.Topics) < 3 {
+		if len(l.Topics) < 2 {
 			continue
 		}
 
-		if l.Topics[0] != events.LifiOpenSig.GetTopic() {
+		if l.Address != h.inputSettler {
+			continue
+		}
+
+		if l.Topics[0] != common.HexToHash(OpenEventTopic) {
 			continue
 		}
 

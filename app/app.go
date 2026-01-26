@@ -305,7 +305,6 @@ func Run() error {
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiEventFetcher(
-						*c.GeneralChainConfig.Id,
 						client,
 						common.HexToAddress(c.LifiInputSettlerEscrow),
 					)
