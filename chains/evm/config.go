@@ -21,11 +21,12 @@ type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
 	Admin              string
 
-	AcrossPool        string
-	AcrossHubPool     string
-	MayanSwift        string
-	LifiOutputSettler string
-	Repayer           string
+	AcrossPool             string
+	AcrossHubPool          string
+	MayanSwift             string
+	LifiOutputSettler      string
+	LifiInputSettlerEscrow string
+	Repayer                string
 	// Liquidator contract per token address
 	Liquidators map[common.Address]common.Address
 
@@ -102,14 +103,15 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 
 	c.ParseFlags()
 	config := &EVMConfig{
-		GeneralChainConfig: c.GeneralChainConfig,
-		Admin:              c.Admin,
-		Repayer:            solverConfig.ProtocolsMetadata.Sprinter.Repayer[id],
-		AcrossPool:         solverConfig.ProtocolsMetadata.Across.SpokePools[id],
-		AcrossHubPool:      solverConfig.ProtocolsMetadata.Across.HubPools[id],
-		MayanSwift:         solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
-		LifiOutputSettler:  solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
-		Liquidators:        liquidators,
+		GeneralChainConfig:     c.GeneralChainConfig,
+		Admin:                  c.Admin,
+		Repayer:                solverConfig.ProtocolsMetadata.Sprinter.Repayer[id],
+		AcrossPool:             solverConfig.ProtocolsMetadata.Across.SpokePools[id],
+		AcrossHubPool:          solverConfig.ProtocolsMetadata.Across.HubPools[id],
+		MayanSwift:             solverConfig.ProtocolsMetadata.Mayan.SwiftContracts[id],
+		LifiOutputSettler:      solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
+		LifiInputSettlerEscrow: solverConfig.ProtocolsMetadata.Lifi.InputSettlerEscrow,
+		Liquidators:            liquidators,
 
 		// nolint:gosec
 		BlockRetryInterval: time.Duration(c.BlockRetryInterval) * time.Second,

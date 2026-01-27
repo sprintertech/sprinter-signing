@@ -13,7 +13,7 @@ import (
 
 	lifiProtocol "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
-	"github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
+	mock_lifi "github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
 )
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
@@ -35,9 +35,9 @@ func Test_LifiAPI_GetOrder(t *testing.T) {
 		{
 			name:         "successful response",
 			id:           "testhash",
-			mockResponse: []byte(mock.LifiMockResponse),
+			mockResponse: []byte(mock_lifi.LifiMockResponse),
 			statusCode:   http.StatusOK,
-			wantResult:   []byte(mock.ExpectedLifiResponse),
+			wantResult:   []byte(mock_lifi.ExpectedLifiResponse),
 		},
 		{
 			name:      "HTTP error",
