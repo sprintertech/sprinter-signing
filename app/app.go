@@ -88,7 +88,6 @@ func Run() error {
 	log.Info().Msg("Successfully loaded configuration")
 
 	staging := viper.GetBool(config.StagingFlagName)
-
 	topoCfg := configuration.RelayerConfig.MpcConfig.TopologyConfiguration
 	doCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(topoCfg.Region),
