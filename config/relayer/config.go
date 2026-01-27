@@ -57,6 +57,8 @@ type BullyConfig struct {
 type TopologyConfiguration struct {
 	EncryptionKey string `mapstructure:"EncryptionKey" json:"encryptionKey"`
 	Url           string `mapstructure:"Url" json:"url"`
+	Region        string `mapstructure:"Region" json:"region" default:"nyc3"`
+	Endpoint      string `mapstructure:"Endpoint" json:"endpoint" default:"https://fra1.digitaloceanspaces.com"`
 	Path          string `mapstructure:"Path" json:"path"`
 }
 

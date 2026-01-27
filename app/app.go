@@ -89,8 +89,9 @@ func Run() error {
 
 	staging := viper.GetBool(config.StagingFlagName)
 
-	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithRegion("nyc3"),
+	topoCfg := configuration.RelayerConfig.MpcConfig.TopologyConfiguration
+	doCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion(topoCfg.Region),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			configuration.RelayerConfig.SolverConfig.AccessKey,
 			configuration.RelayerConfig.SolverConfig.SecretKey,
@@ -98,8 +99,8 @@ func Run() error {
 		)),
 	)
 	panicOnError(err)
-	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String("https://fra1.digitaloceanspaces.com")
+	s3Client := s3.NewFromConfig(doCfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(topoCfg.Endpoint)
 	})
 
 	topologyProvider, err := topology.NewNetworkTopologyProvider(configuration.RelayerConfig.MpcConfig.TopologyConfiguration, s3Client, staging)
