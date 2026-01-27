@@ -1,0 +1,14 @@
+{
+    "peers": [
+        {
+            "peerAddress": "/dns4/sprinter-signer-0.chainsafe.dev/tcp/9000/p2p/QmQuyaH1vnvc8qMMD8PrSvjxx4EpCDKEwuVgiUYz7572HJ"
+        },
+        {
+            "peerAddress": "/dns4/sprinter-signer-1.chainsafe.dev/tcp/9000/p2p/QmdJ7ZpeXc4XFFsWFeyoV5AYcBkMSYxLy3Hn7W8U3dcp7K"
+        },
+        {
+            "peerAddress": "/dns4/signer-1.sprinter.tech/tcp/9000/p2p/QmaD2HV6QfSuZ3is5unoUpgcdKR1YGbNELxqUBVjoJijXB"
+        }
+    ],
+    "threshold": "1"
+}

@@ -6,11 +6,11 @@ package topology_test
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sprintertech/sprinter-signing/config/relayer"
 	"github.com/sprintertech/sprinter-signing/topology"
@@ -127,7 +127,7 @@ func (s *NetworkTopologyTestSuite) Test_IsAllowedPeer_InvalidPeer() {
 
 type TopologyProviderTestSuite struct {
 	suite.Suite
-	fetcher *mock_topology.MockFetcher
+	s3Client *mock_topology.MockS3Client
 }
 
 func TestRunTopologyProviderTestSuite(t *testing.T) {
@@ -136,16 +136,16 @@ func TestRunTopologyProviderTestSuite(t *testing.T) {
 
 func (s *TopologyProviderTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
-	s.fetcher = mock_topology.NewMockFetcher(ctrl)
+	s.s3Client = mock_topology.NewMockS3Client(ctrl)
 }
 
 func (s *TopologyProviderTestSuite) Test_FetchingTopologyFails() {
-	s.fetcher.EXPECT().Get("test.url").Return(&http.Response{}, fmt.Errorf("error"))
+	s.s3Client.EXPECT().GetObject(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error"))
 	topologyConfiguration := relayer.TopologyConfiguration{
-		Url:           "test.url",
+		Url:           "test-bucket",
 		EncryptionKey: "qwertyuiopasdfgh",
 	}
-	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.fetcher)
+	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.s3Client, false)
 
 	_, err := topologyProvider.NetworkTopology("")
 
@@ -153,14 +153,13 @@ func (s *TopologyProviderTestSuite) Test_FetchingTopologyFails() {
 }
 
 func (s *TopologyProviderTestSuite) Test_ValidTopology() {
-	resp := &http.Response{}
-	resp.Body = io.NopCloser(strings.NewReader("f533758136cd1f62c3c7fd96b41d439ce3c899b0e705ecebd567275e4447683f80c21d9cf6287d3ac504f116c18308d34fd1f79cda675983dc01231cdb13db39f271f37bbc4ed9f89b87b04ed74cb4de382e43809a2e690c7a0872c1c2eec631455628621291803d34c73965917b52b44e713d927db805bbc145a2fe51c7352ab8b34f216a57c19e2e3dca27a1cf2013a9e6ece2989fd90bff45ad614520419bc132bd07d4aa89f1afb4016ba16b8de0b8921071ab99d86f4c15672c08ad98a55c0b179cff340dc128c3f8a56876d9a75aec735924fcba5f21ae6e64cf875f23cc1fdef4ae5c3d0f43e421d75161fd44d3a7a4cbab3c6ff84e7ff3b83582944c93627c75ad93262d057889e53d48263749dab0355adc8f949b946f3da3e9a4a104728a4f56214bb177bd5d59a257cf55befb53b6bff1b293f883bd60b7c1aa13c75e8ffd394b130ab6d867e60bfef67c78432663775093023c66bbad812bdda890de43b5491dd27a75ae27b79d85afc0ff390b531743642066c200ea5a405ef746041fa5fbf75c23c4dd35a1cc9854b01f1aaeec4265b4c46145a99e6b02eba82408903117fa34917368d5012420a2f985d2eac929c758d487e93f7779ae8ba6ff0f7f1eca1997abbc3ff0efdf"))
-	s.fetcher.EXPECT().Get("test.url").Return(resp, nil)
+	body := io.NopCloser(strings.NewReader("f533758136cd1f62c3c7fd96b41d439ce3c899b0e705ecebd567275e4447683f80c21d9cf6287d3ac504f116c18308d34fd1f79cda675983dc01231cdb13db39f271f37bbc4ed9f89b87b04ed74cb4de382e43809a2e690c7a0872c1c2eec631455628621291803d34c73965917b52b44e713d927db805bbc145a2fe51c7352ab8b34f216a57c19e2e3dca27a1cf2013a9e6ece2989fd90bff45ad614520419bc132bd07d4aa89f1afb4016ba16b8de0b8921071ab99d86f4c15672c08ad98a55c0b179cff340dc128c3f8a56876d9a75aec735924fcba5f21ae6e64cf875f23cc1fdef4ae5c3d0f43e421d75161fd44d3a7a4cbab3c6ff84e7ff3b83582944c93627c75ad93262d057889e53d48263749dab0355adc8f949b946f3da3e9a4a104728a4f56214bb177bd5d59a257cf55befb53b6bff1b293f883bd60b7c1aa13c75e8ffd394b130ab6d867e60bfef67c78432663775093023c66bbad812bdda890de43b5491dd27a75ae27b79d85afc0ff390b531743642066c200ea5a405ef746041fa5fbf75c23c4dd35a1cc9854b01f1aaeec4265b4c46145a99e6b02eba82408903117fa34917368d5012420a2f985d2eac929c758d487e93f7779ae8ba6ff0f7f1eca1997abbc3ff0efdf"))
+	s.s3Client.EXPECT().GetObject(gomock.Any(), gomock.Any()).Return(&s3.GetObjectOutput{Body: body}, nil)
 	topologyConfiguration := relayer.TopologyConfiguration{
-		Url:           "test.url",
+		Url:           "test-bucket",
 		EncryptionKey: "qwertyuiopasdfgh",
 	}
-	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.fetcher)
+	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.s3Client, false)
 
 	tp, err := topologyProvider.NetworkTopology("")
 
@@ -178,14 +177,13 @@ func (s *TopologyProviderTestSuite) Test_ValidTopology() {
 }
 
 func (s *TopologyProviderTestSuite) Test_InvalidHash() {
-	resp := &http.Response{}
-	resp.Body = io.NopCloser(strings.NewReader("f533758136cd1f62c3c7fd96b41d439ce3c899b0e705ecebd567275e4447683f80c21d9cf6287d3ac504f116c18308d34fd1f79cda675983dc01231cdb13db39f271f37bbc4ed9f89b87b04ed74cb4de382e43809a2e690c7a0872c1c2eec631455628621291803d34c73965917b52b44e713d927db805bbc145a2fe51c7352ab8b34f216a57c19e2e3dca27a1cf2013a9e6ece2989fd90bff45ad614520419bc132bd07d4aa89f1afb4016ba16b8de0b8921071ab99d86f4c15672c08ad98a55c0b179cff340dc128c3f8a56876d9a75aec735924fcba5f21ae6e64cf875f23cc1fdef4ae5c3d0f43e421d75161fd44d3a7a4cbab3c6ff84e7ff3b83582944c93627c75ad93262d057889e53d48263749dab0355adc8f949b946f3da3e9a4a104728a4f56214bb177bd5d59a257cf55befb53b6bff1b293f883bd60b7c1aa13c75e8ffd394b130ab6d867e60bfef67c78432663775093023c66bbad812bdda890de43b5491dd27a75ae27b79d85afc0ff390b531743642066c200ea5a405ef746041fa5fbf75c23c4dd35a1cc9854b01f1aaeec4265b4c46145a99e6b02eba82408903117fa34917368d5012420a2f985d2eac929c758d487e93f7779ae8ba6ff0f7f1eca1997abbc3ff0efdf"))
-	s.fetcher.EXPECT().Get("test.url").Return(resp, nil)
+	body := io.NopCloser(strings.NewReader("f533758136cd1f62c3c7fd96b41d439ce3c899b0e705ecebd567275e4447683f80c21d9cf6287d3ac504f116c18308d34fd1f79cda675983dc01231cdb13db39f271f37bbc4ed9f89b87b04ed74cb4de382e43809a2e690c7a0872c1c2eec631455628621291803d34c73965917b52b44e713d927db805bbc145a2fe51c7352ab8b34f216a57c19e2e3dca27a1cf2013a9e6ece2989fd90bff45ad614520419bc132bd07d4aa89f1afb4016ba16b8de0b8921071ab99d86f4c15672c08ad98a55c0b179cff340dc128c3f8a56876d9a75aec735924fcba5f21ae6e64cf875f23cc1fdef4ae5c3d0f43e421d75161fd44d3a7a4cbab3c6ff84e7ff3b83582944c93627c75ad93262d057889e53d48263749dab0355adc8f949b946f3da3e9a4a104728a4f56214bb177bd5d59a257cf55befb53b6bff1b293f883bd60b7c1aa13c75e8ffd394b130ab6d867e60bfef67c78432663775093023c66bbad812bdda890de43b5491dd27a75ae27b79d85afc0ff390b531743642066c200ea5a405ef746041fa5fbf75c23c4dd35a1cc9854b01f1aaeec4265b4c46145a99e6b02eba82408903117fa34917368d5012420a2f985d2eac929c758d487e93f7779ae8ba6ff0f7f1eca1997abbc3ff0efdf"))
+	s.s3Client.EXPECT().GetObject(gomock.Any(), gomock.Any()).Return(&s3.GetObjectOutput{Body: body}, nil)
 	topologyConfiguration := relayer.TopologyConfiguration{
-		Url:           "test.url",
+		Url:           "test-bucket",
 		EncryptionKey: "qwertyuiopasdfgh",
 	}
-	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.fetcher)
+	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.s3Client, false)
 
 	_, err := topologyProvider.NetworkTopology("invalid")
 
@@ -193,14 +191,13 @@ func (s *TopologyProviderTestSuite) Test_InvalidHash() {
 }
 
 func (s *TopologyProviderTestSuite) Test_ValidHash() {
-	resp := &http.Response{}
-	resp.Body = io.NopCloser(strings.NewReader("f533758136cd1f62c3c7fd96b41d439ce3c899b0e705ecebd567275e4447683f80c21d9cf6287d3ac504f116c18308d34fd1f79cda675983dc01231cdb13db39f271f37bbc4ed9f89b87b04ed74cb4de382e43809a2e690c7a0872c1c2eec631455628621291803d34c73965917b52b44e713d927db805bbc145a2fe51c7352ab8b34f216a57c19e2e3dca27a1cf2013a9e6ece2989fd90bff45ad614520419bc132bd07d4aa89f1afb4016ba16b8de0b8921071ab99d86f4c15672c08ad98a55c0b179cff340dc128c3f8a56876d9a75aec735924fcba5f21ae6e64cf875f23cc1fdef4ae5c3d0f43e421d75161fd44d3a7a4cbab3c6ff84e7ff3b83582944c93627c75ad93262d057889e53d48263749dab0355adc8f949b946f3da3e9a4a104728a4f56214bb177bd5d59a257cf55befb53b6bff1b293f883bd60b7c1aa13c75e8ffd394b130ab6d867e60bfef67c78432663775093023c66bbad812bdda890de43b5491dd27a75ae27b79d85afc0ff390b531743642066c200ea5a405ef746041fa5fbf75c23c4dd35a1cc9854b01f1aaeec4265b4c46145a99e6b02eba82408903117fa34917368d5012420a2f985d2eac929c758d487e93f7779ae8ba6ff0f7f1eca1997abbc3ff0efdf"))
-	s.fetcher.EXPECT().Get("test.url").Return(resp, nil)
+	body := io.NopCloser(strings.NewReader("f533758136cd1f62c3c7fd96b41d439ce3c899b0e705ecebd567275e4447683f80c21d9cf6287d3ac504f116c18308d34fd1f79cda675983dc01231cdb13db39f271f37bbc4ed9f89b87b04ed74cb4de382e43809a2e690c7a0872c1c2eec631455628621291803d34c73965917b52b44e713d927db805bbc145a2fe51c7352ab8b34f216a57c19e2e3dca27a1cf2013a9e6ece2989fd90bff45ad614520419bc132bd07d4aa89f1afb4016ba16b8de0b8921071ab99d86f4c15672c08ad98a55c0b179cff340dc128c3f8a56876d9a75aec735924fcba5f21ae6e64cf875f23cc1fdef4ae5c3d0f43e421d75161fd44d3a7a4cbab3c6ff84e7ff3b83582944c93627c75ad93262d057889e53d48263749dab0355adc8f949b946f3da3e9a4a104728a4f56214bb177bd5d59a257cf55befb53b6bff1b293f883bd60b7c1aa13c75e8ffd394b130ab6d867e60bfef67c78432663775093023c66bbad812bdda890de43b5491dd27a75ae27b79d85afc0ff390b531743642066c200ea5a405ef746041fa5fbf75c23c4dd35a1cc9854b01f1aaeec4265b4c46145a99e6b02eba82408903117fa34917368d5012420a2f985d2eac929c758d487e93f7779ae8ba6ff0f7f1eca1997abbc3ff0efdf"))
+	s.s3Client.EXPECT().GetObject(gomock.Any(), gomock.Any()).Return(&s3.GetObjectOutput{Body: body}, nil)
 	topologyConfiguration := relayer.TopologyConfiguration{
-		Url:           "test.url",
+		Url:           "test-bucket",
 		EncryptionKey: "qwertyuiopasdfgh",
 	}
-	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.fetcher)
+	topologyProvider, _ := topology.NewNetworkTopologyProvider(topologyConfiguration, s.s3Client, false)
 
 	expectedHash := "49cd57ba3b3296a994b2f7ef004164c55d16650fbb0306f31963ceb800ca5bc9"
 	tp, err := topologyProvider.NetworkTopology(expectedHash)

@@ -4,9 +4,13 @@
 package topology
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/cobra"
 
 	"github.com/sprintertech/sprinter-signing/config/relayer"
@@ -16,8 +20,8 @@ import (
 var (
 	testTopologyCMD = &cobra.Command{
 		Use:   "test",
-		Short: "Test topology url",
-		Long: "CLI tests does provided url contain topology that could be well " +
+		Short: "Test topology from S3",
+		Long: "CLI tests does provided S3 bucket contain topology that could be well " +
 			"decrypted with provided password and then parsed accordingly",
 		RunE: testTopology,
 	}
@@ -25,16 +29,24 @@ var (
 
 var (
 	url           string
+	accessKey     string
+	secretKey     string
 	hash          string
 	decryptionKey string
+	staging       bool
 )
 
 func init() {
 	testTopologyCMD.PersistentFlags().StringVar(&decryptionKey, "decryption-key", "", "password to decrypt topology")
 	_ = testTopologyCMD.MarkFlagRequired("decryption-key")
-	testTopologyCMD.PersistentFlags().StringVar(&url, "url", "", "url to fetch topology")
+	testTopologyCMD.PersistentFlags().StringVar(&url, "url", "", "S3 bucket name")
 	_ = testTopologyCMD.MarkFlagRequired("url")
+	testTopologyCMD.PersistentFlags().StringVar(&accessKey, "access-key", "", "S3 access key")
+	_ = testTopologyCMD.MarkFlagRequired("access-key")
+	testTopologyCMD.PersistentFlags().StringVar(&secretKey, "secret-key", "", "S3 secret key")
+	_ = testTopologyCMD.MarkFlagRequired("secret-key")
 	testTopologyCMD.PersistentFlags().StringVar(&hash, "hash", "", "hash of topology")
+	testTopologyCMD.PersistentFlags().BoolVar(&staging, "staging", false, "use staging topology path")
 }
 
 func testTopology(cmd *cobra.Command, args []string) error {
@@ -43,7 +55,23 @@ func testTopology(cmd *cobra.Command, args []string) error {
 		Url:           url,
 		Path:          "",
 	}
-	nt, err := topology.NewNetworkTopologyProvider(config, http.DefaultClient)
+
+	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion("nyc3"),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			accessKey,
+			secretKey,
+			"",
+		)),
+	)
+	if err != nil {
+		return err
+	}
+	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String("https://fra1.digitaloceanspaces.com")
+	})
+
+	nt, err := topology.NewNetworkTopologyProvider(config, s3Client, staging)
 	if err != nil {
 		return err
 	}

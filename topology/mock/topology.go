@@ -10,50 +10,56 @@
 package mock_topology
 
 import (
-	http "net/http"
+	context "context"
 	reflect "reflect"
 
+	s3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	topology "github.com/sprintertech/sprinter-signing/topology"
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockFetcher is a mock of Fetcher interface.
-type MockFetcher struct {
+// MockS3Client is a mock of S3Client interface.
+type MockS3Client struct {
 	ctrl     *gomock.Controller
-	recorder *MockFetcherMockRecorder
+	recorder *MockS3ClientMockRecorder
 	isgomock struct{}
 }
 
-// MockFetcherMockRecorder is the mock recorder for MockFetcher.
-type MockFetcherMockRecorder struct {
-	mock *MockFetcher
+// MockS3ClientMockRecorder is the mock recorder for MockS3Client.
+type MockS3ClientMockRecorder struct {
+	mock *MockS3Client
 }
 
-// NewMockFetcher creates a new mock instance.
-func NewMockFetcher(ctrl *gomock.Controller) *MockFetcher {
-	mock := &MockFetcher{ctrl: ctrl}
-	mock.recorder = &MockFetcherMockRecorder{mock}
+// NewMockS3Client creates a new mock instance.
+func NewMockS3Client(ctrl *gomock.Controller) *MockS3Client {
+	mock := &MockS3Client{ctrl: ctrl}
+	mock.recorder = &MockS3ClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFetcher) EXPECT() *MockFetcherMockRecorder {
+func (m *MockS3Client) EXPECT() *MockS3ClientMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockFetcher) Get(url string) (*http.Response, error) {
+// GetObject mocks base method.
+func (m *MockS3Client) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", url)
-	ret0, _ := ret[0].(*http.Response)
+	varargs := []any{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetObject", varargs...)
+	ret0, _ := ret[0].(*s3.GetObjectOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockFetcherMockRecorder) Get(url any) *gomock.Call {
+// GetObject indicates an expected call of GetObject.
+func (mr *MockS3ClientMockRecorder) GetObject(ctx, params any, optFns ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockFetcher)(nil).Get), url)
+	varargs := append([]any{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObject", reflect.TypeOf((*MockS3Client)(nil).GetObject), varargs...)
 }
 
 // MockDecrypter is a mock of Decrypter interface.

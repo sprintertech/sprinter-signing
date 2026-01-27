@@ -7,13 +7,16 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/ethereum/go-ethereum/common"
 	ethereumCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -84,7 +87,22 @@ func Run() error {
 
 	log.Info().Msg("Successfully loaded configuration")
 
-	topologyProvider, err := topology.NewNetworkTopologyProvider(configuration.RelayerConfig.MpcConfig.TopologyConfiguration, http.DefaultClient)
+	staging := viper.GetBool(config.StagingFlagName)
+
+	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion("nyc3"),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			configuration.RelayerConfig.SolverConfig.AccessKey,
+			configuration.RelayerConfig.SolverConfig.SecretKey,
+			"",
+		)),
+	)
+	panicOnError(err)
+	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String("https://fra1.digitaloceanspaces.com")
+	})
+
+	topologyProvider, err := topology.NewNetworkTopologyProvider(configuration.RelayerConfig.MpcConfig.TopologyConfiguration, s3Client, staging)
 	panicOnError(err)
 	topologyStore := topology.NewTopologyStore(configuration.RelayerConfig.MpcConfig.TopologyConfiguration.Path)
 	networkTopology, err := topologyStore.Topology()
@@ -154,7 +172,6 @@ func Run() error {
 			configuration.RelayerConfig.SolverConfig.AccessKey,
 			configuration.RelayerConfig.SolverConfig.SecretKey),
 	}
-	staging := viper.GetBool(config.StagingFlagName)
 	if staging {
 		solverConfigOpts = append(solverConfigOpts, solverConfig.WithStaging())
 	}

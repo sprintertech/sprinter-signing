@@ -4,15 +4,16 @@
 package topology
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/config/relayer"
@@ -41,8 +42,8 @@ type RawTopology struct {
 type RawPeer struct {
 	PeerAddress string `mapstructure:"PeerAddress" json:"peerAddress"`
 }
-type Fetcher interface {
-	Get(url string) (*http.Response, error)
+type S3Client interface {
+	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
 }
 
 type Decrypter interface {
@@ -55,35 +56,45 @@ type NetworkTopologyProvider interface {
 	NetworkTopology(hash string) (*NetworkTopology, error)
 }
 
-func NewNetworkTopologyProvider(config relayer.TopologyConfiguration, fetcher Fetcher) (NetworkTopologyProvider, error) {
+func NewNetworkTopologyProvider(config relayer.TopologyConfiguration, s3Client S3Client, staging bool) (NetworkTopologyProvider, error) {
 	decrypter, err := NewAESEncryption([]byte(config.EncryptionKey))
 	if err != nil {
 		return nil, err
 	}
 
+	filename := "production/topology"
+	if staging {
+		filename = "staging/topology"
+	}
+
 	return &TopologyProvider{
 		decrypter: decrypter,
-		url:       config.Url,
-		fetcher:   fetcher,
+		bucket:    config.Url,
+		filename:  filename,
+		s3Client:  s3Client,
 	}, nil
 }
 
 type TopologyProvider struct {
-	url       string
+	bucket    string
+	filename  string
 	decrypter Decrypter
-	fetcher   Fetcher
+	s3Client  S3Client
 }
 
 func (t *TopologyProvider) NetworkTopology(hash string) (*NetworkTopology, error) {
-	log.Info().Msgf("Reading topology from URL: %s", t.url)
+	log.Info().Msgf("Reading topology from S3 bucket: %s, file: %s", t.bucket, t.filename)
 
-	resp, err := t.fetcher.Get(t.url)
+	output, err := t.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
+		Bucket: &t.bucket,
+		Key:    &t.filename,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	defer output.Body.Close()
+	body, err := io.ReadAll(output.Body)
 	if err != nil {
 		return nil, err
 	}
