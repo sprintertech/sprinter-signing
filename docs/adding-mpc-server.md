@@ -101,8 +101,11 @@ Verify the layout:
 ├── .env
 └── cfg/
     ├── config.json
+    ├── topology        (created automatically by the node)
     └── keyshares/
 ```
+
+The `cfg/` directory is mounted into the container. The node persists both the topology cache and keyshares there, so they survive container restarts and image updates.
 
 Start the node:
 
