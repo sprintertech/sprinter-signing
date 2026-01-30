@@ -28,6 +28,7 @@ const (
 
 type SigningBody struct {
 	ChainId          uint64
+	SourceChainId    uint64       `json:"sourceChainId"`
 	DepositId        string       `json:"depositId"`
 	Nonce            *BigInt      `json:"nonce"`
 	Protocol         ProtocolType `json:"protocol"`
@@ -119,13 +120,14 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		}
 	case LifiEscrowProtocol:
 		{
-			m = evmMessage.NewLifiEscrowMessage(0, b.ChainId, &evmMessage.LifiEscrowData{
+			m = evmMessage.NewLifiEscrowMessage(b.SourceChainId, b.ChainId, &evmMessage.LifiEscrowData{
 				OrderID:       b.DepositId,
+				DepositTxHash: b.DepositTxHash,
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
 				ErrChn:        errChn,
-				Source:        0,
+				Source:        b.SourceChainId,
 				Destination:   b.ChainId,
 				BorrowAmount:  b.BorrowAmount.Int,
 			})
@@ -207,6 +209,19 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	_, ok = h.chains[b.ChainId]
 	if !ok {
 		return fmt.Errorf("chain '%d' not supported", b.ChainId)
+	}
+
+	if b.Protocol == LifiEscrowProtocol {
+		if b.SourceChainId == 0 {
+			return fmt.Errorf("missing field 'sourceChainId' for lifi-escrow protocol")
+		}
+		if b.DepositTxHash == "" {
+			return fmt.Errorf("missing field 'depositTxHash' for lifi-escrow protocol")
+		}
+		_, ok = h.chains[b.SourceChainId]
+		if !ok {
+			return fmt.Errorf("source chain '%d' not supported", b.SourceChainId)
+		}
 	}
 
 	return nil

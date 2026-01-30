@@ -27,7 +27,7 @@ import (
 )
 
 type OrderFetcher interface {
-	Order(ctx context.Context, hash common.Hash, orderID common.Hash) (*lifi.LifiOrder, error)
+	Order(ctx context.Context, sourceChainID uint64, hash common.Hash, orderID common.Hash) (*lifi.LifiOrder, error)
 }
 
 type OrderValidator interface {
@@ -99,6 +99,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 
 	order, err := h.orderFetcher.Order(
 		context.Background(),
+		data.Source,
 		common.HexToHash(data.DepositTxHash),
 		common.HexToHash(data.OrderID))
 	if err != nil {

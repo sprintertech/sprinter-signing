@@ -43,18 +43,18 @@ func (m *MockOrderFetcher) EXPECT() *MockOrderFetcherMockRecorder {
 }
 
 // Order mocks base method.
-func (m *MockOrderFetcher) Order(ctx context.Context, hash, orderID common.Hash) (*lifi.LifiOrder, error) {
+func (m *MockOrderFetcher) Order(ctx context.Context, sourceChainID uint64, hash, orderID common.Hash) (*lifi.LifiOrder, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Order", ctx, hash, orderID)
+	ret := m.ctrl.Call(m, "Order", ctx, sourceChainID, hash, orderID)
 	ret0, _ := ret[0].(*lifi.LifiOrder)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Order indicates an expected call of Order.
-func (mr *MockOrderFetcherMockRecorder) Order(ctx, hash, orderID any) *gomock.Call {
+func (mr *MockOrderFetcherMockRecorder) Order(ctx, sourceChainID, hash, orderID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Order", reflect.TypeOf((*MockOrderFetcher)(nil).Order), ctx, hash, orderID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Order", reflect.TypeOf((*MockOrderFetcher)(nil).Order), ctx, sourceChainID, hash, orderID)
 }
 
 // MockOrderValidator is a mock of OrderValidator interface.

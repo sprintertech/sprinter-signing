@@ -175,6 +175,7 @@ func Run() error {
 	lifiOutputSettlers := make(map[uint64]common.Address)
 	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
+	evmClients := make(map[uint64]lifi.ReceiptFetcher)
 	for _, chainConfig := range configuration.ChainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
@@ -184,6 +185,8 @@ func Run() error {
 				kp, _ := secp256k1.GenerateKeypair()
 				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, kp)
 				panicOnError(err)
+
+				evmClients[*c.GeneralChainConfig.Id] = client
 
 				if c.AcrossPool != "" {
 					poolAddress := common.HexToAddress(c.AcrossPool)
@@ -218,6 +221,14 @@ func Run() error {
 	}
 	tokenStore := config.TokenStore{
 		Tokens: tokens,
+	}
+
+	var lifiApi *lifi.LifiEventFetcher
+	if len(lifiOutputSettlers) > 0 {
+		lifiApi = lifi.NewLifiEventFetcher(
+			evmClients,
+			common.HexToAddress(solverConfig.ProtocolsMetadata.Lifi.InputSettlerEscrow),
+		)
 	}
 
 	for _, chainConfig := range configuration.ChainConfigs {
@@ -304,10 +315,6 @@ func Run() error {
 
 					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
-					lifiApi := lifi.NewLifiEventFetcher(
-						client,
-						common.HexToAddress(c.LifiInputSettlerEscrow),
-					)
 					lifiValidator := validation.NewLifiEscrowOrderValidator(solverConfig, resolver)
 
 					lifiMh := evmMessage.NewLifiEscrowMessageHandler(
