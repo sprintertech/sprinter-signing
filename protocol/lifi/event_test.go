@@ -13,6 +13,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const testChainID uint64 = 1
+
 type OrderTestSuite struct {
 	suite.Suite
 	fetcher      *lifi.LifiEventFetcher
@@ -28,13 +30,23 @@ func (s *OrderTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	s.mockClient = mock_lifi.NewMockReceiptFetcher(ctrl)
 	s.inputSettler = common.HexToAddress("0x000025c3226C00B2Cdc200005a1600509f4e00C0")
-	s.fetcher = lifi.NewLifiEventFetcher(s.mockClient, s.inputSettler)
+	clients := map[uint64]lifi.ReceiptFetcher{
+		testChainID: s.mockClient,
+	}
+	s.fetcher = lifi.NewLifiEventFetcher(clients, s.inputSettler)
+}
+
+func (s *OrderTestSuite) Test_Order_UnsupportedChain() {
+	_, err := s.fetcher.Order(context.Background(), 999, common.Hash{}, common.Hash{})
+
+	s.NotNil(err)
+	s.Contains(err.Error(), "no client configured for source chain 999")
 }
 
 func (s *OrderTestSuite) Test_Order_FetchingTxFails() {
 	s.mockClient.EXPECT().TransactionReceipt(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error"))
 
-	_, err := s.fetcher.Order(context.Background(), common.Hash{}, common.Hash{})
+	_, err := s.fetcher.Order(context.Background(), testChainID, common.Hash{}, common.Hash{})
 
 	s.NotNil(err)
 }
@@ -44,7 +56,7 @@ func (s *OrderTestSuite) Test_Order_NoEvents() {
 		Logs: make([]*types.Log, 0),
 	}, nil)
 
-	_, err := s.fetcher.Order(context.Background(), common.Hash{}, common.Hash{})
+	_, err := s.fetcher.Order(context.Background(), testChainID, common.Hash{}, common.Hash{})
 
 	s.NotNil(err)
 }
@@ -87,7 +99,7 @@ func (s *OrderTestSuite) Test_Order_InvalidLogs() {
 		},
 	}, nil)
 
-	_, err := s.fetcher.Order(context.Background(), common.Hash{}, common.Hash{})
+	_, err := s.fetcher.Order(context.Background(), testChainID, common.Hash{}, common.Hash{})
 
 	s.NotNil(err)
 }

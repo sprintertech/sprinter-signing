@@ -373,6 +373,8 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		SourceChainId: 1,
+		DepositTxHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 	}
 	body, _ := json.Marshal(input)
 

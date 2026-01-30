@@ -21,25 +21,30 @@ type ReceiptFetcher interface {
 }
 
 type LifiEventFetcher struct {
-	client       ReceiptFetcher
+	clients      map[uint64]ReceiptFetcher
 	inputSettler common.Address
 }
 
 func NewLifiEventFetcher(
-	client ReceiptFetcher,
+	clients map[uint64]ReceiptFetcher,
 	inputSettler common.Address,
 ) *LifiEventFetcher {
 	return &LifiEventFetcher{
-		client:       client,
+		clients:      clients,
 		inputSettler: inputSettler,
 	}
 }
 
-func (h *LifiEventFetcher) Order(ctx context.Context, hash common.Hash, orderID common.Hash) (*lifi.LifiOrder, error) {
+func (h *LifiEventFetcher) Order(ctx context.Context, sourceChainID uint64, hash common.Hash, orderID common.Hash) (*lifi.LifiOrder, error) {
+	client, ok := h.clients[sourceChainID]
+	if !ok {
+		return nil, fmt.Errorf("no client configured for source chain %d", sourceChainID)
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, TRANSACTION_TIMEOUT)
 	defer cancel()
 
-	log, err := h.fetchOpenEvent(ctx, hash, orderID)
+	log, err := h.fetchOpenEvent(ctx, client, hash, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +52,8 @@ func (h *LifiEventFetcher) Order(ctx context.Context, hash common.Hash, orderID 
 	return contracts.ParseOpenEvent(log, h.inputSettler.Hex())
 }
 
-func (h *LifiEventFetcher) fetchOpenEvent(ctx context.Context, hash common.Hash, orderID common.Hash) (*types.Log, error) {
-	receipt, err := h.client.TransactionReceipt(ctx, hash)
+func (h *LifiEventFetcher) fetchOpenEvent(ctx context.Context, client ReceiptFetcher, hash common.Hash, orderID common.Hash) (*types.Log, error) {
+	receipt, err := client.TransactionReceipt(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
