@@ -17,6 +17,8 @@ import (
 	"github.com/sprintertech/sprinter-signing/config/chain"
 )
 
+const ETH_SYMBOL = "ETH"
+
 type EVMConfig struct {
 	GeneralChainConfig chain.GeneralChainConfig
 	Admin              string
@@ -87,6 +89,13 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 			Decimals: uint8(c.Decimals),
 		}
 		tokens[s] = tc
+	}
+	if sc.NativeTokenSymbol == ETH_SYMBOL {
+		tokens[ETH_SYMBOL] = config.TokenConfig{
+			Address: common.Address{},
+			// nolint:gosec
+			Decimals: uint8(sc.Decimals),
+		}
 	}
 
 	confirmations := make(map[uint64]uint64)
