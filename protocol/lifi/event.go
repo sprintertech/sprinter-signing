@@ -50,7 +50,7 @@ func (h *LifiEventFetcher) Order(ctx context.Context, hash common.Hash, orderID 
 func (h *LifiEventFetcher) fetchOpenEvent(ctx context.Context, hash common.Hash, orderID common.Hash) (*types.Log, error) {
 	receipt, err := h.client.TransactionReceipt(ctx, hash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("no receipt found for hash %s, %w", hash.Hex(), err)
 	}
 
 	for _, l := range receipt.Logs {
