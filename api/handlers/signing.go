@@ -124,6 +124,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Nonce:         b.Nonce.Int,
 				LiquidityPool: common.HexToAddress(b.LiquidityPool),
 				Caller:        common.HexToAddress(b.Caller),
+				DepositTxHash: b.DepositTxHash,
 				ErrChn:        errChn,
 				Source:        0,
 				Destination:   b.ChainId,
