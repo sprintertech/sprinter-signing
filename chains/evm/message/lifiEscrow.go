@@ -97,6 +97,8 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
+	log.Info().Str("depositId", data.OrderID).Msgf("Handling lifi escrow message %+v", data)
+
 	order, err := h.orderFetcher.Order(
 		context.Background(),
 		common.HexToHash(data.DepositTxHash),
@@ -142,7 +144,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	}
 
 	log.Debug().Msgf(`
-		Siging lifi unlock hash.
+		Singing lifi unlock hash.
 		Calldata: %s
 		Amount: %s
 		Borrow token: %s,
@@ -155,7 +157,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		borrowToken.Hex(),
 		h.lifiAddresses[destChainID].Hex(),
 		data.Nonce,
-		big.NewInt(order.Order.FillDeadline.Unix()).Uint64(),
+		data.Deadline,
 	)
 
 	unlockHash, err := signature.BorrowUnlockHash(
@@ -164,7 +166,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		borrowToken,
 		new(big.Int).SetUint64(destChainID),
 		h.lifiAddresses[destChainID],
-		big.NewInt(order.Order.FillDeadline.Unix()).Uint64(),
+		data.Deadline,
 		data.Caller,
 		data.LiquidityPool,
 		data.Nonce,

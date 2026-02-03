@@ -148,7 +148,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		common.BytesToAddress(d.OutputToken[12:]),
 		d.DestinationChainId,
 		h.pools[d.DestinationChainId.Uint64()],
-		uint64(d.FillDeadline),
+		data.Deadline,
 		data.Caller,
 		data.LiquidityPool,
 		data.Nonce,

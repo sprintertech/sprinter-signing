@@ -237,6 +237,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		Deadline:      uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 
@@ -270,6 +271,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 		Caller:           "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Nonce:            &handlers.BigInt{big.NewInt(1001)},
 		RepaymentChainId: 5,
+		Deadline:         uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 
@@ -305,6 +307,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MayanSuccess() {
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		Deadline:      uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 
@@ -339,6 +342,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_RhinestoneSuccess() {
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		Deadline:      uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 
@@ -373,6 +377,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		Deadline:      uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 
@@ -407,6 +412,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		Deadline:      uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 
@@ -441,6 +447,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_SprinterSuccess() {
 		Calldata:      "0xbe5",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
 		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		Deadline:      uint64(time.Now().Unix()),
 	}
 	body, _ := json.Marshal(input)
 

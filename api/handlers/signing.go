@@ -86,6 +86,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Destination:      b.ChainId,
 				ErrChn:           errChn,
 				DepositTxHash:    common.HexToHash(b.DepositTxHash),
+				Deadline:         b.Deadline,
 				RepaymentChainID: b.RepaymentChainId,
 			})
 		}
@@ -101,6 +102,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				DepositTxHash: b.DepositTxHash,
 				Source:        0,
 				Destination:   b.ChainId,
+				Deadline:      b.Deadline,
 				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
@@ -114,6 +116,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				ErrChn:        errChn,
 				Source:        0,
 				Destination:   b.ChainId,
+				Deadline:      b.Deadline,
 				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
@@ -128,6 +131,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				ErrChn:        errChn,
 				Source:        0,
 				Destination:   b.ChainId,
+				Deadline:      b.Deadline,
 				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
@@ -203,6 +207,10 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 
 	if b.ChainId == 0 {
 		return fmt.Errorf("missing field 'chainId'")
+	}
+
+	if b.Deadline == 0 {
+		return fmt.Errorf("missing field 'deadline'")
 	}
 
 	_, ok = h.chains[b.ChainId]
