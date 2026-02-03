@@ -191,6 +191,10 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		Address:  common.HexToAddress("0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb29"),
 		Decimals: 8,
 	}
+	expectedTokens["ETH"] = config.TokenConfig{
+		Address:  common.Address{},
+		Decimals: 18,
+	}
 
 	solverChains := make(map[string]solverConfig.Chain)
 	solverChains["eip155:1"] = solverConfig.Chain{
@@ -210,6 +214,8 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 				MaxAmountUSD:  2000,
 			},
 		},
+		NativeTokenSymbol: "ETH",
+		Decimals:          18,
 	}
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig, solverConfig.SolverConfig{
