@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -87,12 +86,6 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	deadline, err := strconv.ParseUint(bundle.BundleData.Expires, 10, 64)
-	if err != nil {
-		data.ErrChn <- err
-		return nil, err
-	}
-
 	err = h.verifyOrder(bundle, data, calldata)
 	if err != nil {
 		data.ErrChn <- err
@@ -116,7 +109,7 @@ func (h *RhinestoneMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		borrowToken,
 		new(big.Int).SetUint64(bundle.TargetChainId),
 		common.HexToAddress(bundle.BundleEvent.FillPayload.To),
-		deadline,
+		data.Deadline,
 		data.Caller,
 		data.LiquidityPool,
 		data.Nonce,

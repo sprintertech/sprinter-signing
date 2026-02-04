@@ -96,6 +96,8 @@ func NewMayanMessageHandler(
 func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {
 	data := m.Data.(*MayanData)
 
+	log.Info().Str("depositId", data.OrderHash).Msgf("Handling mayan message %+v", data)
+
 	err := h.notify(data)
 	if err != nil {
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
@@ -167,7 +169,7 @@ func (h *MayanMessageHandler) HandleMessage(m *message.Message) (*proposal.Propo
 		destinationBorrowToken.Address,
 		new(big.Int).SetUint64(destChainId),
 		h.mayanPools[destChainId],
-		msg.Deadline,
+		data.Deadline,
 		data.Caller,
 		data.LiquidityPool,
 		data.Nonce,

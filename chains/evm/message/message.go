@@ -25,6 +25,7 @@ type AcrossData struct {
 	RepaymentChainID uint64
 	Caller           common.Address
 	Coordinator      peer.ID
+	Deadline         uint64
 	Source           uint64
 	Destination      uint64
 }
@@ -50,6 +51,7 @@ type MayanData struct {
 	Calldata      string
 	Nonce         *big.Int
 	BorrowAmount  *big.Int
+	Deadline      uint64
 	Source        uint64
 	Destination   uint64
 }
@@ -74,6 +76,7 @@ type RhinestoneData struct {
 	BorrowAmount  *big.Int
 	Nonce         *big.Int
 	Source        uint64
+	Deadline      uint64
 	Destination   uint64
 }
 
@@ -96,6 +99,7 @@ type LifiEscrowData struct {
 	Caller        common.Address
 	DepositTxHash string
 	BorrowAmount  *big.Int
+	Deadline      uint64
 	Nonce         *big.Int
 	Source        uint64
 	Destination   uint64
