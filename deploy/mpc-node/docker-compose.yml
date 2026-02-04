@@ -1,0 +1,13 @@
+services:
+  relayer:
+    image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
+    command: run --config /cfg/config.json
+    volumes:
+      - ./cfg:/cfg
+    labels:
+      logging: "alloy"
+      logging_jobname: "containerlogs"
+      service_name: "${SERVICE_NAME}"
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    restart: always

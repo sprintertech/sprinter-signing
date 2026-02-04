@@ -1,0 +1,23 @@
+{
+  "relayer": {
+    "mpcConfig": {
+      "port": "9000",
+      "keysharePath": "/cfg/keyshares/0.keyshare",
+      "key": "<OPERATOR_LIBP2P_PRIVATE_KEY>",
+      "topologyConfiguration": {
+        "path": "/cfg/topology",
+        "url": "<TOPOLOGY_URL>",
+        "encryptionKey": "<TOPOLOGY_ENCRYPTION_KEY>"
+      },
+      "commHealthCheckInterval": "24h"
+    },
+    "coinmarketcapConfig": {
+      "apiKey": "<COINMARKETCAP_API_KEY>"
+    },
+    "solverConfig": {
+      "accessKey": "<SOLVER_ACCESS_KEY>",
+      "secretKey": "<SOLVER_SECRET_KEY>"
+    }
+  },
+  "domains": []
+}
