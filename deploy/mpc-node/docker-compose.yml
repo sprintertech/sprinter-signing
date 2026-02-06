@@ -9,5 +9,6 @@ services:
       logging_jobname: "containerlogs"
       service_name: "${SERVICE_NAME}"
     ports:
-      - "${HOST_PORT:-3000}:3000"
+      - "${API_PORT:-3000}:3000"
+      - "${P2P_PORT:-9000}:9000"
     restart: always
