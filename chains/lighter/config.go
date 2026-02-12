@@ -46,8 +46,9 @@ func NewLighterConfig(solverConfig solverConfig.SolverConfig) (*LighterConfig, e
 	}
 
 	return &LighterConfig{
-		WithdrawalAddress: common.HexToAddress(withdrawalAddress),
-		RepaymentAddress:  solverConfig.ProtocolsMetadata.Lighter.RepaymentAddress,
-		UsdcAddress:       common.HexToAddress(usdcConfig.Address),
+		WithdrawalAddress:    common.HexToAddress(withdrawalAddress),
+		RepaymentAddress:     solverConfig.ProtocolsMetadata.Lighter.RepaymentAddress,
+		UsdcAddress:          common.HexToAddress(usdcConfig.Address),
+		ConfirmationsByValue: confirmations,
 	}, nil
 }

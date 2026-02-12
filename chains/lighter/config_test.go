@@ -78,6 +78,8 @@ func (s *NewLighterConfigTestSuite) Test_ValidConfig() {
 	solverChains := make(map[string]solverConfig.Chain)
 	solverChains["eip155:42161"] = solverConfig.Chain{
 		Tokens: tokens,
+	}
+	solverChains["lighter:1"] = solverConfig.Chain{
 		Confirmations: []solverConfig.Confirmations{
 			{
 				Confirmations: 5,
