@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"math"
 	"math/big"
+	"slices"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,8 +27,9 @@ import (
 )
 
 var (
-	ARBITRUM_CHAIN_ID         = big.NewInt(42161)
-	USDC_ACCOUNT_INDEX uint64 = 3
+	ARBITRUM_CHAIN_ID          = big.NewInt(42161)
+	USDC_ACCOUNT_INDEX uint64  = 3
+	USDC_DECIMALS      float64 = 6
 )
 
 type Coordinator interface {
@@ -47,12 +51,14 @@ type LighterMessageHandler struct {
 	usdcAddress      common.Address
 	repaymentAccount string
 	txFetcher        TxFetcher
+	confirmations    map[uint64]uint64
 }
 
 func NewLighterMessageHandler(
 	lighterAddress common.Address,
 	usdcAddress common.Address,
 	repaymentAccount string,
+	confirmations map[uint64]uint64,
 	txFetcher TxFetcher,
 	coordinator Coordinator,
 	host host.Host,
@@ -70,6 +76,7 @@ func NewLighterMessageHandler(
 		comm:             comm,
 		fetcher:          fetcher,
 		sigChn:           sigChn,
+		confirmations:    confirmations,
 	}
 }
 
@@ -149,7 +156,23 @@ func (h *LighterMessageHandler) verifyWithdrawal(tx *lighter.LighterTx) error {
 		return errors.New("only usdc asset supported on lighter")
 	}
 
+	if err := h.verifyOrderSize(tx.Transfer.Amount / uint64(math.Pow(10, USDC_DECIMALS))); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (h *LighterMessageHandler) verifyOrderSize(orderValue uint64) error {
+	buckets := slices.Collect(maps.Keys(h.confirmations))
+	slices.Sort(buckets)
+	for _, bucket := range buckets {
+		if orderValue < bucket {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("order value %d exceeds confirmation buckets", orderValue)
 }
 
 func (h *LighterMessageHandler) calldata(tx *lighter.LighterTx) ([]byte, error) {
