@@ -10,6 +10,7 @@ import (
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sprintertech/sprinter-signing/tss/message"
+	mock_tss "github.com/sprintertech/sprinter-signing/tss/mock"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 )
@@ -21,6 +22,7 @@ type SignatureCacheTestSuite struct {
 	ctx context.Context
 
 	mockCommunication *mock_communication.MockCommunication
+	mockMetrics       *mock_tss.MockMetrics
 	cancel            context.CancelFunc
 	sigChn            chan interface{}
 	msgChn            chan *comm.WrappedMessage
@@ -46,7 +48,8 @@ func (s *SignatureCacheTestSuite) SetupTest() {
 	s.cancel = cancel
 	s.ctx = ctx
 
-	s.sc = cache.NewSignatureCache(s.mockCommunication)
+	s.mockMetrics = mock_tss.NewMockMetrics(gomock.NewController(s.T()))
+	s.sc = cache.NewSignatureCache(s.mockCommunication, s.mockMetrics)
 	go s.sc.Watch(s.ctx, s.sigChn)
 	time.Sleep(time.Millisecond * 100)
 }
@@ -65,6 +68,7 @@ func (s *SignatureCacheTestSuite) Test_Signature_ValidSignatureResult() {
 		Signature: []byte("signature"),
 		ID:        "signatureID",
 	}
+	s.mockMetrics.EXPECT().EndProcess(expectedSig.ID)
 	s.sigChn <- expectedSig
 	time.Sleep(time.Millisecond * 100)
 
@@ -79,6 +83,7 @@ func (s *SignatureCacheTestSuite) Test_Signature_ValidMessage() {
 		Signature: []byte("signature"),
 		ID:        "signatureID",
 	}
+	s.mockMetrics.EXPECT().EndProcess(expectedSig.ID)
 	wMsgBytes, _ := message.MarshalSignatureMessage(expectedSig.ID, expectedSig.Signature)
 	wMsg := &comm.WrappedMessage{
 		Payload: wMsgBytes,
@@ -98,6 +103,7 @@ func (s *SignatureCacheTestSuite) Test_Subscribe_ValidMessage_EarlyExit() {
 		Signature: []byte("signature"),
 		ID:        "signatureID",
 	}
+	s.mockMetrics.EXPECT().EndProcess(expectedSig.ID)
 	wMsgBytes, _ := message.MarshalSignatureMessage(expectedSig.ID, expectedSig.Signature)
 	wMsg := &comm.WrappedMessage{
 		Payload: wMsgBytes,
@@ -122,6 +128,7 @@ func (s *SignatureCacheTestSuite) Test_Subscribe_ValidMessage() {
 		Signature: []byte("signature"),
 		ID:        "signatureID",
 	}
+	s.mockMetrics.EXPECT().EndProcess(expectedSig.ID)
 	wMsgBytes, _ := message.MarshalSignatureMessage(expectedSig.ID, expectedSig.Signature)
 	wMsg := &comm.WrappedMessage{
 		Payload: wMsgBytes,

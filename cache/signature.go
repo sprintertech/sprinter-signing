@@ -16,12 +16,17 @@ const (
 	SIGNATURE_TTL = time.Minute * 10
 )
 
+type Metrics interface {
+	EndProcess(sessionID string)
+}
+
 type SignatureCache struct {
 	sigCache *ttlcache.Cache[string, []byte]
 	comm     comm.Communication
+	metrics  Metrics
 }
 
-func NewSignatureCache(c comm.Communication) *SignatureCache {
+func NewSignatureCache(c comm.Communication, metrics Metrics) *SignatureCache {
 	cache := ttlcache.New(
 		ttlcache.WithTTL[string, []byte](SIGNATURE_TTL),
 	)
@@ -29,6 +34,7 @@ func NewSignatureCache(c comm.Communication) *SignatureCache {
 	sc := &SignatureCache{
 		sigCache: cache,
 		comm:     c,
+		metrics:  metrics,
 	}
 
 	go cache.Start()
@@ -43,7 +49,7 @@ func (s *SignatureCache) Subscribe(ctx context.Context, id string, sigChannel ch
 		return
 	}
 
-	ping := time.Tick(time.Millisecond * 250)
+	ping := time.Tick(time.Millisecond * 50)
 	for {
 		select {
 		case <-ctx.Done():
@@ -81,6 +87,7 @@ func (s *SignatureCache) Watch(ctx context.Context, sigChn chan interface{}) {
 			{
 				sig := sig.(signing.EcdsaSignature)
 				s.sigCache.Set(sig.ID, sig.Signature, ttlcache.DefaultTTL)
+				s.metrics.EndProcess(sig.ID)
 			}
 		case msg := <-msgChn:
 			{
@@ -92,6 +99,7 @@ func (s *SignatureCache) Watch(ctx context.Context, sigChn chan interface{}) {
 
 				log.Debug().Msgf("Received signature for ID: %s", msg.ID)
 				s.sigCache.Set(msg.ID, msg.Signature, ttlcache.DefaultTTL)
+				s.metrics.EndProcess(msg.ID)
 			}
 		case <-ctx.Done():
 			{

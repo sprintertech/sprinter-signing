@@ -34,6 +34,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/metrics"
 
 	lifiConfig "github.com/sprintertech/lifi-solver/pkg/config"
 	"github.com/sprintertech/sprinter-signing/chains/lighter"
@@ -44,7 +45,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/jobs"
 	"github.com/sprintertech/sprinter-signing/keyshare"
-	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
 	"github.com/sprintertech/sprinter-signing/protocol/across"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
@@ -109,16 +109,8 @@ func Run() error {
 	panicOnError(err)
 	log.Info().Str("peerID", host.ID().String()).Msg("Successfully created libp2p host")
 
-	communication := p2p.NewCommunication(host, "p2p/sprinter")
-	electorFactory := elector.NewCoordinatorElectorFactory(host, configuration.RelayerConfig.BullyConfig)
-	coordinator := tss.NewCoordinator(host, communication, electorFactory)
-
-	db, err := lvldb.NewLvlDB(viper.GetString(config.BlockstoreFlagName))
-	if err != nil {
-		panicOnError(err)
-	}
-	blockstore := store.NewBlockStore(db)
-	keyshareStore := keyshare.NewECDSAKeyshareStore(configuration.RelayerConfig.MpcConfig.KeysharePath)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL)
 	panicOnError(err)
@@ -127,14 +119,22 @@ func Run() error {
 			log.Error().Msgf("Error shutting down meter provider: %v", err)
 		}
 	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sygmaMetrics, err := metrics.NewSygmaMetrics(ctx, mp.Meter("relayer-metric-provider"), configuration.RelayerConfig.Env, configuration.RelayerConfig.Id, Version)
+	sygmaMetrics, err := metrics.NewSprinterMetrics(ctx, mp.Meter("relayer-metric-provider"), configuration.RelayerConfig.Env, configuration.RelayerConfig.Id, Version)
 	if err != nil {
 		panic(err)
 	}
+
+	communication := p2p.NewCommunication(host, "p2p/sprinter")
+	electorFactory := elector.NewCoordinatorElectorFactory(host, configuration.RelayerConfig.BullyConfig)
+	coordinator := tss.NewCoordinator(host, communication, sygmaMetrics, electorFactory)
+
+	db, err := lvldb.NewLvlDB(viper.GetString(config.BlockstoreFlagName))
+	if err != nil {
+		panicOnError(err)
+	}
+	blockstore := store.NewBlockStore(db)
+	keyshareStore := keyshare.NewECDSAKeyshareStore(configuration.RelayerConfig.MpcConfig.KeysharePath)
+
 	msgChan := make(chan []*message.Message)
 	sigChn := make(chan interface{})
 
@@ -142,7 +142,7 @@ func Run() error {
 		configuration.RelayerConfig.CoinmarketcapConfig.Url,
 		configuration.RelayerConfig.CoinmarketcapConfig.ApiKey)
 
-	signatureCache := cache.NewSignatureCache(communication)
+	signatureCache := cache.NewSignatureCache(communication, sygmaMetrics)
 	go signatureCache.Watch(ctx, sigChn)
 
 	supportedChains := make(map[uint64]struct{})

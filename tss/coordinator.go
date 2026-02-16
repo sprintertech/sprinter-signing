@@ -37,6 +37,11 @@ type TssProcess interface {
 	Timeout() time.Duration
 }
 
+type Metrics interface {
+	StartProcess(sessionID string)
+	EndProcess(sessionID string)
+}
+
 type Coordinator struct {
 	host           host.Host
 	communication  comm.Communication
@@ -44,6 +49,7 @@ type Coordinator struct {
 
 	pendingProcesses map[string]bool
 	processLock      sync.Mutex
+	metrics          Metrics
 
 	CoordinatorTimeout time.Duration
 	InitiatePeriod     time.Duration
@@ -52,12 +58,14 @@ type Coordinator struct {
 func NewCoordinator(
 	host host.Host,
 	communication comm.Communication,
+	metrics Metrics,
 	electorFactory *elector.CoordinatorElectorFactory,
 ) *Coordinator {
 	return &Coordinator{
 		host:           host,
 		communication:  communication,
 		electorFactory: electorFactory,
+		metrics:        metrics,
 
 		pendingProcesses: make(map[string]bool),
 
@@ -79,6 +87,7 @@ func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, re
 	c.processLock.Lock()
 	c.pendingProcesses[sessionID] = true
 	c.processLock.Unlock()
+	c.metrics.StartProcess(sessionID)
 
 	ctx, cancel := context.WithCancel(ctx)
 	p := pool.New().WithContext(ctx).WithCancelOnError()

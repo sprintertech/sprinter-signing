@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sourcegraph/conc/pool"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -17,6 +16,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/keygen"
 	tsstest "github.com/sprintertech/sprinter-signing/tss/test"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 type KeygenTestSuite struct {
@@ -40,7 +40,7 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 		communicationMap[host.ID()] = &communication
 		keygen := keygen.NewKeygen("keygen", s.Threshold, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
+		coordinator := tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory)
 		coordinators = append(coordinators, coordinator)
 		processes = append(processes, keygen)
 	}
@@ -76,7 +76,7 @@ func (s *KeygenTestSuite) Test_KeygenTimeout() {
 		communicationMap[host.ID()] = &communication
 		keygen := keygen.NewKeygen("keygen2", s.Threshold, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
+		coordinator := tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory)
 		keygen.TssTimeout = time.Millisecond
 		coordinators = append(coordinators, coordinator)
 		processes = append(processes, keygen)
