@@ -2,12 +2,16 @@ package metrics
 
 import (
 	"context"
-	"sync"
 	"time"
 
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/otel/metric"
+)
+
+const (
+	SESSION_TTL = time.Minute * 10
 )
 
 type MpcMetrics struct {
@@ -16,9 +20,8 @@ type MpcMetrics struct {
 	totalRelayerCount      *int64
 	availableRelayerCount  *int64
 
-	sessionTimeHistogram metric.Float64Histogram
-	sessionStartTime     map[string]time.Time
-	histogramMutex       sync.Mutex
+	sessionTimeHistogram  metric.Float64Histogram
+	sessionStartTimeCache *ttlcache.Cache[string, time.Time]
 }
 
 // NewMpcMetrics initializes metrics related to the MPC set
@@ -56,8 +59,9 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 		totalRelayerCount:      totalRelayerCount,
 		availableRelayerCount:  availableRelayerCount,
 		sessionTimeHistogram:   sessionTimeHistogram,
-		sessionStartTime:       make(map[string]time.Time),
-		histogramMutex:         sync.Mutex{},
+		sessionStartTimeCache: ttlcache.New(
+			ttlcache.WithTTL[string, time.Time](SESSION_TTL),
+		),
 	}, nil
 }
 
@@ -67,21 +71,15 @@ func (m *MpcMetrics) TrackRelayerStatus(unavailable peer.IDSlice, all peer.IDSli
 }
 
 func (m *MpcMetrics) StartProcess(sessionID string) {
-	m.histogramMutex.Lock()
-	defer m.histogramMutex.Unlock()
-
-	m.sessionStartTime[sessionID] = time.Now()
+	m.sessionStartTimeCache.Set(sessionID, time.Now(), ttlcache.DefaultTTL)
 }
 
 func (m *MpcMetrics) EndProcess(sessionID string) {
-	m.histogramMutex.Lock()
-	defer m.histogramMutex.Unlock()
-
-	startTime, ok := m.sessionStartTime[sessionID]
-	if !ok {
+	startTime := m.sessionStartTimeCache.Get(sessionID)
+	if startTime == nil {
 		log.Warn().Msgf("Session start time with ID %s not found", sessionID)
 		return
 	}
 
-	m.sessionTimeHistogram.Record(context.Background(), time.Since(startTime).Seconds())
+	m.sessionTimeHistogram.Record(context.Background(), time.Since(startTime.Value()).Seconds())
 }
