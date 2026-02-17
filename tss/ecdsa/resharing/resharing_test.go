@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
@@ -20,6 +19,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/resharing"
 	tsstest "github.com/sprintertech/sprinter-signing/tss/test"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 type ResharingTestSuite struct {
@@ -60,7 +60,7 @@ func (s *ResharingTestSuite) Test_ValidResharingProcess_OldAndNewSubset() {
 		s.MockECDSAStorer.EXPECT().StoreKeyshare(gomock.Any()).Return(nil)
 		resharing := resharing.NewResharing("resharing2", 1, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, resharing)
 	}
 	tsstest.SetupCommunication(communicationMap)
@@ -107,7 +107,7 @@ func (s *ResharingTestSuite) Test_ValidResharingProcess_RemovePeer() {
 		s.MockECDSAStorer.EXPECT().StoreKeyshare(gomock.Any()).Return(nil)
 		resharing := resharing.NewResharing("resharing2", 1, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, resharing)
 	}
 	tsstest.SetupCommunication(communicationMap)
@@ -157,7 +157,7 @@ func (s *ResharingTestSuite) Test_InvalidResharingProcess_InvalidOldThreshold_Le
 		s.MockECDSAStorer.EXPECT().GetKeyshare().Return(share, nil)
 		resharing := resharing.NewResharing("resharing3", 1, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, resharing)
 	}
 	tsstest.SetupCommunication(communicationMap)
@@ -206,7 +206,7 @@ func (s *ResharingTestSuite) Test_InvalidResharingProcess_InvalidOldThreshold_Bi
 		s.MockECDSAStorer.EXPECT().GetKeyshare().Return(share, nil)
 		resharing := resharing.NewResharing("resharing4", 1, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, resharing)
 	}
 	tsstest.SetupCommunication(communicationMap)

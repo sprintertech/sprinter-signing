@@ -152,3 +152,51 @@ func (mr *MockTssProcessMockRecorder) ValidCoordinators() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidCoordinators", reflect.TypeOf((*MockTssProcess)(nil).ValidCoordinators))
 }
+
+// MockMetrics is a mock of Metrics interface.
+type MockMetrics struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetricsMockRecorder
+	isgomock struct{}
+}
+
+// MockMetricsMockRecorder is the mock recorder for MockMetrics.
+type MockMetricsMockRecorder struct {
+	mock *MockMetrics
+}
+
+// NewMockMetrics creates a new mock instance.
+func NewMockMetrics(ctrl *gomock.Controller) *MockMetrics {
+	mock := &MockMetrics{ctrl: ctrl}
+	mock.recorder = &MockMetricsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMetrics) EXPECT() *MockMetricsMockRecorder {
+	return m.recorder
+}
+
+// EndProcess mocks base method.
+func (m *MockMetrics) EndProcess(sessionID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "EndProcess", sessionID)
+}
+
+// EndProcess indicates an expected call of EndProcess.
+func (mr *MockMetricsMockRecorder) EndProcess(sessionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndProcess", reflect.TypeOf((*MockMetrics)(nil).EndProcess), sessionID)
+}
+
+// StartProcess mocks base method.
+func (m *MockMetrics) StartProcess(sessionID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "StartProcess", sessionID)
+}
+
+// StartProcess indicates an expected call of StartProcess.
+func (mr *MockMetricsMockRecorder) StartProcess(sessionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartProcess", reflect.TypeOf((*MockMetrics)(nil).StartProcess), sessionID)
+}

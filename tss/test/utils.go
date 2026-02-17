@@ -27,6 +27,7 @@ type CoordinatorTestSuite struct {
 	MockECDSAStorer   *mock_tss.MockECDSAKeyshareStorer
 	MockCommunication *mock_comm.MockCommunication
 	MockTssProcess    *mock_tss.MockTssProcess
+	MockMetrics       *mock_tss.MockMetrics
 
 	Hosts       []host.Host
 	Threshold   int
@@ -39,6 +40,8 @@ func (s *CoordinatorTestSuite) SetupTest() {
 	s.MockECDSAStorer = mock_tss.NewMockECDSAKeyshareStorer(s.GomockController)
 	s.MockCommunication = mock_comm.NewMockCommunication(s.GomockController)
 	s.MockTssProcess = mock_tss.NewMockTssProcess(s.GomockController)
+	s.MockMetrics = mock_tss.NewMockMetrics(s.GomockController)
+	s.MockMetrics.EXPECT().StartProcess(gomock.Any()).AnyTimes()
 	s.PartyNumber = 3
 	s.Threshold = 1
 

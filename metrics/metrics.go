@@ -11,14 +11,14 @@ import (
 	api "go.opentelemetry.io/otel/metric"
 )
 
-type SygmaMetrics struct {
+type SprinterMetrics struct {
 	*observability.RelayerMetrics
 	*MpcMetrics
 	*HostMetrics
 }
 
 // NewSygmaMetrics creates an instance of metrics
-func NewSygmaMetrics(ctx context.Context, meter api.Meter, env, relayerID, version string) (*SygmaMetrics, error) {
+func NewSprinterMetrics(ctx context.Context, meter api.Meter, env, relayerID, version string) (*SprinterMetrics, error) {
 	attributes := []attribute.KeyValue{attribute.String("relayerid", relayerID), attribute.String("env", env), attribute.String("version", version)}
 	opts := api.WithAttributes(attributes...)
 	relayerMetrics, err := observability.NewRelayerMetrics(ctx, meter, attributes...)
@@ -36,7 +36,7 @@ func NewSygmaMetrics(ctx context.Context, meter api.Meter, env, relayerID, versi
 		return nil, err
 	}
 
-	return &SygmaMetrics{
+	return &SprinterMetrics{
 		RelayerMetrics: relayerMetrics,
 		MpcMetrics:     mpcMetrics,
 		HostMetrics:    hostMetrics,

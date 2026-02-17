@@ -51,7 +51,7 @@ func (s *SigningTestSuite) Test_ValidSigningProcess() {
 			panic(err)
 		}
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, signing)
 	}
 	tsstest.SetupCommunication(communicationMap)
@@ -101,7 +101,7 @@ func (s *SigningTestSuite) Test_ValidSigningProcess_ManualCoordinator() {
 			panic(err)
 		}
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, signing)
 	}
 	tsstest.SetupCommunication(communicationMap)
@@ -155,7 +155,7 @@ func (s *SigningTestSuite) Test_SigningTimeout() {
 			panic(err)
 		}
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinator := tss.NewCoordinator(host, &communication, electorFactory)
+		coordinator := tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory)
 		signing.TssTimeout = time.Nanosecond
 		coordinators = append(coordinators, coordinator)
 		processes = append(processes, signing)
@@ -188,7 +188,7 @@ func (s *SigningTestSuite) Test_PendingProcessExists() {
 		communicationMap[host.ID()] = &communication
 		keygen := keygen.NewKeygen("keygen3", s.Threshold, host, &communication, s.MockECDSAStorer)
 		electorFactory := elector.NewCoordinatorElectorFactory(host, s.BullyConfig)
-		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, electorFactory))
+		coordinators = append(coordinators, tss.NewCoordinator(host, &communication, s.MockMetrics, electorFactory))
 		processes = append(processes, keygen)
 	}
 	tsstest.SetupCommunication(communicationMap)
