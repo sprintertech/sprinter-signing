@@ -52,6 +52,9 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 	}
 
 	sessionTimeHistogram, err := meter.Float64Histogram("relayer.SessionTime")
+	if err != nil {
+		return nil, err
+	}
 
 	return &MpcMetrics{
 		totalRelayersGauge:     totalRelayersGauge,

@@ -120,18 +120,14 @@ func Run() error {
 		}
 	}()
 	sygmaMetrics, err := metrics.NewSprinterMetrics(ctx, mp.Meter("relayer-metric-provider"), configuration.RelayerConfig.Env, configuration.RelayerConfig.Id, Version)
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 
 	communication := p2p.NewCommunication(host, "p2p/sprinter")
 	electorFactory := elector.NewCoordinatorElectorFactory(host, configuration.RelayerConfig.BullyConfig)
 	coordinator := tss.NewCoordinator(host, communication, sygmaMetrics, electorFactory)
 
 	db, err := lvldb.NewLvlDB(viper.GetString(config.BlockstoreFlagName))
-	if err != nil {
-		panicOnError(err)
-	}
+	panicOnError(err)
 	blockstore := store.NewBlockStore(db)
 	keyshareStore := keyshare.NewECDSAKeyshareStore(configuration.RelayerConfig.MpcConfig.KeysharePath)
 
