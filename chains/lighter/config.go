@@ -19,6 +19,8 @@ type LighterConfig struct {
 	WithdrawalAddress common.Address
 	UsdcAddress       common.Address
 	RepaymentAddress  string
+	// usd bucket -> confirmations
+	ConfirmationsByValue map[uint64]uint64
 }
 
 func NewLighterConfig(solverConfig solverConfig.SolverConfig) (*LighterConfig, error) {
@@ -37,9 +39,16 @@ func NewLighterConfig(solverConfig solverConfig.SolverConfig) (*LighterConfig, e
 		return nil, fmt.Errorf("withdrawal address not configured")
 	}
 
+	confirmations := make(map[uint64]uint64)
+	for _, confirmation := range solverConfig.Chains[LIGHTER_CAIP].Confirmations {
+		// nolint:gosec
+		confirmations[uint64(confirmation.MaxAmountUSD)] = uint64(confirmation.Confirmations)
+	}
+
 	return &LighterConfig{
-		WithdrawalAddress: common.HexToAddress(withdrawalAddress),
-		RepaymentAddress:  solverConfig.ProtocolsMetadata.Lighter.RepaymentAddress,
-		UsdcAddress:       common.HexToAddress(usdcConfig.Address),
+		WithdrawalAddress:    common.HexToAddress(withdrawalAddress),
+		RepaymentAddress:     solverConfig.ProtocolsMetadata.Lighter.RepaymentAddress,
+		UsdcAddress:          common.HexToAddress(usdcConfig.Address),
+		ConfirmationsByValue: confirmations,
 	}, nil
 }

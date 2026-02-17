@@ -391,6 +391,7 @@ func Run() error {
 		lighterConfig.WithdrawalAddress,
 		lighterConfig.UsdcAddress,
 		lighterConfig.RepaymentAddress,
+		lighterConfig.ConfirmationsByValue,
 		lighterAPI,
 		coordinator,
 		host,

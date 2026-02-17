@@ -71,9 +71,25 @@ func (s *NewLighterConfigTestSuite) Test_ValidConfig() {
 		Decimals: 6,
 	}
 
+	expectedBlockConfirmations := make(map[uint64]uint64)
+	expectedBlockConfirmations[1000] = 5
+	expectedBlockConfirmations[2000] = 10
+
 	solverChains := make(map[string]solverConfig.Chain)
 	solverChains["eip155:42161"] = solverConfig.Chain{
 		Tokens: tokens,
+	}
+	solverChains["lighter:1"] = solverConfig.Chain{
+		Confirmations: []solverConfig.Confirmations{
+			{
+				Confirmations: 5,
+				MaxAmountUSD:  1000,
+			},
+			{
+				Confirmations: 10,
+				MaxAmountUSD:  2000,
+			},
+		},
 	}
 
 	config, err := lighter.NewLighterConfig(solverConfig.SolverConfig{
@@ -90,8 +106,9 @@ func (s *NewLighterConfigTestSuite) Test_ValidConfig() {
 
 	s.Nil(err)
 	s.Equal(config, &lighter.LighterConfig{
-		WithdrawalAddress: common.HexToAddress("withdrawal"),
-		UsdcAddress:       common.HexToAddress("usdc"),
-		RepaymentAddress:  "3",
+		WithdrawalAddress:    common.HexToAddress("withdrawal"),
+		UsdcAddress:          common.HexToAddress("usdc"),
+		RepaymentAddress:     "3",
+		ConfirmationsByValue: expectedBlockConfirmations,
 	})
 }

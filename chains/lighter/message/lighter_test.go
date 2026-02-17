@@ -54,11 +54,14 @@ func (s *LighterMessageHandlerTestSuite) SetupTest() {
 	s.mockTxFetcher = mock_message.NewMockTxFetcher(ctrl)
 
 	s.sigChn = make(chan interface{}, 1)
+	confirmations := make(map[uint64]uint64)
+	confirmations[200] = 0
 
 	s.handler = message.NewLighterMessageHandler(
 		common.Address{},
 		common.Address{},
 		"3",
+		confirmations,
 		s.mockTxFetcher,
 		s.mockCoordinator,
 		s.mockHost,
@@ -173,7 +176,7 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAsset() {
 		DepositTxHash: "orderHash",
 	}
 	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
-		Type: lighter.TxTypeL2Withdraw,
+		Type: lighter.TxTypeL2Transfer,
 		Transfer: &lighter.Transfer{
 			Amount:         2000001,
 			AssetIndex:     2,
@@ -220,6 +223,48 @@ func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidAccount() {
 			Amount:         2000001,
 			AssetIndex:     3,
 			ToAccountIndex: 5,
+			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	}, nil)
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.NotNil(err)
+
+	err = <-errChn
+	s.NotNil(err)
+}
+
+func (s *LighterMessageHandlerTestSuite) Test_HandleMessage_InvalidOrderValue() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.LighterMsg,
+		"lighter",
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	errChn := make(chan error, 1)
+	ad := &message.LighterData{
+		ErrChn:        errChn,
+		Nonce:         big.NewInt(101),
+		LiquidityPool: common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		OrderHash:     "orderHash",
+		DepositTxHash: "orderHash",
+	}
+	s.mockTxFetcher.EXPECT().GetTx(ad.OrderHash).Return(&lighter.LighterTx{
+		Type: lighter.TxTypeL2Transfer,
+		Transfer: &lighter.Transfer{
+			Amount:         200000001,
+			AssetIndex:     3,
+			ToAccountIndex: 3,
 			Memo:           []byte{238, 123, 250, 212, 202, 237, 62, 98, 106, 248, 169, 199, 213, 3, 76, 213, 137, 238, 73, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}, nil)
