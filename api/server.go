@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	"github.com/sprintertech/sprinter-signing/health"
@@ -18,12 +19,16 @@ func Serve(
 	unlockHandler *handlers.UnlockHandler,
 	statusHandler *handlers.StatusHandler,
 	confirmationsHandler *handlers.ConfirmationsHandler,
+	prometheusEnabled bool,
 ) {
 	r := mux.NewRouter()
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/unlocks", unlockHandler.HandleUnlock).Methods("POST")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures", signingHandler.HandleSigning).Methods("POST")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/signatures/{depositId}", statusHandler.HandleRequest).Methods("GET")
 	r.HandleFunc("/v1/chains/{chainId:[0-9]+}/confirmations", confirmationsHandler.HandleRequest).Methods("GET")
+	if prometheusEnabled {
+		r.Handle("/metrics", promhttp.Handler()).Methods("GET")
+	}
 	r.HandleFunc("/health", health.HealthHandler()).Methods("GET")
 
 	server := &http.Server{

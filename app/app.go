@@ -60,6 +60,8 @@ import (
 	"github.com/sygmaprotocol/sygma-core/observability"
 	"github.com/sygmaprotocol/sygma-core/relayer"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
+	promexporter "go.opentelemetry.io/otel/exporters/prometheus"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"github.com/sygmaprotocol/sygma-core/store"
 	"github.com/sygmaprotocol/sygma-core/store/lvldb"
 )
@@ -112,7 +114,14 @@ func Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL)
+	var meterOpts []sdkmetric.Option
+	if configuration.RelayerConfig.PrometheusEnabled {
+		promExporter, err := promexporter.New()
+		panicOnError(err)
+		meterOpts = append(meterOpts, sdkmetric.WithReader(promExporter))
+	}
+
+	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL, meterOpts...)
 	panicOnError(err)
 	defer func() {
 		if err := mp.Shutdown(context.Background()); err != nil {
@@ -430,7 +439,8 @@ func Run() error {
 		signingHandler,
 		unlockHandler,
 		statusHandler,
-		confirmationsHandler)
+		confirmationsHandler,
+		configuration.RelayerConfig.PrometheusEnabled)
 
 	sig := <-sysErr
 	log.Info().Msgf("terminating got ` [%v] signal", sig)

@@ -25,6 +25,7 @@ type RelayerConfig struct {
 	CoinmarketcapConfig       CoinmarketcapConfig
 	SolverConfig              SolverConfig
 	ApiAddr                   string
+	PrometheusEnabled         bool
 }
 
 type CoinmarketcapConfig struct {
@@ -72,6 +73,7 @@ type RawRelayerConfig struct {
 	CoinmarketcapConfig       CoinmarketcapConfig `mapstructure:"CoinmarketcapConfig" json:"coinmarketcapConfig"`
 	SolverConfig              SolverConfig        `mapstructure:"SolverConfig" json:"solverConfig"`
 	ApiAddr                   string              `mapstructure:"apiAddr" default:"0.0.0.0:3000"`
+	PrometheusEnabled         bool                `mapstructure:"PrometheusEnabled" json:"prometheusEnabled" default:"false"`
 }
 
 type RawMpcRelayerConfig struct {
@@ -147,6 +149,7 @@ func NewRelayerConfig(rawConfig RawRelayerConfig) (RelayerConfig, error) {
 	config.Id = rawConfig.Id
 	config.ApiAddr = rawConfig.ApiAddr
 	config.SolverConfig = rawConfig.SolverConfig
+	config.PrometheusEnabled = rawConfig.PrometheusEnabled
 	return config, nil
 }
 
