@@ -13,11 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v6
         with:
           go-version: 1.23
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: setup git access to private repos
         run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
@@ -26,4 +28,4 @@ jobs:
         run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 
       - name: Run linter
-        run: golangci-lint run --timeout=10m
+        run: golangci-lint run --timeout=10m --new-from-merge-base=main
