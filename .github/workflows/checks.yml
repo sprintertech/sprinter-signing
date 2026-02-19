@@ -18,8 +18,6 @@ jobs:
           go-version: 1.23
 
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: setup git access to private repos
         run: git config --global url."https://${TOKEN}:x-oauth-basic@github.com/sprintertech/".insteadOf "https://github.com/sprintertech/"
