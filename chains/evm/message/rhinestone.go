@@ -221,19 +221,21 @@ func (h *RhinestoneMessageHandler) Listen(ctx context.Context) {
 		select {
 		case wMsg := <-msgChn:
 			{
-				d := &RhinestoneData{}
-				err := json.Unmarshal(wMsg.Payload, d)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling rhinestone message: %s", err)
-					continue
-				}
+				go func(wMsg *comm.WrappedMessage) {
+					d := &RhinestoneData{}
+					err := json.Unmarshal(wMsg.Payload, d)
+					if err != nil {
+						log.Warn().Msgf("Failed unmarshaling rhinestone message: %s", err)
+						return
+					}
 
-				d.ErrChn = make(chan error, 1)
-				msg := NewRhinestoneMessage(d.Source, d.Destination, d)
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling rhinestone message %+v because of: %s", msg, err)
-				}
+					d.ErrChn = make(chan error, 1)
+					msg := NewRhinestoneMessage(d.Source, d.Destination, d)
+					_, err = h.HandleMessage(msg)
+					if err != nil {
+						log.Err(err).Msgf("Failed handling rhinestone message %+v because of: %s", msg, err)
+					}
+				}(wMsg)
 			}
 		case <-ctx.Done():
 			{

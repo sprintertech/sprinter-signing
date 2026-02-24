@@ -284,19 +284,21 @@ func (h *LifiEscrowMessageHandler) Listen(ctx context.Context) {
 		select {
 		case wMsg := <-msgChn:
 			{
-				d := &LifiEscrowData{}
-				err := json.Unmarshal(wMsg.Payload, d)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling LiFi message: %s", err)
-					continue
-				}
+				go func(wMsg *comm.WrappedMessage) {
+					d := &LifiEscrowData{}
+					err := json.Unmarshal(wMsg.Payload, d)
+					if err != nil {
+						log.Warn().Msgf("Failed unmarshaling LiFi message: %s", err)
+						return
+					}
 
-				d.ErrChn = make(chan error, 1)
-				msg := NewLifiEscrowMessage(d.Source, d.Destination, d)
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling LiFi message %+v because of: %s", msg, err)
-				}
+					d.ErrChn = make(chan error, 1)
+					msg := NewLifiEscrowMessage(d.Source, d.Destination, d)
+					_, err = h.HandleMessage(msg)
+					if err != nil {
+						log.Err(err).Msgf("Failed handling LiFi message %+v because of: %s", msg, err)
+					}
+				}(wMsg)
 			}
 		case <-ctx.Done():
 			{
