@@ -205,19 +205,21 @@ func (h *MayanMessageHandler) Listen(ctx context.Context) {
 		select {
 		case wMsg := <-msgChn:
 			{
-				d := &MayanData{}
-				err := json.Unmarshal(wMsg.Payload, d)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
-					continue
-				}
+				go func(wMsg *comm.WrappedMessage) {
+					d := &MayanData{}
+					err := json.Unmarshal(wMsg.Payload, d)
+					if err != nil {
+						log.Warn().Msgf("Failed unmarshaling Mayan message: %s", err)
+						return
+					}
 
-				d.ErrChn = make(chan error, 1)
-				msg := NewMayanMessage(d.Source, d.Destination, d)
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", msg, err)
-				}
+					d.ErrChn = make(chan error, 1)
+					msg := NewMayanMessage(d.Source, d.Destination, d)
+					_, err = h.HandleMessage(msg)
+					if err != nil {
+						log.Err(err).Msgf("Failed handling Mayan message %+v because of: %s", msg, err)
+					}
+				}(wMsg)
 			}
 		case <-ctx.Done():
 			{

@@ -94,19 +94,21 @@ func (h *LifiUnlockHandler) Listen(ctx context.Context) {
 		select {
 		case wMsg := <-msgChn:
 			{
-				d := &LifiUnlockData{}
-				err := json.Unmarshal(wMsg.Payload, d)
-				if err != nil {
-					log.Warn().Msgf("Failed unmarshaling across message: %s", err)
-					continue
-				}
-				d.SigChn = make(chan interface{}, 1)
+				go func(wMsg *comm.WrappedMessage) {
+					d := &LifiUnlockData{}
+					err := json.Unmarshal(wMsg.Payload, d)
+					if err != nil {
+						log.Warn().Msgf("Failed unmarshaling across message: %s", err)
+						return
+					}
+					d.SigChn = make(chan interface{}, 1)
 
-				msg := NewLifiUnlockMessage(d.Source, d.Destination, d)
-				_, err = h.HandleMessage(msg)
-				if err != nil {
-					log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
-				}
+					msg := NewLifiUnlockMessage(d.Source, d.Destination, d)
+					_, err = h.HandleMessage(msg)
+					if err != nil {
+						log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
+					}
+				}(wMsg)
 			}
 		case <-ctx.Done():
 			{
