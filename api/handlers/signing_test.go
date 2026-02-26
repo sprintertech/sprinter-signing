@@ -565,7 +565,7 @@ func (s *StatusHandlerTestSuite) Test_HandleRequest_ValidSignature() {
 
 	time.Sleep(100 * time.Millisecond) // Give some time for the goroutine to execute
 
-	s.Equal(http.StatusAccepted, recorder.Code)
+	s.Equal(http.StatusOK, recorder.Code)
 	s.Equal("text/event-stream", recorder.Header().Get("Content-Type"))
 	s.Equal("no-cache", recorder.Header().Get("Cache-Control"))
 	s.Equal("keep-alive", recorder.Header().Get("Connection"))
