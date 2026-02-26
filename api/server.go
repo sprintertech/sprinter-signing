@@ -27,9 +27,8 @@ func Serve(
 	r.HandleFunc("/health", health.HealthHandler()).Methods("GET")
 
 	server := &http.Server{
-		Addr:        addr,
-		Handler:     r,
-		ReadTimeout: time.Second * 10,
+		Addr:    addr,
+		Handler: r,
 	}
 	go func() {
 		log.Info().Msgf("Starting server on %s", addr)
