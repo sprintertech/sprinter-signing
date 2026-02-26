@@ -48,7 +48,7 @@ func (s *CommunicationHealthTestSuite) TearDownTest() {
 	}
 }
 
-func (s *CommunicationHealthTestSuite) TestCommHealth_AllPearsAvailable() {
+func (s *CommunicationHealthTestSuite) TestCommHealth_AllPeersAvailable() {
 	errors := comm.ExecuteCommHealthCheck(
 		s.testCommunications[0], peer.IDSlice{s.testHosts[1].ID(), s.testHosts[2].ID()},
 	)

@@ -18,75 +18,50 @@ import (
 //
 // Each stream is mapped to a specific session, by sessionID
 type StreamManager struct {
-	streamsBySessionID map[string]map[peer.ID]network.Stream
-	streamLocker       *sync.Mutex
-	host               host.Host
+	streamsByPeer map[peer.ID]network.Stream
+	streamLocker  *sync.Mutex
+	host          host.Host
+	protocolID    protocol.ID
 }
 
 // NewStreamManager creates new StreamManager
-func NewStreamManager(host host.Host) *StreamManager {
+func NewStreamManager(host host.Host, protocolID protocol.ID) *StreamManager {
 	return &StreamManager{
-		streamsBySessionID: make(map[string]map[peer.ID]network.Stream),
-		streamLocker:       &sync.Mutex{},
-		host:               host,
+		streamsByPeer: make(map[peer.ID]network.Stream),
+		streamLocker:  &sync.Mutex{},
+		host:          host,
+		protocolID:    protocolID,
 	}
 }
 
-// ReleaseStream removes reference on streams mapped to provided sessionID and closes them
-func (sm *StreamManager) ReleaseStreams(sessionID string) {
+// CloseStream closes stream to the peer
+func (sm *StreamManager) CloseStream(peerID peer.ID, stream network.Stream) {
+	sm.streamLocker.Lock()
+	delete(sm.streamsByPeer, peerID)
+	sm.streamLocker.Unlock()
+
+	err := stream.Close()
+	if err != nil {
+		log.Warn().Err(err).Msgf("Failed to close stream")
+		return
+	}
+}
+
+// Stream fetches stream by peer
+func (sm *StreamManager) Stream(peerID peer.ID) (network.Stream, error) {
 	sm.streamLocker.Lock()
 	defer sm.streamLocker.Unlock()
 
-	streams, ok := sm.streamsBySessionID[sessionID]
+	stream, ok := sm.streamsByPeer[peerID]
 	if !ok {
-		return
-	}
-
-	for peer, stream := range streams {
-		err := stream.Close()
-		if err != nil {
-			log.Debug().Msgf("Cannot close stream to peer %s, err: %s", peer.String(), err.Error())
-			_ = stream.Reset()
-		}
-	}
-
-	delete(sm.streamsBySessionID, sessionID)
-}
-
-// AddStream saves and maps provided stream to sessionID
-func (sm *StreamManager) AddStream(sessionID string, peerID peer.ID, stream network.Stream) {
-	sm.streamLocker.Lock()
-	defer sm.streamLocker.Unlock()
-
-	_, ok := sm.streamsBySessionID[sessionID]
-	if !ok {
-		sm.streamsBySessionID[sessionID] = make(map[peer.ID]network.Stream)
-	}
-
-	_, ok = sm.streamsBySessionID[sessionID][peerID]
-	if ok {
-		return
-	}
-
-	sm.streamsBySessionID[sessionID][peerID] = stream
-}
-
-// Stream fetches stream by peer and session ID
-func (sm *StreamManager) Stream(sessionID string, peerID peer.ID, protocolID protocol.ID) (network.Stream, error) {
-	sm.streamLocker.Lock()
-
-	stream, ok := sm.streamsBySessionID[sessionID][peerID]
-	if !ok {
-		stream, err := sm.host.NewStream(context.TODO(), peerID, protocolID)
+		stream, err := sm.host.NewStream(context.TODO(), peerID, sm.protocolID)
 		if err != nil {
 			return nil, err
 		}
 
-		sm.streamLocker.Unlock()
-		sm.AddStream(sessionID, peerID, stream)
+		sm.streamsByPeer[peerID] = stream
 		return stream, nil
 	}
 
-	sm.streamLocker.Unlock()
 	return stream, nil
 }

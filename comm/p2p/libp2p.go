@@ -27,7 +27,6 @@ const (
 type Libp2pCommunication struct {
 	SessionSubscriptionManager
 	h             host.Host
-	protocolID    protocol.ID
 	logger        zerolog.Logger
 	streamManager *StreamManager
 }
@@ -37,21 +36,18 @@ func NewCommunication(h host.Host, protocolID protocol.ID) Libp2pCommunication {
 	c := Libp2pCommunication{
 		SessionSubscriptionManager: NewSessionSubscriptionManager(),
 		h:                          h,
-		protocolID:                 protocolID,
 		logger:                     logger,
-		streamManager:              NewStreamManager(h),
+		streamManager:              NewStreamManager(h, protocolID),
 	}
 
 	// start processing incoming messages
-	c.h.SetStreamHandler(c.protocolID, c.StreamHandlerFunc)
+	c.h.SetStreamHandler(protocolID, c.StreamHandlerFunc)
 	return c
 }
 
 /** Communication interface methods **/
 
-func (c Libp2pCommunication) CloseSession(sessionID string) {
-	c.streamManager.ReleaseStreams(sessionID)
-}
+func (c Libp2pCommunication) CloseSession(sessionID string) {}
 
 func (c Libp2pCommunication) Broadcast(
 	peers peer.IDSlice,
@@ -179,7 +175,7 @@ func (c Libp2pCommunication) sendMessage(
 	}
 
 	var stream network.Stream
-	stream, err = c.streamManager.Stream(sessionID, to, c.protocolID)
+	stream, err = c.streamManager.Stream(to)
 	if err != nil {
 		return err
 	}
@@ -187,7 +183,7 @@ func (c Libp2pCommunication) sendMessage(
 	err = WriteStream(msg, bufio.NewWriterSize(stream, defaultBufferSize))
 	if err != nil {
 		c.logger.Error().Str("To", to.String()).Err(err).Msg("unable to send message")
-		c.streamManager.ReleaseStreams(sessionID)
+		c.streamManager.CloseStream(to, stream)
 		return err
 	}
 
