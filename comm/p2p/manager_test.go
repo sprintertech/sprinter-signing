@@ -49,5 +49,5 @@ func (s *StreamManagerTestSuite) Test_ManagingSubscriptions_Success() {
 	s.Equal(s1, s2)
 
 	stream1.EXPECT().Close().Times(1).Return(nil)
-	streamManager.CloseStream(peerID1, s1)
+	streamManager.CloseStream(peerID1)
 }
