@@ -123,6 +123,12 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
+	if data.BorrowAmount.Cmp(d.InputAmount) > 0 {
+		err := fmt.Errorf("borrow amount exceeds input amount")
+		data.ErrChn <- err
+		return nil, err
+	}
+
 	err = h.confirmationWatcher.WaitForTokenConfirmations(
 		context.Background(),
 		h.chainID,
@@ -144,7 +150,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 
 	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
-		d.OutputAmount,
+		data.BorrowAmount,
 		common.BytesToAddress(d.OutputToken[12:]),
 		d.DestinationChainId,
 		h.pools[d.DestinationChainId.Uint64()],
