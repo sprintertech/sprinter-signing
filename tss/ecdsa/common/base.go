@@ -78,7 +78,6 @@ func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm
 						return
 					}
 					b.Log.Debug().Msgf("Updated party with message from %s", wMsg.From)
-					return
 				}(wMsg)
 			}
 		case <-ctx.Done():
