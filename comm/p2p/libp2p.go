@@ -177,13 +177,14 @@ func (c Libp2pCommunication) sendMessage(
 	var stream network.Stream
 	stream, err = c.streamManager.Stream(to)
 	if err != nil {
+		c.logger.Error().Str("To", to.String()).Err(err).Msg("Unable to get stream")
 		return err
 	}
 
 	err = WriteStream(msg, bufio.NewWriterSize(stream, defaultBufferSize))
 	if err != nil {
-		c.logger.Error().Str("To", to.String()).Err(err).Msg("unable to send message")
-		c.streamManager.CloseStream(to, stream)
+		c.logger.Error().Str("To", to.String()).Err(err).Msg("Unable to send message")
+		c.streamManager.CloseStream(to)
 		return err
 	}
 

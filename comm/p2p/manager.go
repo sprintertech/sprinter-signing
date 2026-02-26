@@ -15,8 +15,6 @@ import (
 )
 
 // StreamManager manages instances of network.Stream
-//
-// Each stream is mapped to a specific session, by sessionID
 type StreamManager struct {
 	streamsByPeer map[peer.ID]network.Stream
 	streamLocker  *sync.Mutex
@@ -35,8 +33,13 @@ func NewStreamManager(host host.Host, protocolID protocol.ID) *StreamManager {
 }
 
 // CloseStream closes stream to the peer
-func (sm *StreamManager) CloseStream(peerID peer.ID, stream network.Stream) {
+func (sm *StreamManager) CloseStream(peerID peer.ID) {
 	sm.streamLocker.Lock()
+	stream, ok := sm.streamsByPeer[peerID]
+	if !ok {
+		return
+	}
+
 	delete(sm.streamsByPeer, peerID)
 	sm.streamLocker.Unlock()
 
