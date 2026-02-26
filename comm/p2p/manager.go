@@ -37,6 +37,7 @@ func (sm *StreamManager) CloseStream(peerID peer.ID) {
 	sm.streamLocker.Lock()
 	stream, ok := sm.streamsByPeer[peerID]
 	if !ok {
+		sm.streamLocker.Unlock()
 		return
 	}
 

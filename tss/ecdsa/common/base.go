@@ -59,21 +59,27 @@ func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm
 		select {
 		case wMsg := <-msgChan:
 			{
-				b.Log.Debug().Msgf("processed inbound message from %s", wMsg.From)
+				go func(wMsg *comm.WrappedMessage) error {
+					b.Log.Debug().Msgf("Processed inbound message from %s", wMsg.From)
 
-				msg, err := message.UnmarshalTssMessage(wMsg.Payload)
-				if err != nil {
-					return err
-				}
+					msg, err := message.UnmarshalTssMessage(wMsg.Payload)
+					if err != nil {
+						b.Log.Error().Err(err).Msgf("Failed unmarshaling message from %s", wMsg.From)
+						return err
+					}
 
-				ok, err := b.Party.UpdateFromBytes(
-					msg.MsgBytes,
-					b.PartyStore[wMsg.From.String()],
-					msg.IsBroadcast,
-					new(big.Int).SetBytes([]byte(b.SID)))
-				if !ok {
-					return err
-				}
+					ok, err := b.Party.UpdateFromBytes(
+						msg.MsgBytes,
+						b.PartyStore[wMsg.From.String()],
+						msg.IsBroadcast,
+						new(big.Int).SetBytes([]byte(b.SID)))
+					if !ok {
+						b.Log.Error().Err(err).Msgf("Failed updating party with message from %s", wMsg.From)
+						return err
+					}
+					b.Log.Debug().Msgf("Updated party with message from %s", wMsg.From)
+					return nil
+				}(wMsg)
 			}
 		case <-ctx.Done():
 			return nil
@@ -88,27 +94,34 @@ func (b *BaseTss) ProcessOutboundMessages(ctx context.Context, outChn chan tss.M
 		select {
 		case msg := <-outChn:
 			{
-				b.Log.Debug().Msg(msg.String())
-				wireBytes, routing, err := msg.WireBytes()
-				if err != nil {
-					return err
-				}
+				go func(msg tss.Message) error {
+					b.Log.Debug().Msg(msg.String())
+					wireBytes, routing, err := msg.WireBytes()
+					if err != nil {
+						return err
+					}
 
-				msgBytes, err := message.MarshalTssMessage(wireBytes, routing.IsBroadcast)
-				if err != nil {
-					return err
-				}
+					msgBytes, err := message.MarshalTssMessage(wireBytes, routing.IsBroadcast)
+					if err != nil {
+						b.Log.Error().Err(err).Msgf("Failed marshaling message")
+						return err
+					}
 
-				peers, err := b.BroadcastPeers(msg)
-				if err != nil {
-					return err
-				}
+					peers, err := b.BroadcastPeers(msg)
+					if err != nil {
+						b.Log.Error().Err(err).Msgf("Failed getting broadcast peers")
+						return err
+					}
 
-				b.Log.Debug().Msgf("sending message to %s", peers)
-				err = b.Communication.Broadcast(peers, msgBytes, messageType, b.SessionID())
-				if err != nil {
-					return err
-				}
+					b.Log.Debug().Msgf("Sending message to %s", peers)
+					err = b.Communication.Broadcast(peers, msgBytes, messageType, b.SessionID())
+					if err != nil {
+						b.Log.Error().Err(err).Msgf("Failed broadcasting message")
+						return err
+					}
+
+					return nil
+				}(msg)
 			}
 		case <-ctx.Done():
 			{
