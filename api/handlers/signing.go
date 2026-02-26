@@ -259,6 +259,7 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setheaders(w)
+	w.WriteHeader(http.StatusAccepted)
 
 	ctx := r.Context()
 	sigChn := make(chan []byte, 1)
