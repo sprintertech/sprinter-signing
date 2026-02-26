@@ -138,6 +138,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedDepositQuery() 
 		ErrChn:           errChn,
 		DepositId:        big.NewInt(100),
 		Nonce:            big.NewInt(101),
+		BorrowAmount:     big.NewInt(1000),
 		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:           common.HexToAddress("0xde526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		RepaymentChainID: 10,
@@ -155,6 +156,61 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_FailedDepositQuery() 
 
 	err = <-errChn
 	s.NotNil(err)
+}
+
+func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExceedsInputAmount() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.AcrossMsg,
+		fmt.Sprintf("%d-%s", 1, comm.AcrossSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	deposit := &events.AcrossDeposit{
+		InputToken:         fillBytes32("input_token_address_1234567890"),
+		OutputToken:        fillBytes32("output_token_address_0987654321"),
+		InputAmount:        big.NewInt(1000),
+		OutputAmount:       big.NewInt(990),
+		DestinationChainId: big.NewInt(137),
+		DepositId:          big.NewInt(123456789),
+		//nolint:gosec
+		QuoteTimestamp: uint32(time.Now().Unix()),
+		//nolint:gosec
+		ExclusivityDeadline: uint32(time.Now().Add(10 * time.Minute).Unix()),
+		//nolint:gosec
+		FillDeadline:     uint32(time.Now().Add(1 * time.Hour).Unix()),
+		Depositor:        fillBytes32("depositor_address_abcdef123456"),
+		Recipient:        fillBytes32("recipient_address_654321fedcba"),
+		ExclusiveRelayer: fillBytes32("relayer_address_112233445566"),
+		Message:          []byte("Sample message for AcrossDeposit"),
+	}
+	s.mockDepositFetcher.EXPECT().Deposit(gomock.Any(), gomock.Any(), gomock.Any()).Return(deposit, nil)
+
+	errChn := make(chan error, 1)
+	ad := &message.AcrossData{
+		ErrChn:           errChn,
+		DepositId:        big.NewInt(2595221),
+		Nonce:            big.NewInt(101),
+		BorrowAmount:     big.NewInt(1001),
+		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:           common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
+		RepaymentChainID: 10,
+	}
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      1,
+		Destination: 2,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.ErrorContains(err, "borrow amount exceeds input amount")
+
+	err = <-errChn
+	s.ErrorContains(err, "borrow amount exceeds input amount")
 }
 
 func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
@@ -195,6 +251,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
 		ErrChn:           errChn,
 		DepositId:        big.NewInt(2595221),
 		Nonce:            big.NewInt(101),
+		BorrowAmount:     big.NewInt(1000000000000000000),
 		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
 		Caller:           common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
 		RepaymentChainID: 10,

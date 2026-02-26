@@ -21,6 +21,7 @@ type AcrossData struct {
 	DepositTxHash    common.Hash
 	DepositId        *big.Int
 	Nonce            *big.Int
+	BorrowAmount     *big.Int
 	LiquidityPool    common.Address
 	RepaymentChainID uint64
 	Caller           common.Address
