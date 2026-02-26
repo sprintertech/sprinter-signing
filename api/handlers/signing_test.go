@@ -237,6 +237,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
 		//nolint:gosec
 		Deadline: uint64(time.Now().Unix()),
 	}
@@ -270,6 +271,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 		Protocol:         "across",
 		LiquidityPool:    "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
 		Caller:           "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		BorrowAmount:     &handlers.BigInt{big.NewInt(1000)},
 		Nonce:            &handlers.BigInt{big.NewInt(1001)},
 		RepaymentChainId: 5,
 		//nolint:gosec
