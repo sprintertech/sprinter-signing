@@ -59,13 +59,13 @@ func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm
 		select {
 		case wMsg := <-msgChan:
 			{
-				go func(wMsg *comm.WrappedMessage) error {
+				go func(wMsg *comm.WrappedMessage) {
 					b.Log.Debug().Msgf("Processed inbound message from %s", wMsg.From)
 
 					msg, err := message.UnmarshalTssMessage(wMsg.Payload)
 					if err != nil {
 						b.Log.Error().Err(err).Msgf("Failed unmarshaling message from %s", wMsg.From)
-						return err
+						return
 					}
 
 					ok, err := b.Party.UpdateFromBytes(
@@ -75,10 +75,10 @@ func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm
 						new(big.Int).SetBytes([]byte(b.SID)))
 					if !ok {
 						b.Log.Error().Err(err).Msgf("Failed updating party with message from %s", wMsg.From)
-						return err
+						return
 					}
 					b.Log.Debug().Msgf("Updated party with message from %s", wMsg.From)
-					return nil
+					return
 				}(wMsg)
 			}
 		case <-ctx.Done():
@@ -94,33 +94,32 @@ func (b *BaseTss) ProcessOutboundMessages(ctx context.Context, outChn chan tss.M
 		select {
 		case msg := <-outChn:
 			{
-				go func(msg tss.Message) error {
+				go func(msg tss.Message) {
 					b.Log.Debug().Msg(msg.String())
 					wireBytes, routing, err := msg.WireBytes()
 					if err != nil {
-						return err
+						b.Log.Error().Err(err).Msgf("Failed getting wire bytes")
+						return
 					}
 
 					msgBytes, err := message.MarshalTssMessage(wireBytes, routing.IsBroadcast)
 					if err != nil {
 						b.Log.Error().Err(err).Msgf("Failed marshaling message")
-						return err
+						return
 					}
 
 					peers, err := b.BroadcastPeers(msg)
 					if err != nil {
 						b.Log.Error().Err(err).Msgf("Failed getting broadcast peers")
-						return err
+						return
 					}
 
 					b.Log.Debug().Msgf("Sending message to %s", peers)
 					err = b.Communication.Broadcast(peers, msgBytes, messageType, b.SessionID())
 					if err != nil {
 						b.Log.Error().Err(err).Msgf("Failed broadcasting message")
-						return err
+						return
 					}
-
-					return nil
 				}(msg)
 			}
 		case <-ctx.Done():
