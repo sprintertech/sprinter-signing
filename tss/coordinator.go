@@ -78,13 +78,13 @@ func NewCoordinator(
 // the result of all of them is needed. The processes should have an unique session ID for each one.
 func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, resultChn chan interface{}, coordinator peer.ID) error {
 	sessionID := tssProcesses[0].SessionID()
+
+	c.processLock.Lock()
 	value, ok := c.pendingProcesses[sessionID]
 	if ok && value {
 		log.Warn().Str("SessionID", sessionID).Msgf("Process already pending")
 		return fmt.Errorf("process already pending")
 	}
-
-	c.processLock.Lock()
 	c.pendingProcesses[sessionID] = true
 	c.processLock.Unlock()
 	c.metrics.StartProcess(sessionID)
