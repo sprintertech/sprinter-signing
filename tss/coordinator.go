@@ -82,6 +82,7 @@ func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, re
 	c.processLock.Lock()
 	value, ok := c.pendingProcesses[sessionID]
 	if ok && value {
+		c.processLock.Unlock()
 		log.Warn().Str("SessionID", sessionID).Msgf("Process already pending")
 		return fmt.Errorf("process already pending")
 	}
