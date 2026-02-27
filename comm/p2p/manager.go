@@ -6,12 +6,17 @@ package p2p
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	STREAM_TIMEOUT = time.Second * 5
 )
 
 // StreamManager manages instances of network.Stream
@@ -58,7 +63,9 @@ func (sm *StreamManager) Stream(peerID peer.ID) (network.Stream, error) {
 
 	stream, ok := sm.streamsByPeer[peerID]
 	if !ok {
-		stream, err := sm.host.NewStream(context.TODO(), peerID, sm.protocolID)
+		ctx, cancel := context.WithTimeout(context.Background(), STREAM_TIMEOUT)
+		defer cancel()
+		stream, err := sm.host.NewStream(ctx, peerID, sm.protocolID)
 		if err != nil {
 			return nil, err
 		}
