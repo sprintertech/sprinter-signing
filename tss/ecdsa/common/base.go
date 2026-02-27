@@ -49,17 +49,18 @@ func (b *BaseTss) PopulatePartyStore(parties tss.SortedPartyIDs) {
 
 // ProcessInboundMessages processes messages from tss parties and updates local party accordingly.
 func (b *BaseTss) ProcessInboundMessages(ctx context.Context, msgChan chan *comm.WrappedMessage) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%s", string(debug.Stack()))
-		}
-	}()
-
 	for {
 		select {
 		case wMsg := <-msgChan:
 			{
 				go func(wMsg *comm.WrappedMessage) {
+					defer func() {
+						if r := recover(); r != nil {
+							err = fmt.Errorf("%s", string(debug.Stack()))
+							b.Log.Error().Err(err).Msgf("Panic during processing inbound message")
+						}
+					}()
+
 					b.Log.Debug().Msgf("Processed inbound message from %s", wMsg.From)
 
 					msg, err := message.UnmarshalTssMessage(wMsg.Payload)
