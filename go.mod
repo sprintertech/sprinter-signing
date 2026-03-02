@@ -232,5 +232,6 @@ require (
 
 replace (
 	github.com/agl/ed25519 => github.com/binance-chain/edwards25519 v0.0.0-20200305024217-f36fc4b53d43
-	github.com/binance-chain/tss-lib => github.com/sprintertech/threshlib v0.0.0-20260302115212-8452713b0170
+	github.com/binance-chain/tss-lib => github.com/sprintertech/threshlib v0.0.0-20260302132418-136474b0b72e
+
 )
