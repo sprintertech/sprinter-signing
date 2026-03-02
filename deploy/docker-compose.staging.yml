@@ -14,6 +14,9 @@ services:
       - CONFIG_PATH=/cfg/config_1.json
       - KEYSHARE_PATH=/cfg/keyshares/0.keyshare
       - VIRTUAL_HOST=${SPRINTER_SIGNING_DOMAIN}
+      - GOLOG_LOG_LEVEL="info"
+      - GOLOG_LOG_FMT="json"
+      - GOLOG_OUTPUT="stdout"
     labels:
       logging: "alloy"
       logging_jobname: "containerlogs"
@@ -38,6 +41,9 @@ services:
       - KEYSHARE=${KEYSHARE_2}
       - CONFIG_PATH=/cfg/config_2.json
       - KEYSHARE_PATH=/cfg/keyshares/1.keyshare
+      - GOLOG_LOG_LEVEL="info"
+      - GOLOG_LOG_FMT="json"
+      - GOLOG_OUTPUT="stdout"
     labels:
       logging: "alloy"
       logging_jobname: "containerlogs"
@@ -60,6 +66,9 @@ services:
       - KEYSHARE=${KEYSHARE_3}
       - CONFIG_PATH=/cfg/config_3.json
       - KEYSHARE_PATH=/cfg/keyshares/2.keyshare
+      - GOLOG_LOG_LEVEL="info"
+      - GOLOG_LOG_FMT="json"
+      - GOLOG_OUTPUT="stdout"
     labels:
       logging: "alloy"
       logging_jobname: "containerlogs"
