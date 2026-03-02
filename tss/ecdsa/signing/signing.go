@@ -136,6 +136,13 @@ func (s *Signing) Run(
 	p.Go(func(ctx context.Context) error { return s.monitorSigning(ctx) })
 
 	s.Log.Info().Msgf("Started signing process for message %s", s.msg.Text(16))
+	for i, party := range parties {
+		s.Log.Debug().Msgf("Participating party: %s, ID: %d", party.GetId(), i)
+		p := s.PartyStore[party.Id]
+		if p != party {
+			return fmt.Errorf("party %s different than %s", p.Id, party.Id)
+		}
+	}
 
 	tssError := s.Party.Start()
 	if tssError != nil {

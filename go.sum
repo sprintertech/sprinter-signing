@@ -74,8 +74,6 @@ github.com/ChainAgnostic/go-caip v0.1.15 h1:3HUhxTmuZ8Hlqp2NnUW1Nr7kDq1JAvQL2ZGX
 github.com/ChainAgnostic/go-caip v0.1.15/go.mod h1:ObYGVKrjfWoMwfTiMaWexP+gFxSCGEVXPVIIVmGXVI4=
 github.com/ChainSafe/go-schnorrkel v1.0.0 h1:3aDA67lAykLaG1y3AOjs88dMxC88PgUuHRrLeDnvGIM=
 github.com/ChainSafe/go-schnorrkel v1.0.0/go.mod h1:dpzHYVxLZcp8pjlV+O+UR8K0Hp/z7vcchBSbMBEhCw4=
-github.com/ChainSafe/threshlib v0.0.0-20230420112309-603112eb4684 h1:l5IpX6FFHNFgbjOIZ9LLS9y2sm1Zxp6CMbMpUmFWuxw=
-github.com/ChainSafe/threshlib v0.0.0-20230420112309-603112eb4684/go.mod h1:QWOI8ORRuVh3uoHDqcDVOjUmg+CIVvNmzJOs4vWlfcY=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
 github.com/DataDog/zstd v1.4.5/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
@@ -959,6 +957,8 @@ github.com/sprintertech/lifi-solver v1.3.1 h1:nNzZOPRpHIg6lgOPke9YO6EohZFTTWDQYr
 github.com/sprintertech/lifi-solver v1.3.1/go.mod h1:xi+WZBEV3MnISw3u1TtMrcQiy6BIqUvzkn/OuBdWiCM=
 github.com/sprintertech/solver-config/go v0.0.0-20260122113136-6411c27edf48 h1:Id4+gLztZsi7tHZLq5Nx7Dt5z6MpLWAIMz6VFCCAxy0=
 github.com/sprintertech/solver-config/go v0.0.0-20260122113136-6411c27edf48/go.mod h1:MrIGW6M815PSYKtWSeOd1Z7eiSeOIk/uA/6E2PhlQVQ=
+github.com/sprintertech/threshlib v0.0.0-20260302115212-8452713b0170 h1:+ko6l+zRmtro8RFAWqWTomK++WS8jKaNxPrCxZoxHUw=
+github.com/sprintertech/threshlib v0.0.0-20260302115212-8452713b0170/go.mod h1:QWOI8ORRuVh3uoHDqcDVOjUmg+CIVvNmzJOs4vWlfcY=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

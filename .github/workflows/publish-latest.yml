@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - main
+      - debug
 
 env:
   GO111MODULE: on
