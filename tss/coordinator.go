@@ -237,7 +237,7 @@ func (c *Coordinator) initiate(
 
 				_ = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
 				ticker.Stop()
-				go c.startProcess(ctx, tssProcess, startParams, resultChn, errChn)
+				go c.startProcess(ctx, tssProcess, true, startParams, resultChn, errChn)
 			}
 		case <-ticker.C:
 			{
@@ -300,7 +300,7 @@ func (c *Coordinator) waitForStart(
 					return err
 				}
 
-				go c.startProcess(ctx, tssProcess, msg.Params, resultChn, errChn)
+				go c.startProcess(ctx, tssProcess, false, msg.Params, resultChn, errChn)
 			}
 		case <-ctx.Done():
 			{
@@ -313,10 +313,11 @@ func (c *Coordinator) waitForStart(
 func (c *Coordinator) startProcess(
 	ctx context.Context,
 	tssProcess TssProcess,
+	coordinator bool,
 	startParams []byte,
 	resultChn chan interface{},
 	errChn chan error) {
-	err := tssProcess.Run(ctx, false, resultChn, startParams)
+	err := tssProcess.Run(ctx, coordinator, resultChn, startParams)
 	if err == common.ErrProcessStarted {
 		return
 	}
