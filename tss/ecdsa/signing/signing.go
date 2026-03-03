@@ -94,6 +94,7 @@ func (s *Signing) Run(
 ) error {
 	s.Mux.Lock()
 	if s.Started {
+		s.Mux.Unlock()
 		s.Log.Warn().Msgf("Signing already started")
 		return common.ErrProcessStarted
 	}

@@ -73,6 +73,7 @@ func (k *Keygen) Run(
 ) error {
 	k.Mux.Lock()
 	if k.Started {
+		k.Mux.Unlock()
 		k.Log.Warn().Msgf("Keygen already started")
 		return common.ErrProcessStarted
 	}

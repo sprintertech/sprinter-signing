@@ -90,6 +90,7 @@ func (r *Resharing) Run(
 ) error {
 	r.Mux.Lock()
 	if r.Started {
+		r.Mux.Unlock()
 		r.Log.Warn().Msgf("Resharing already started")
 		return common.ErrProcessStarted
 	}
