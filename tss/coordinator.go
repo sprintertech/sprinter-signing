@@ -16,6 +16,7 @@ import (
 	"github.com/sourcegraph/conc/pool"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/comm/elector"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
 	"github.com/sprintertech/sprinter-signing/tss/message"
 	"golang.org/x/exp/slices"
 )
@@ -236,13 +237,7 @@ func (c *Coordinator) initiate(
 
 				_ = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
 				ticker.Stop()
-				go func() {
-					err := tssProcess.Run(ctx, true, resultChn, startParams)
-					select {
-					case errChn <- err:
-					default:
-					}
-				}()
+				go c.startProcess(ctx, tssProcess, true, startParams, resultChn, errChn)
 			}
 		case <-ticker.C:
 			{
@@ -305,18 +300,30 @@ func (c *Coordinator) waitForStart(
 					return err
 				}
 
-				go func() {
-					err := tssProcess.Run(ctx, false, resultChn, msg.Params)
-					select {
-					case errChn <- err:
-					default:
-					}
-				}()
+				go c.startProcess(ctx, tssProcess, false, msg.Params, resultChn, errChn)
 			}
 		case <-ctx.Done():
 			{
 				return nil
 			}
 		}
+	}
+}
+
+func (c *Coordinator) startProcess(
+	ctx context.Context,
+	tssProcess TssProcess,
+	coordinator bool,
+	startParams []byte,
+	resultChn chan interface{},
+	errChn chan error) {
+	err := tssProcess.Run(ctx, coordinator, resultChn, startParams)
+	if errors.Is(err, common.ErrProcessStarted) {
+		return
+	}
+
+	select {
+	case errChn <- err:
+	default:
 	}
 }

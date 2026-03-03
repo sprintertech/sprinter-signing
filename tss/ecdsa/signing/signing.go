@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"sync"
 	"time"
 
 	tssCommon "github.com/binance-chain/tss-lib/common"
@@ -72,9 +73,11 @@ func NewSigning(
 			Communication: comm,
 			Peers:         key.Peers,
 			SID:           sessionID,
+			Started:       false,
+			Mux:           &sync.Mutex{},
 			Log:           log.With().Str("SessionID", sessionID).Str("messageID", messageID).Str("Process", "signing").Logger(),
 			Cancel:        func() {},
-			TssTimeout:    time.Second * 30,
+			TssTimeout:    time.Second * 8,
 		},
 		key: key,
 		msg: msg,
@@ -89,6 +92,15 @@ func (s *Signing) Run(
 	resultChn chan interface{},
 	params []byte,
 ) error {
+	s.Mux.Lock()
+	if s.Started {
+		s.Mux.Unlock()
+		s.Log.Warn().Msgf("Signing already started")
+		return common.ErrProcessStarted
+	}
+	s.Started = true
+	s.Mux.Unlock()
+
 	s.coordinator = coordinator
 	s.resultChn = resultChn
 	ctx, s.Cancel = context.WithCancel(ctx)

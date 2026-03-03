@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -51,6 +52,8 @@ func NewKeygen(
 			Peers:         host.Peerstore().Peers(),
 			SID:           sessionID,
 			Log:           log.With().Str("SessionID", sessionID).Str("Process", "keygen").Logger(),
+			Started:       false,
+			Mux:           &sync.Mutex{},
 			Cancel:        func() {},
 			TssTimeout:    time.Minute * 10,
 		},
@@ -68,6 +71,14 @@ func (k *Keygen) Run(
 	resultChn chan interface{},
 	params []byte,
 ) error {
+	k.Mux.Lock()
+	if k.Started {
+		k.Mux.Unlock()
+		k.Log.Warn().Msgf("Keygen already started")
+		return common.ErrProcessStarted
+	}
+	k.Started = true
+	k.Mux.Unlock()
 	ctx, k.Cancel = context.WithCancel(ctx)
 
 	k.storer.LockKeyshare()

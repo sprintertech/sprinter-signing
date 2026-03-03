@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -68,6 +69,8 @@ func NewResharing(
 			Peers:         host.Peerstore().Peers(),
 			SID:           sessionID,
 			Log:           log.With().Str("SessionID", sessionID).Str("Process", "resharing").Logger(),
+			Started:       false,
+			Mux:           &sync.Mutex{},
 			Cancel:        func() {},
 			TssTimeout:    time.Minute * 10,
 		},
@@ -85,6 +88,15 @@ func (r *Resharing) Run(
 	resultChn chan interface{},
 	params []byte,
 ) error {
+	r.Mux.Lock()
+	if r.Started {
+		r.Mux.Unlock()
+		r.Log.Warn().Msgf("Resharing already started")
+		return common.ErrProcessStarted
+	}
+	r.Started = true
+	r.Mux.Unlock()
+
 	ctx, r.Cancel = context.WithCancel(ctx)
 
 	startParams, err := r.unmarshallStartParams(params)

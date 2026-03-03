@@ -5,9 +5,11 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/binance-chain/tss-lib/tss"
@@ -24,6 +26,8 @@ type Party interface {
 	WaitingFor() []*tss.PartyID
 }
 
+var ErrProcessStarted = errors.New("process already started")
+
 // BaseTss contains common variables and methods to
 // all tss processes.
 type BaseTss struct {
@@ -31,6 +35,8 @@ type BaseTss struct {
 	SID           string
 	Party         Party
 	PartyStore    map[string]*tss.PartyID
+	Started       bool
+	Mux           *sync.Mutex
 	Communication comm.Communication
 	Peers         []peer.ID
 	Log           zerolog.Logger
