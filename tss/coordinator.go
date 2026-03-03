@@ -318,7 +318,7 @@ func (c *Coordinator) startProcess(
 	resultChn chan interface{},
 	errChn chan error) {
 	err := tssProcess.Run(ctx, coordinator, resultChn, startParams)
-	if err == common.ErrProcessStarted {
+	if errors.Is(err, common.ErrProcessStarted) {
 		return
 	}
 
