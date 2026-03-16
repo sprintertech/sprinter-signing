@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -23,7 +22,6 @@ func StartConfigWatcher(ctx context.Context, config *solverConfig.SolverConfig, 
 	configChanged := make(chan struct{}, 1)
 	configHash, err := calculateConfigHash(config)
 	if err != nil {
-		slog.Error("Failed to calculate initial config hash", slog.String("error", err.Error()))
 		return configChanged, err
 	}
 
