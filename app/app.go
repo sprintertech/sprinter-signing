@@ -157,6 +157,9 @@ func Run() error {
 	solverConfig, err := solverConfig.FetchSolverConfig(ctx, solverConfigOpts...)
 	panicOnError(err)
 
+	configChanged, err := config.StartConfigWatcher(ctx, solverConfig, solverConfigOpts)
+	panicOnError(err)
+
 	keyshare, err := keyshareStore.GetKeyshare()
 	var mpcAddress common.Address
 	if err == nil {
@@ -432,9 +435,20 @@ func Run() error {
 		statusHandler,
 		confirmationsHandler)
 
-	sig := <-sysErr
-	log.Info().Msgf("terminating got ` [%v] signal", sig)
-	return nil
+	for {
+		select {
+		case sig := <-sysErr:
+			{
+				log.Info().Msgf("terminating got ` [%v] signal", sig)
+				return nil
+			}
+		case <-configChanged:
+			{
+				log.Info().Msgf("terminating to reload config")
+				return nil
+			}
+		}
+	}
 }
 
 func panicOnError(err error) {
