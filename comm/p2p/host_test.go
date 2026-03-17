@@ -53,7 +53,9 @@ func (s *HostTestSuite) TestHost_NewHost_Success() {
 	)
 	s.Nil(err)
 	s.NotNil(host)
-	s.Len(host.Peerstore().Peers(), 2)
+	peers := host.Peerstore().Peers()
+	s.True(peerInSlice(p1.ID, peers))
+	s.True(peerInSlice(p2.ID, peers))
 }
 
 func (s *HostTestSuite) TestHost_NewHost_InvalidPrivKey() {
