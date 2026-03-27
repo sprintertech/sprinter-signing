@@ -69,7 +69,7 @@ jobs:
           SYG_RELAYER_MPCCONFIG_KEY_3: ${{ secrets.SYG_RELAYER_MPCCONFIG_KEY_3 }}
           KEYSHARE_3: ${{ secrets.KEYSHARE_3 }}
         run: |
-          envsubst < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
+          envsubst '$SIGNING_IMAGE_VERSION $SPRINTER_SIGNING_DOMAIN $SYG_CHAINS $SYG_RELAYER_SOLVERCONFIG_ACCESSKEY $SYG_RELAYER_SOLVERCONFIG_SECRETKEY $SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY $SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY $SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL $SYG_RELAYER_MPCCONFIG_KEY_1 $KEYSHARE_1 $SYG_RELAYER_MPCCONFIG_KEY_2 $KEYSHARE_2 $SYG_RELAYER_MPCCONFIG_KEY_3 $KEYSHARE_3' < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
           echo "Rendered docker-compose"
 
       - name: Deploy stack (create or update)
@@ -77,14 +77,14 @@ jobs:
           PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
           PORTAINER_API_TOKEN: ${{ secrets.PORTAINER_API_TOKEN }}
         run: |
-          ESCAPED_COMPOSE=$(cat docker-compose.rendered.yml | jq -Rs .)
           STACK_EXISTS="${{ steps.check_stack.outputs.exists }}"
           STACK_ID="${{ steps.check_stack.outputs.stack_id }}"
 
           if [ "$STACK_EXISTS" = "true" ]; then
             echo "Updating existing stack with ID: $STACK_ID"
 
-            echo "{\"stackFileContent\": $ESCAPED_COMPOSE, \"prune\": true, \"pullImage\": true, \"env\": []}" > payload.json
+            jq -n --rawfile compose docker-compose.rendered.yml \
+              '{stackFileContent: $compose, prune: true, pullImage: true, env: []}' > payload.json
 
             curl -s -X PUT "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$PORTAINER_ENDPOINT_ID" \
               -H "X-API-Key: $PORTAINER_API_TOKEN" \
@@ -94,8 +94,10 @@ jobs:
           else
             echo "Creating new stack: $STACK_NAME"
 
-            echo "{\"name\": \"$STACK_NAME\", \"fromAppTemplate\": false, \"stackFileContent\": $ESCAPED_COMPOSE, \"env\": []}" > payload.json
-            cat payload.json
+            jq -n --rawfile compose docker-compose.rendered.yml \
+              --arg name "$STACK_NAME" \
+              '{name: $name, fromAppTemplate: false, stackFileContent: $compose, env: []}' > payload.json
+
             curl -v -s -X POST "$PORTAINER_URL/api/stacks/create/standalone/string?endpointId=$PORTAINER_ENDPOINT_ID" \
               -H "X-API-Key: $PORTAINER_API_TOKEN" \
               -H "Content-Type: application/json" \
