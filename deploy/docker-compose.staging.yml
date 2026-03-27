@@ -1,18 +1,26 @@
 services:
   relayer1:
     image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
-    command: 
+    command:
       - |
         mkdir -p /cfg/keyshares
-        echo $${${no_var}CONFIG_FULL} | base64 --decode > $${${no_var}CONFIG_PATH}
-        echo $${${no_var}KEYSHARE} | base64 --decode > $${${no_var}KEYSHARE_PATH}
-        /signing run --config $${${no_var}CONFIG_PATH} --staging
+        printenv KEYSHARE > "$${SYG_RELAYER_MPCCONFIG_KEYSHAREPATH}"
+        /signing run --config env --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
-      - CONFIG_FULL=${CONFIG_1_FULL}
+      - SYG_RELAYER_MPCCONFIG_KEY=${SYG_RELAYER_MPCCONFIG_KEY_1}
+      - SYG_RELAYER_MPCCONFIG_KEYSHAREPATH=/cfg/keyshares/0.keyshare
       - KEYSHARE=${KEYSHARE_1}
-      - CONFIG_PATH=/cfg/config_1.json
-      - KEYSHARE_PATH=/cfg/keyshares/0.keyshare
+      - SYG_RELAYER_MPCCONFIG_PORT=9000
+      - SYG_RELAYER_MPCCONFIG_COMMHEALTHCHECKINTERVAL=1h
+      - SYG_RELAYER_LOGLEVEL=debug
+      - SYG_CHAINS=${SYG_CHAINS}
+      - SYG_RELAYER_SOLVERCONFIG_ACCESSKEY=${SYG_RELAYER_SOLVERCONFIG_ACCESSKEY}
+      - SYG_RELAYER_SOLVERCONFIG_SECRETKEY=${SYG_RELAYER_SOLVERCONFIG_SECRETKEY}
+      - SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY=${SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY=${SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL=${SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_PATH=topology-1
       - VIRTUAL_HOST=${SPRINTER_SIGNING_DOMAIN}
     labels:
       logging: "alloy"
@@ -26,40 +34,56 @@ services:
 
   relayer2:
     image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
-    command: 
+    command:
       - |
         mkdir -p /cfg/keyshares
-        echo $${${no_var}CONFIG_FULL} | base64 --decode > $${${no_var}CONFIG_PATH} 
-        echo $${${no_var}KEYSHARE} | base64 --decode > $${${no_var}KEYSHARE_PATH}
-        /signing run --config $${${no_var}CONFIG_PATH} --staging
+        printenv KEYSHARE > "$${SYG_RELAYER_MPCCONFIG_KEYSHAREPATH}"
+        /signing run --config env --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
-      - CONFIG_FULL=${CONFIG_2_FULL}
+      - SYG_RELAYER_MPCCONFIG_KEY=${SYG_RELAYER_MPCCONFIG_KEY_2}
+      - SYG_RELAYER_MPCCONFIG_KEYSHAREPATH=/cfg/keyshares/1.keyshare
       - KEYSHARE=${KEYSHARE_2}
-      - CONFIG_PATH=/cfg/config_2.json
-      - KEYSHARE_PATH=/cfg/keyshares/1.keyshare
+      - SYG_RELAYER_MPCCONFIG_PORT=9000
+      - SYG_RELAYER_MPCCONFIG_COMMHEALTHCHECKINTERVAL=1h
+      - SYG_RELAYER_LOGLEVEL=debug
+      - SYG_CHAINS=${SYG_CHAINS}
+      - SYG_RELAYER_SOLVERCONFIG_ACCESSKEY=${SYG_RELAYER_SOLVERCONFIG_ACCESSKEY}
+      - SYG_RELAYER_SOLVERCONFIG_SECRETKEY=${SYG_RELAYER_SOLVERCONFIG_SECRETKEY}
+      - SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY=${SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY=${SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL=${SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_PATH=topology-2
     labels:
       logging: "alloy"
       logging_jobname: "containerlogs"
       service_name: "signing_relayer_2_staging"
-    restart: always
     ports:
       - 3001:3000
+    restart: always
 
   relayer3:
     image: ghcr.io/sprintertech/sprinter-signing:${SIGNING_IMAGE_VERSION}
-    command: 
+    command:
       - |
         mkdir -p /cfg/keyshares
-        echo $${${no_var}CONFIG_FULL} | base64 --decode > $${${no_var}CONFIG_PATH}
-        echo $${${no_var}KEYSHARE} | base64 --decode > $${${no_var}KEYSHARE_PATH}
-        /signing run --config $${${no_var}CONFIG_PATH} --staging
+        printenv KEYSHARE > "$${SYG_RELAYER_MPCCONFIG_KEYSHAREPATH}"
+        /signing run --config env --staging
     entrypoint: ["/bin/sh", "-c"]
     environment:
-      - CONFIG_FULL=${CONFIG_3_FULL}
+      - SYG_RELAYER_MPCCONFIG_KEY=${SYG_RELAYER_MPCCONFIG_KEY_3}
+      - SYG_RELAYER_MPCCONFIG_KEYSHAREPATH=/cfg/keyshares/2.keyshare
       - KEYSHARE=${KEYSHARE_3}
-      - CONFIG_PATH=/cfg/config_3.json
-      - KEYSHARE_PATH=/cfg/keyshares/2.keyshare
+      - SYG_RELAYER_MPCCONFIG_PORT=9000
+      - SYG_RELAYER_MPCCONFIG_COMMHEALTHCHECKINTERVAL=1h
+      - SYG_RELAYER_LOGLEVEL=debug
+      - SYG_CHAINS=${SYG_CHAINS}
+      - SYG_RELAYER_SOLVERCONFIG_ACCESSKEY=${SYG_RELAYER_SOLVERCONFIG_ACCESSKEY}
+      - SYG_RELAYER_SOLVERCONFIG_SECRETKEY=${SYG_RELAYER_SOLVERCONFIG_SECRETKEY}
+      - SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY=${SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY=${SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL=${SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL}
+      - SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_PATH=topology-3
     labels:
       logging: "alloy"
       logging_jobname: "containerlogs"

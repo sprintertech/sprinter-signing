@@ -53,13 +53,21 @@ jobs:
           DOCKER_COMPOSE_PATH: ./deploy/docker-compose.staging.yml
           # export here all secrets used in the docker-compose environment
           SIGNING_IMAGE_VERSION: ${{ github.event.inputs.image_version || 'latest' }}
-          CONFIG_1_FULL: ${{ secrets.CONFIG_1_FULL }}
-          CONFIG_2_FULL: ${{ secrets.CONFIG_2_FULL }}
-          CONFIG_3_FULL: ${{ secrets.CONFIG_3_FULL }}
-          KEYSHARE_1: ${{ secrets.KEYSHARE_1 }}
-          KEYSHARE_2: ${{ secrets.KEYSHARE_2}}
-          KEYSHARE_3: ${{ secrets.KEYSHARE_3 }}
           SPRINTER_SIGNING_DOMAIN: ${{ secrets.SPRINTER_SIGNING_DOMAIN }}
+          # Shared across all relayers
+          SYG_CHAINS: ${{ secrets.SYG_CHAINS }}
+          SYG_RELAYER_SOLVERCONFIG_ACCESSKEY: ${{ secrets.SYG_RELAYER_SOLVERCONFIG_ACCESSKEY }}
+          SYG_RELAYER_SOLVERCONFIG_SECRETKEY: ${{ secrets.SYG_RELAYER_SOLVERCONFIG_SECRETKEY }}
+          SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY: ${{ secrets.SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY }}
+          SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY: ${{ secrets.SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY }}
+          SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL: ${{ secrets.SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL }}
+          # Per-relayer secrets
+          SYG_RELAYER_MPCCONFIG_KEY_1: ${{ secrets.SYG_RELAYER_MPCCONFIG_KEY_1 }}
+          KEYSHARE_1: ${{ secrets.KEYSHARE_1 }}
+          SYG_RELAYER_MPCCONFIG_KEY_2: ${{ secrets.SYG_RELAYER_MPCCONFIG_KEY_2 }}
+          KEYSHARE_2: ${{ secrets.KEYSHARE_2 }}
+          SYG_RELAYER_MPCCONFIG_KEY_3: ${{ secrets.SYG_RELAYER_MPCCONFIG_KEY_3 }}
+          KEYSHARE_3: ${{ secrets.KEYSHARE_3 }}
         run: |
           envsubst < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
           echo "Rendered docker-compose"
