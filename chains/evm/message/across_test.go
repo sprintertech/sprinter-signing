@@ -13,10 +13,10 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
-	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/comm"
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/keyshare"
 	mock_tss "github.com/sprintertech/sprinter-signing/tss/ecdsa/common/mock"
 	"github.com/stretchr/testify/suite"
@@ -80,11 +80,11 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
 	s.validLog, _ = hex.DecodeString("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab100000000000000000000000000000000000000000000000000119baee0ab0400000000000000000000000000000000000000000000000000001199073ea3008d0000000000000000000000000000000000000000000000000000000067bc6e3f0000000000000000000000000000000000000000000000000000000067bc927b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001886a1eb051c10f20c7386576a6a0716b20b2734000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 
-	// Addresses derived the same way the handler does: common.BytesToAddress(token[12:])
+	// Addresses derived the same way the handler does: common.BytesToAddress(token[:])
 	inputToken6Arr := fillBytes32("input_token_address_1234567890")
 	outputToken6Arr := fillBytes32("output_token_address_0987654321")
-	inputToken6Addr := common.BytesToAddress(inputToken6Arr[12:])
-	outputToken6Addr := common.BytesToAddress(outputToken6Arr[12:])
+	inputToken6Addr := common.BytesToAddress(inputToken6Arr[:])
+	outputToken6Addr := common.BytesToAddress(outputToken6Arr[:])
 	inputToken18Addr := common.HexToAddress("0x1111111111111111111111111111111111111111")
 	outputToken18to6Addr := common.HexToAddress("0x2222222222222222222222222222222222222222")
 
