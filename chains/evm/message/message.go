@@ -67,30 +67,6 @@ func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.
 	}
 }
 
-type RhinestoneData struct {
-	ErrChn chan error `json:"-"`
-
-	BundleID      string
-	Coordinator   peer.ID
-	LiquidityPool common.Address
-	Caller        common.Address
-	BorrowAmount  *big.Int
-	Nonce         *big.Int
-	Source        uint64
-	Deadline      uint64
-	Destination   uint64
-}
-
-func NewRhinestoneMessage(source, destination uint64, rhinestoneData *RhinestoneData) *message.Message {
-	return &message.Message{
-		Source:      source,
-		Destination: destination,
-		Data:        rhinestoneData,
-		Type:        message.MessageType(comm.RhinestoneMsg.String()),
-		Timestamp:   time.Now(),
-	}
-}
-
 type LifiEscrowData struct {
 	ErrChn chan error `json:"-"`
 
