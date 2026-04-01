@@ -80,7 +80,7 @@ func NewLighterMessageHandler(
 	}
 }
 
-// HandleMessage finds the Mayan deposit with the according deposit ID and starts
+// HandleMessage finds the Lighter deposit with the according deposit ID and starts
 // the MPC signature process for it. The result will be saved into the signature
 // cache through the result channel.
 func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Proposal, error) {

@@ -41,32 +41,6 @@ func NewAcrossMessage(source, destination uint64, acrossData *AcrossData) *messa
 	}
 }
 
-type MayanData struct {
-	ErrChn chan error `json:"-"`
-
-	OrderHash     string
-	Coordinator   peer.ID
-	LiquidityPool common.Address
-	Caller        common.Address
-	DepositTxHash string
-	Calldata      string
-	Nonce         *big.Int
-	BorrowAmount  *big.Int
-	Deadline      uint64
-	Source        uint64
-	Destination   uint64
-}
-
-func NewMayanMessage(source, destination uint64, mayanData *MayanData) *message.Message {
-	return &message.Message{
-		Source:      source,
-		Destination: destination,
-		Data:        mayanData,
-		Type:        message.MessageType(comm.MayanMsg.String()),
-		Timestamp:   time.Now(),
-	}
-}
-
 type LifiEscrowData struct {
 	ErrChn chan error `json:"-"`
 
