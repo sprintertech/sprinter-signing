@@ -13,6 +13,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/comm"
 	mock_communication "github.com/sprintertech/sprinter-signing/comm/mock"
 	mock_host "github.com/sprintertech/sprinter-signing/comm/p2p/mock/host"
@@ -79,12 +80,30 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 	// Ethereum: 0x93a9d5e32f5c81cbd17ceb842edc65002e3a79da4efbdc9f1e1f7e97fbcd669b
 	s.validLog, _ = hex.DecodeString("000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab100000000000000000000000000000000000000000000000000119baee0ab0400000000000000000000000000000000000000000000000000001199073ea3008d0000000000000000000000000000000000000000000000000000000067bc6e3f0000000000000000000000000000000000000000000000000000000067bc927b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001886a1eb051c10f20c7386576a6a0716b20b2734000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000000")
 
-	confirmations := make(map[uint64]uint64)
-	confirmations[1000] = 100
-	confirmations[2000] = 200
+	// Addresses derived the same way the handler does: common.BytesToAddress(token[12:])
+	inputToken6Arr := fillBytes32("input_token_address_1234567890")
+	outputToken6Arr := fillBytes32("output_token_address_0987654321")
+	inputToken6Addr := common.BytesToAddress(inputToken6Arr[12:])
+	outputToken6Addr := common.BytesToAddress(outputToken6Arr[12:])
+	inputToken18Addr := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	outputToken18to6Addr := common.HexToAddress("0x2222222222222222222222222222222222222222")
+
+	tokenStore := config.TokenStore{
+		Tokens: map[uint64]map[string]config.TokenConfig{
+			1: {
+				"USDC":  {Address: inputToken6Addr, Decimals: 6},
+				"WUSDC": {Address: inputToken18Addr, Decimals: 18},
+			},
+			137: {
+				"USDC":  {Address: outputToken6Addr, Decimals: 6},
+				"WUSDC": {Address: outputToken18to6Addr, Decimals: 6},
+			},
+		},
+	}
 
 	s.handler = message.NewAcrossMessageHandler(
 		1,
+		tokenStore,
 		pools,
 		repayers,
 		s.mockCoordinator,
@@ -269,4 +288,65 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
 
 	err = <-errChn
 	s.Nil(err)
+}
+
+func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExceedsScaledInputAmount() {
+	s.mockCommunication.EXPECT().Broadcast(
+		gomock.Any(),
+		gomock.Any(),
+		comm.AcrossMsg,
+		fmt.Sprintf("%d-%s", 1, comm.AcrossSessionID),
+	).Return(nil)
+	p, _ := pstoremem.NewPeerstore()
+	s.mockHost.EXPECT().Peerstore().Return(p)
+
+	// WUSDC on src chain has 18 decimals, on dst chain has 6 decimals.
+	// InputAmount of 1e18 (1 token at 18 dec) scales to 1e6 (1 token at 6 dec).
+	// BorrowAmount of 1e6+1 must be rejected.
+	var inputToken18Arr [32]byte
+	copy(inputToken18Arr[12:], common.HexToAddress("0x1111111111111111111111111111111111111111").Bytes())
+
+	deposit := &events.AcrossDeposit{
+		InputToken:         inputToken18Arr,
+		OutputToken:        fillBytes32("output_token_address_0987654321"),
+		InputAmount:        new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil), // 1e18
+		OutputAmount:       big.NewInt(990000),
+		DestinationChainId: big.NewInt(137),
+		DepositId:          big.NewInt(123456789),
+		//nolint:gosec
+		QuoteTimestamp: uint32(time.Now().Unix()),
+		//nolint:gosec
+		ExclusivityDeadline: uint32(time.Now().Add(10 * time.Minute).Unix()),
+		//nolint:gosec
+		FillDeadline:     uint32(time.Now().Add(1 * time.Hour).Unix()),
+		Depositor:        fillBytes32("depositor_address_abcdef123456"),
+		Recipient:        fillBytes32("recipient_address_654321fedcba"),
+		ExclusiveRelayer: fillBytes32("relayer_address_112233445566"),
+		Message:          []byte("Sample message for AcrossDeposit"),
+	}
+	s.mockDepositFetcher.EXPECT().Deposit(gomock.Any(), gomock.Any(), gomock.Any()).Return(deposit, nil)
+
+	errChn := make(chan error, 1)
+	ad := &message.AcrossData{
+		ErrChn:           errChn,
+		DepositId:        big.NewInt(2595221),
+		Nonce:            big.NewInt(101),
+		BorrowAmount:     big.NewInt(1_000_001), // 1e6 + 1, exceeds scaled amount of 1e6
+		LiquidityPool:    common.HexToAddress("0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657"),
+		Caller:           common.HexToAddress("0x5ECF7351930e4A251193aA022Ef06249C6cBfa27"),
+		RepaymentChainID: 10,
+	}
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      1,
+		Destination: 2,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+
+	s.Nil(prop)
+	s.ErrorContains(err, "borrow amount exceeds input amount")
+
+	err = <-errChn
+	s.ErrorContains(err, "borrow amount exceeds input amount")
 }

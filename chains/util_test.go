@@ -35,3 +35,42 @@ func (s *UtilTestSuite) Test_CalculateStartingBlock_Nil() {
 	s.Nil(res)
 	s.NotNil(err)
 }
+
+func (s *UtilTestSuite) TestScaleTokenAmount() {
+	tests := []struct {
+		name        string
+		amount      *big.Int
+		srcDecimals int64
+		dstDecimals int64
+		want        *big.Int
+	}{
+		{
+			name:        "same decimals — no scaling",
+			amount:      big.NewInt(1_000_000),
+			srcDecimals: 6,
+			dstDecimals: 6,
+			want:        big.NewInt(1_000_000),
+		},
+		{
+			name:        "18 to 6 decimals",
+			amount:      big.NewInt(1_000_000_000_000_000_000),
+			srcDecimals: 18,
+			dstDecimals: 6,
+			want:        big.NewInt(1_000_000),
+		},
+		{
+			name:        "6 to 18 decimals",
+			amount:      big.NewInt(1_000_000),
+			srcDecimals: 6,
+			dstDecimals: 18,
+			want:        big.NewInt(1_000_000_000_000_000_000),
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			got := ScaleTokenAmount(tt.amount, tt.srcDecimals, tt.dstDecimals)
+			s.Equal(tt.want, got)
+		})
+	}
+}
