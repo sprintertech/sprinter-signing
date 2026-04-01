@@ -39,10 +39,14 @@ const (
 	AcrossMsg
 	// SprinterCreditMsg message type is used for the process coordinator to share sprinter data
 	SprinterCreditMsg
+	// MayanMsg (deprecated)
+	_
 	// LighterMsg message type is used for the process coordinator to share lighter data
 	LighterMsg
 	// LifiEscrowMsg message type is used for the process coordinator to share lifi data
 	LifiEscrowMsg
+	// RhinestoneMsg (deprecated)
+	_
 	// LifiUnlockMsg message type is used for the process coordinator to share lifi unlock data
 	LifiUnlockMsg
 	// Unknown message type
