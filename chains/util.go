@@ -24,7 +24,7 @@ func CalculateStartingBlock(startBlock *big.Int, blockConfirmations *big.Int) (*
 // When src < dst: exponent is negative, so effectively multiplies.
 func ScaleTokenAmount(amount *big.Int, srcDecimals, dstDecimals int64) *big.Int {
 	if srcDecimals == dstDecimals {
-		return amount
+		return new(big.Int).Set(amount)
 	}
 	if srcDecimals > dstDecimals {
 		scale := new(big.Int).Exp(big.NewInt(10), big.NewInt(srcDecimals-dstDecimals), nil)
