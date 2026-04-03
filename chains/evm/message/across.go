@@ -13,9 +13,11 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
+	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -55,7 +57,8 @@ type DepositFetcher interface {
 }
 
 type AcrossMessageHandler struct {
-	chainID uint64
+	chainID    uint64
+	tokenStore config.TokenStore
 
 	pools               map[uint64]common.Address
 	repayers            map[uint64]common.Address
@@ -72,6 +75,7 @@ type AcrossMessageHandler struct {
 
 func NewAcrossMessageHandler(
 	chainID uint64,
+	tokenStore config.TokenStore,
 	pools map[uint64]common.Address,
 	repayers map[uint64]common.Address,
 	coordinator Coordinator,
@@ -84,6 +88,7 @@ func NewAcrossMessageHandler(
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
 		chainID:             chainID,
+		tokenStore:          tokenStore,
 		pools:               pools,
 		repayers:            repayers,
 		coordinator:         coordinator,
@@ -123,7 +128,36 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	if data.BorrowAmount.Cmp(d.InputAmount) > 0 {
+	sourceTokenAddress := common.BytesToAddress(d.InputToken[:])
+	symbol, srcToken, err := h.tokenStore.ConfigByAddress(h.chainID, sourceTokenAddress)
+	if err != nil {
+		err = fmt.Errorf(
+			"failed to get source token for address %s on chain %d: %w",
+			sourceTokenAddress.Hex(),
+			h.chainID,
+			err,
+		)
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	destToken, err := h.tokenStore.ConfigBySymbol(
+		d.DestinationChainId.Uint64(),
+		symbol,
+	)
+	if err != nil {
+		err = fmt.Errorf(
+			"failed to get destination token by symbol %s on chain %d: %w",
+			symbol,
+			d.DestinationChainId.Uint64(),
+			err,
+		)
+		data.ErrChn <- err
+		return nil, err
+	}
+
+	scaledInputAmount := chains.ScaleTokenAmount(d.InputAmount, int64(srcToken.Decimals), int64(destToken.Decimals))
+	if data.BorrowAmount.Cmp(scaledInputAmount) > 0 {
 		err := fmt.Errorf("borrow amount exceeds input amount")
 		data.ErrChn <- err
 		return nil, err
@@ -133,7 +167,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		context.Background(),
 		h.chainID,
 		data.DepositTxHash,
-		common.BytesToAddress(d.InputToken[12:]),
+		sourceTokenAddress,
 		d.InputAmount)
 	if err != nil {
 		data.ErrChn <- err
@@ -151,7 +185,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 	unlockHash, err := signature.BorrowUnlockHash(
 		calldata,
 		data.BorrowAmount,
-		common.BytesToAddress(d.OutputToken[12:]),
+		common.BytesToAddress(d.OutputToken[:]),
 		d.DestinationChainId,
 		h.pools[d.DestinationChainId.Uint64()],
 		data.Deadline,
