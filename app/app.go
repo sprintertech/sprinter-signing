@@ -224,7 +224,10 @@ func Run() error {
 		case "evm":
 			{
 				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
-				panicOnError(err)
+				if err != nil {
+					log.Error().Err(err).Uint64("chain", *c.GeneralChainConfig.Id).Msgf("Failed registering EVM domain")
+					continue
+				}
 
 				kp, _ := secp256k1.GenerateKeypair()
 				client, err := evmClient.NewEVMClient(c.GeneralChainConfig.Endpoint, kp)
