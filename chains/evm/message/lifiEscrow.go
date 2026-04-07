@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -262,7 +263,17 @@ func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder, borrowAmou
 		return fmt.Errorf("orders with multiple outputs not supported")
 	}
 
-	if order.GenericInputs[0].Amount.Cmp(borrowAmount) == -1 {
+	tokenIn := common.BytesToAddress(order.GenericInputs[0].TokenAddress[:])
+	symbol, srcToken, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
+	if err != nil {
+		return err
+	}
+	dstToken, err := h.tokenStore.ConfigBySymbol(order.Order.Outputs[0].ChainID, symbol)
+	if err != nil {
+		return err
+	}
+	scaledInputAmount := chains.ScaleTokenAmount(order.GenericInputs[0].Amount, int64(srcToken.Decimals), int64(dstToken.Decimals))
+	if scaledInputAmount.Cmp(borrowAmount) == -1 {
 		return fmt.Errorf("order input is less than requested borrow amount")
 	}
 
