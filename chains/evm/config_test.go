@@ -98,11 +98,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 					"eip155:1": "acrossHubPool",
 				},
 			},
-			Mayan: &solverConfig.MayanMetadata{
-				SwiftContracts: map[string]string{
-					"eip155:1": "mayanSwift",
-				},
-			},
 			Sprinter: &solverConfig.SprinterMetadata{
 				Repayer: map[string]string{
 					"eip155:1": "repayer",
@@ -140,7 +135,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		Repayer:                "repayer",
 		AcrossPool:             "acrossPool",
 		AcrossHubPool:          "acrossHubPool",
-		MayanSwift:             "mayanSwift",
 		LifiOutputSettler:      "settler",
 		LifiInputSettlerEscrow: "escrowSettler",
 		ConfirmationsByValue:   make(map[uint64]uint64),
@@ -160,7 +154,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		"admin":                 "adminAddress",
 		"acrossPool":            "acrossPool",
 		"acrossHubPool":         "hubPool",
-		"mayanSwift":            "mayanSwift",
 		"maxGasPrice":           1000,
 		"gasMultiplier":         1000,
 		"gasIncreasePercentage": 20,
@@ -229,11 +222,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 					"eip155:1": "acrossHubPool",
 				},
 			},
-			Mayan: &solverConfig.MayanMetadata{
-				SwiftContracts: map[string]string{
-					"eip155:1": "mayanSwift",
-				},
-			},
 			Sprinter: &solverConfig.SprinterMetadata{
 				Repayer: map[string]string{
 					"eip155:1": "repayer",
@@ -261,7 +249,6 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		Admin:                "adminAddress",
 		AcrossPool:           "acrossPool",
 		AcrossHubPool:        "acrossHubPool",
-		MayanSwift:           "mayanSwift",
 		LifiOutputSettler:    "settler",
 		Repayer:              "repayer",
 		ConfirmationsByValue: expectedBlockConfirmations,

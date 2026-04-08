@@ -39,14 +39,10 @@ const (
 	AcrossMsg
 	// SprinterCreditMsg message type is used for the process coordinator to share sprinter data
 	SprinterCreditMsg
-	// MayanMsg message type is used for the process coordinator to share mayan data
-	MayanMsg
 	// LighterMsg message type is used for the process coordinator to share lighter data
 	LighterMsg
 	// LifiEscrowMsg message type is used for the process coordinator to share lifi data
 	LifiEscrowMsg
-	// Rhinestone message type is used for the process coordinator to share rhinestone data
-	RhinestoneMsg
 	// LifiUnlockMsg message type is used for the process coordinator to share lifi unlock data
 	LifiUnlockMsg
 	// Unknown message type
@@ -57,9 +53,7 @@ const (
 	SignatureSessionID      = "signatures"
 	AcrossSessionID         = "across"
 	SprinterCreditSessionID = "sprinter-credit"
-	MayanSessionID          = "mayan"
 	LifiEscrowSessionID     = "lifi-escrow"
-	RhinestoneSessionID     = "rhinestone"
 	LighterSessionID        = "lighter"
 	LifiUnlockSessionID     = "lifi-unlock"
 )
@@ -95,10 +89,6 @@ func (msgType MessageType) String() string {
 		return "CoordinatorPingResponseMsg"
 	case AcrossMsg:
 		return "AcrossMsg"
-	case MayanMsg:
-		return "MayanMsg"
-	case RhinestoneMsg:
-		return "RhinestoneMsg"
 	case LifiEscrowMsg:
 		return "LifiEscrowMsg"
 	case LifiUnlockMsg:

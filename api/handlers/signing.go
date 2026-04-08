@@ -19,8 +19,6 @@ type ProtocolType string
 
 const (
 	AcrossProtocol         ProtocolType = "across"
-	MayanProtocol          ProtocolType = "mayan"
-	RhinestoneProtocol     ProtocolType = "rhinestone"
 	LifiEscrowProtocol     ProtocolType = "lifi-escrow"
 	LighterProtocol        ProtocolType = "lighter"
 	SprinterCreditProtocol ProtocolType = "sprinter-credit"
@@ -89,36 +87,6 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				DepositTxHash:    common.HexToHash(b.DepositTxHash),
 				Deadline:         b.Deadline,
 				RepaymentChainID: b.RepaymentChainId,
-			})
-		}
-	case MayanProtocol:
-		{
-			m = evmMessage.NewMayanMessage(0, b.ChainId, &evmMessage.MayanData{
-				OrderHash:     b.DepositId,
-				Nonce:         b.Nonce.Int,
-				LiquidityPool: common.HexToAddress(b.LiquidityPool),
-				Caller:        common.HexToAddress(b.Caller),
-				ErrChn:        errChn,
-				Calldata:      b.Calldata,
-				DepositTxHash: b.DepositTxHash,
-				Source:        0,
-				Destination:   b.ChainId,
-				Deadline:      b.Deadline,
-				BorrowAmount:  b.BorrowAmount.Int,
-			})
-		}
-	case RhinestoneProtocol:
-		{
-			m = evmMessage.NewRhinestoneMessage(0, b.ChainId, &evmMessage.RhinestoneData{
-				BundleID:      b.DepositId,
-				Nonce:         b.Nonce.Int,
-				LiquidityPool: common.HexToAddress(b.LiquidityPool),
-				Caller:        common.HexToAddress(b.Caller),
-				ErrChn:        errChn,
-				Source:        0,
-				Destination:   b.ChainId,
-				Deadline:      b.Deadline,
-				BorrowAmount:  b.BorrowAmount.Int,
 			})
 		}
 	case LifiEscrowProtocol:

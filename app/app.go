@@ -49,7 +49,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/protocol/across"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	lighterAPI "github.com/sprintertech/sprinter-signing/protocol/lighter"
-	"github.com/sprintertech/sprinter-signing/protocol/mayan"
 	"github.com/sprintertech/sprinter-signing/topology"
 	"github.com/sprintertech/sprinter-signing/tss"
 	coreEvm "github.com/sygmaprotocol/sygma-core/chains/evm"
@@ -170,7 +169,6 @@ func Run() error {
 
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
-	mayanPools := make(map[uint64]common.Address)
 	lifiOutputSettlers := make(map[uint64]common.Address)
 	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
@@ -187,11 +185,6 @@ func Run() error {
 				if c.AcrossPool != "" {
 					poolAddress := common.HexToAddress(c.AcrossPool)
 					acrossPools[*c.GeneralChainConfig.Id] = poolAddress
-				}
-
-				if c.MayanSwift != "" {
-					poolAddress := common.HexToAddress(c.MayanSwift)
-					mayanPools[*c.GeneralChainConfig.Id] = poolAddress
 				}
 
 				if c.LifiOutputSettler != "" {
@@ -269,30 +262,6 @@ func Run() error {
 					go acrossMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(message.MessageType(comm.AcrossMsg.String()), acrossMh)
-					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
-					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
-				}
-
-				if c.MayanSwift != "" {
-					mayanSwiftContract := contracts.NewMayanSwiftContract(client, common.HexToAddress(c.MayanSwift))
-					mayanApi := mayan.NewMayanExplorer()
-					mayanMh := evmMessage.NewMayanMessageHandler(
-						*c.GeneralChainConfig.Id,
-						client,
-						repayerAddresses,
-						mayanPools,
-						coordinator,
-						host,
-						communication,
-						keyshareStore,
-						watcher,
-						tokenStore,
-						mayanSwiftContract,
-						mayanApi,
-						sigChn)
-					go mayanMh.Listen(ctx)
-
-					mh.RegisterMessageHandler(message.MessageType(comm.MayanMsg.String()), mayanMh)
 					supportedChains[*c.GeneralChainConfig.Id] = struct{}{}
 					confirmationsPerChain[*c.GeneralChainConfig.Id] = c.ConfirmationsByValue
 				}
