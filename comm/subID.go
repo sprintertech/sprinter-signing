@@ -8,15 +8,21 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
+	"sync/atomic"
 )
 
 // SubscriptionID is unique identifier for each subscription
 // It is defined as: SessionID-MessageType-SubscriptionIdentifier
 type SubscriptionID string
 
+// subIDCounter provides monotonic uniqueness for subscription IDs without
+// relying on clock resolution. Earlier implementation used time.Now().UnixNano()
+// which collides on coarse-resolution clocks (e.g. macOS, where consecutive
+// calls in a tight loop often return the same nanosecond).
+var subIDCounter atomic.Uint64
+
 func NewSubscriptionID(sessionID string, msgType MessageType) SubscriptionID {
-	return SubscriptionID(fmt.Sprintf("%s-%d-%d", sessionID, msgType, time.Now().UnixNano()))
+	return SubscriptionID(fmt.Sprintf("%s-%d-%d", sessionID, msgType, subIDCounter.Add(1)))
 }
 
 func (sID SubscriptionID) SessionID() string {
