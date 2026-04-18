@@ -189,6 +189,18 @@ func (mr *MockMetricsMockRecorder) EndProcess(sessionID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndProcess", reflect.TypeOf((*MockMetrics)(nil).EndProcess), sessionID)
 }
 
+// RecordInitiateDuration mocks base method.
+func (m *MockMetrics) RecordInitiateDuration(d time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RecordInitiateDuration", d)
+}
+
+// RecordInitiateDuration indicates an expected call of RecordInitiateDuration.
+func (mr *MockMetricsMockRecorder) RecordInitiateDuration(d any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordInitiateDuration", reflect.TypeOf((*MockMetrics)(nil).RecordInitiateDuration), d)
+}
+
 // StartProcess mocks base method.
 func (m *MockMetrics) StartProcess(sessionID string) {
 	m.ctrl.T.Helper()
