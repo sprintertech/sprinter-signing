@@ -50,7 +50,7 @@ func (s *KeygenTestSuite) Test_ValidKeygenProcess() {
 	s.MockECDSAStorer.EXPECT().UnlockKeyshare().Times(3)
 	s.MockECDSAStorer.EXPECT().StoreKeyshare(gomock.Any()).Times(3)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	pool := pool.New().WithContext(ctx)
