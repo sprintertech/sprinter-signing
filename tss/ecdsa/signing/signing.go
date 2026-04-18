@@ -259,6 +259,10 @@ func (s *Signing) Retryable() bool {
 	return true
 }
 
+func (s *Signing) Type() string {
+	return "signing"
+}
+
 // monitorSigning checks if the process is stuck and waiting for peers and sends an error
 // if it is
 func (s *Signing) monitorSigning(ctx context.Context) error {

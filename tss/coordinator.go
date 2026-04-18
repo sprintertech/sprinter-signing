@@ -32,12 +32,13 @@ type TssProcess interface {
 	Retryable() bool
 	StartParams(readyPeers []peer.ID) []byte
 	SessionID() string
+	Type() string
 	ValidCoordinators() []peer.ID
 	Timeout() time.Duration
 }
 
 type Metrics interface {
-	StartProcess(sessionID string)
+	StartProcess(sessionID, processType string)
 	EndProcess(sessionID string)
 }
 
@@ -88,7 +89,7 @@ func (c *Coordinator) Execute(ctx context.Context, tssProcesses []TssProcess, re
 	}
 	c.pendingProcesses[sessionID] = true
 	c.processLock.Unlock()
-	c.metrics.StartProcess(sessionID)
+	c.metrics.StartProcess(sessionID, process.Type())
 
 	ctx, cancel := context.WithCancel(ctx)
 	p := pool.New().WithContext(ctx).WithCancelOnError()

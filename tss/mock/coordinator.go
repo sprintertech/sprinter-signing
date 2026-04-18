@@ -139,6 +139,20 @@ func (mr *MockTssProcessMockRecorder) Timeout() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timeout", reflect.TypeOf((*MockTssProcess)(nil).Timeout))
 }
 
+// Type mocks base method.
+func (m *MockTssProcess) Type() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Type")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Type indicates an expected call of Type.
+func (mr *MockTssProcessMockRecorder) Type() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Type", reflect.TypeOf((*MockTssProcess)(nil).Type))
+}
+
 // ValidCoordinators mocks base method.
 func (m *MockTssProcess) ValidCoordinators() []peer.ID {
 	m.ctrl.T.Helper()
@@ -190,13 +204,13 @@ func (mr *MockMetricsMockRecorder) EndProcess(sessionID any) *gomock.Call {
 }
 
 // StartProcess mocks base method.
-func (m *MockMetrics) StartProcess(sessionID string) {
+func (m *MockMetrics) StartProcess(sessionID, processType string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "StartProcess", sessionID)
+	m.ctrl.Call(m, "StartProcess", sessionID, processType)
 }
 
 // StartProcess indicates an expected call of StartProcess.
-func (mr *MockMetricsMockRecorder) StartProcess(sessionID any) *gomock.Call {
+func (mr *MockMetricsMockRecorder) StartProcess(sessionID, processType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartProcess", reflect.TypeOf((*MockMetrics)(nil).StartProcess), sessionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartProcess", reflect.TypeOf((*MockMetrics)(nil).StartProcess), sessionID, processType)
 }

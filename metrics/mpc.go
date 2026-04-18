@@ -7,6 +7,7 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -14,14 +15,20 @@ const (
 	SESSION_TTL = time.Minute * 10
 )
 
+type sessionStart struct {
+	at          time.Time
+	processType string
+}
+
 type MpcMetrics struct {
 	totalRelayersGauge     metric.Int64ObservableGauge
 	availableRelayersGauge metric.Int64ObservableGauge
 	totalRelayerCount      *int64
 	availableRelayerCount  *int64
 
-	sessionTimeHistogram  metric.Float64Histogram
-	sessionStartTimeCache *ttlcache.Cache[string, time.Time]
+	sessionTimeHistogram metric.Float64Histogram
+	sessionStartCache    *ttlcache.Cache[string, sessionStart]
+	opts                 metric.MeasurementOption
 }
 
 // NewMpcMetrics initializes metrics related to the MPC set
@@ -51,7 +58,10 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 		return nil, err
 	}
 
-	sessionTimeHistogram, err := meter.Float64Histogram("relayer.SessionTime")
+	sessionTimeHistogram, err := meter.Float64Histogram(
+		"relayer.SessionTime",
+		metric.WithDescription("Duration (seconds) of a TSS process, labelled by process type (keygen/signing/resharing)"),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +72,10 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 		totalRelayerCount:      totalRelayerCount,
 		availableRelayerCount:  availableRelayerCount,
 		sessionTimeHistogram:   sessionTimeHistogram,
-		sessionStartTimeCache: ttlcache.New(
-			ttlcache.WithTTL[string, time.Time](SESSION_TTL),
+		sessionStartCache: ttlcache.New(
+			ttlcache.WithTTL[string, sessionStart](SESSION_TTL),
 		),
+		opts: opts,
 	}, nil
 }
 
@@ -73,16 +84,26 @@ func (m *MpcMetrics) TrackRelayerStatus(unavailable peer.IDSlice, all peer.IDSli
 	*m.availableRelayerCount = int64(len(all) - len(unavailable))
 }
 
-func (m *MpcMetrics) StartProcess(sessionID string) {
-	m.sessionStartTimeCache.Set(sessionID, time.Now(), ttlcache.DefaultTTL)
+func (m *MpcMetrics) StartProcess(sessionID, processType string) {
+	m.sessionStartCache.Set(
+		sessionID,
+		sessionStart{at: time.Now(), processType: processType},
+		ttlcache.DefaultTTL,
+	)
 }
 
 func (m *MpcMetrics) EndProcess(sessionID string) {
-	startTime := m.sessionStartTimeCache.Get(sessionID)
-	if startTime == nil {
+	entry := m.sessionStartCache.Get(sessionID)
+	if entry == nil {
 		log.Warn().Msgf("Session start time with ID %s not found", sessionID)
 		return
 	}
 
-	m.sessionTimeHistogram.Record(context.Background(), time.Since(startTime.Value()).Seconds())
+	start := entry.Value()
+	m.sessionTimeHistogram.Record(
+		context.Background(),
+		time.Since(start.at).Seconds(),
+		m.opts,
+		metric.WithAttributes(attribute.String("type", start.processType)),
+	)
 }

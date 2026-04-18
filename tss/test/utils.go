@@ -41,7 +41,7 @@ func (s *CoordinatorTestSuite) SetupTest() {
 	s.MockCommunication = mock_comm.NewMockCommunication(s.GomockController)
 	s.MockTssProcess = mock_tss.NewMockTssProcess(s.GomockController)
 	s.MockMetrics = mock_tss.NewMockMetrics(s.GomockController)
-	s.MockMetrics.EXPECT().StartProcess(gomock.Any()).AnyTimes()
+	s.MockMetrics.EXPECT().StartProcess(gomock.Any(), gomock.Any()).AnyTimes()
 	s.PartyNumber = 3
 	s.Threshold = 1
 
