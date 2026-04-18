@@ -21,12 +21,12 @@ type MpcMetrics struct {
 	totalRelayerCount      *int64
 	availableRelayerCount  *int64
 
-	sessionTimeHistogram         metric.Float64Histogram
-	initiateTimeHistogram        metric.Float64Histogram
-	commSendTimeHistogram        metric.Float64Histogram
-	commDnsResolveTimeHistogram  metric.Float64Histogram
-	sessionStartTimeCache        *ttlcache.Cache[string, time.Time]
-	opts                         metric.MeasurementOption
+	sessionTimeHistogram        metric.Float64Histogram
+	initiateTimeHistogram       metric.Float64Histogram
+	commSendTimeHistogram       metric.Float64Histogram
+	commDnsResolveTimeHistogram metric.Float64Histogram
+	sessionStartTimeCache       *ttlcache.Cache[string, time.Time]
+	opts                        metric.MeasurementOption
 }
 
 // NewMpcMetrics initializes metrics related to the MPC set
