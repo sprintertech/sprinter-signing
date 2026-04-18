@@ -39,6 +39,7 @@ type TssProcess interface {
 type Metrics interface {
 	StartProcess(sessionID string)
 	EndProcess(sessionID string)
+	RecordInitiateDuration(d time.Duration)
 }
 
 type Coordinator struct {
@@ -210,6 +211,7 @@ func (c *Coordinator) initiate(
 
 	ticker := time.NewTicker(c.InitiatePeriod)
 	defer ticker.Stop()
+	initiateStart := time.Now()
 	c.broadcastInitiateMsg(tssProcess.SessionID())
 	for {
 		select {
@@ -236,6 +238,7 @@ func (c *Coordinator) initiate(
 				}
 
 				_ = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
+				c.metrics.RecordInitiateDuration(time.Since(initiateStart))
 				ticker.Stop()
 				go c.startProcess(ctx, tssProcess, true, startParams, resultChn, errChn)
 			}

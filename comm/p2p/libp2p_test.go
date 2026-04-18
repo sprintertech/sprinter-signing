@@ -47,7 +47,7 @@ func (s *Libp2pCommunicationTestSuite) SetupTest() {
 func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_MessageProcessing_ValidMessage() {
 	s.mockHost.EXPECT().ID().Return(s.allowedPeers[0])
 	s.mockHost.EXPECT().SetStreamHandler(s.testProtocolID, gomock.Any()).Return()
-	c := p2p.NewCommunication(s.mockHost, s.testProtocolID)
+	c := p2p.NewCommunication(s.mockHost, s.testProtocolID, p2p.NoopMetrics{})
 
 	msgChannel := make(chan *comm.WrappedMessage)
 	c.Subscribe("1", comm.CoordinatorPingMsg, msgChannel)
@@ -87,7 +87,7 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_MessageProcessing
 func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_StreamHandlerFunction_ValidMessageWithSubscribers() {
 	s.mockHost.EXPECT().ID().Return(s.allowedPeers[0])
 	s.mockHost.EXPECT().SetStreamHandler(s.testProtocolID, gomock.Any()).Return()
-	c := p2p.NewCommunication(s.mockHost, s.testProtocolID)
+	c := p2p.NewCommunication(s.mockHost, s.testProtocolID, p2p.NoopMetrics{})
 
 	testWrappedMsg := comm.WrappedMessage{
 		MessageType: comm.CoordinatorPingMsg,
@@ -165,7 +165,7 @@ func (s *Libp2pCommunicationTestSuite) TestLibp2pCommunication_SendReceiveMessag
 		connectionGate := p2p.NewConnectionGate(topology)
 		newHost, _ := p2p.NewHost(privateKeys[i], topology, connectionGate, 4000+portOffset+i)
 		testHosts = append(testHosts, newHost)
-		communications = append(communications, p2p.NewCommunication(newHost, protocol.ID(protocolID)))
+		communications = append(communications, p2p.NewCommunication(newHost, protocol.ID(protocolID), p2p.NoopMetrics{}))
 	}
 
 	msgChn := make(chan *comm.WrappedMessage)

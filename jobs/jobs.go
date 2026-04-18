@@ -18,7 +18,7 @@ type RelayerStatusMeter interface {
 }
 
 func StartCommunicationHealthCheckJob(h host.Host, interval time.Duration, metrics RelayerStatusMeter) {
-	healthComm := p2p.NewCommunication(h, "p2p/health")
+	healthComm := p2p.NewCommunication(h, "p2p/health", p2p.NoopMetrics{})
 	for {
 		time.Sleep(interval)
 		log.Debug().Msg("Starting communication health check")
