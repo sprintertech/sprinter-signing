@@ -7,6 +7,7 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -20,8 +21,12 @@ type MpcMetrics struct {
 	totalRelayerCount      *int64
 	availableRelayerCount  *int64
 
-	sessionTimeHistogram  metric.Float64Histogram
-	sessionStartTimeCache *ttlcache.Cache[string, time.Time]
+	sessionTimeHistogram        metric.Float64Histogram
+	initiateTimeHistogram       metric.Float64Histogram
+	commSendTimeHistogram       metric.Float64Histogram
+	commDnsResolveTimeHistogram metric.Float64Histogram
+	sessionStartTimeCache       *ttlcache.Cache[string, time.Time]
+	opts                        metric.MeasurementOption
 }
 
 // NewMpcMetrics initializes metrics related to the MPC set
@@ -56,15 +61,43 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 		return nil, err
 	}
 
+	initiateTimeHistogram, err := meter.Float64Histogram(
+		"relayer.InitiateTime",
+		metric.WithDescription("Duration (seconds) of the coordinator initiate handshake: broadcast -> threshold+1 peers ready"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	commSendTimeHistogram, err := meter.Float64Histogram(
+		"relayer.CommSendTime",
+		metric.WithDescription("Duration (seconds) of a single outbound libp2p message send, labelled by target peer"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	commDnsResolveTimeHistogram, err := meter.Float64Histogram(
+		"relayer.CommDnsResolveTime",
+		metric.WithDescription("Duration (seconds) of DNS resolution + libp2p Connect per outbound send"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &MpcMetrics{
-		totalRelayersGauge:     totalRelayersGauge,
-		availableRelayersGauge: availableRelayersGauge,
-		totalRelayerCount:      totalRelayerCount,
-		availableRelayerCount:  availableRelayerCount,
-		sessionTimeHistogram:   sessionTimeHistogram,
+		totalRelayersGauge:          totalRelayersGauge,
+		availableRelayersGauge:      availableRelayersGauge,
+		totalRelayerCount:           totalRelayerCount,
+		availableRelayerCount:       availableRelayerCount,
+		sessionTimeHistogram:        sessionTimeHistogram,
+		initiateTimeHistogram:       initiateTimeHistogram,
+		commSendTimeHistogram:       commSendTimeHistogram,
+		commDnsResolveTimeHistogram: commDnsResolveTimeHistogram,
 		sessionStartTimeCache: ttlcache.New(
 			ttlcache.WithTTL[string, time.Time](SESSION_TTL),
 		),
+		opts: opts,
 	}, nil
 }
 
@@ -84,5 +117,22 @@ func (m *MpcMetrics) EndProcess(sessionID string) {
 		return
 	}
 
-	m.sessionTimeHistogram.Record(context.Background(), time.Since(startTime.Value()).Seconds())
+	m.sessionTimeHistogram.Record(context.Background(), time.Since(startTime.Value()).Seconds(), m.opts)
+}
+
+func (m *MpcMetrics) RecordInitiateDuration(d time.Duration) {
+	m.initiateTimeHistogram.Record(context.Background(), d.Seconds(), m.opts)
+}
+
+func (m *MpcMetrics) RecordCommSend(peerID string, d time.Duration) {
+	m.commSendTimeHistogram.Record(
+		context.Background(),
+		d.Seconds(),
+		m.opts,
+		metric.WithAttributes(attribute.String("peer", peerID)),
+	)
+}
+
+func (m *MpcMetrics) RecordCommDnsResolve(d time.Duration) {
+	m.commDnsResolveTimeHistogram.Record(context.Background(), d.Seconds(), m.opts)
 }

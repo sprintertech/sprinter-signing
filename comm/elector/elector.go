@@ -36,7 +36,7 @@ type CoordinatorElectorFactory struct {
 
 // NewCoordinatorElectorFactory creates new CoordinatorElectorFactory
 func NewCoordinatorElectorFactory(h host.Host, config relayer.BullyConfig) *CoordinatorElectorFactory {
-	communication := p2p.NewCommunication(h, ProtocolID)
+	communication := p2p.NewCommunication(h, ProtocolID, p2p.NoopMetrics{})
 
 	return &CoordinatorElectorFactory{
 		h:      h,

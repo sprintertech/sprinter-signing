@@ -228,6 +228,7 @@ func InitializeHostsAndCommunications(numberOfActors uint16, protocolID protocol
 		com := p2p.NewCommunication(
 			testHosts[i],
 			protocolID,
+			p2p.NoopMetrics{},
 		)
 		testCommunications = append(testCommunications, com)
 	}

@@ -121,7 +121,7 @@ func Run() error {
 	sygmaMetrics, err := metrics.NewSprinterMetrics(ctx, mp.Meter("relayer-metric-provider"), configuration.RelayerConfig.Env, configuration.RelayerConfig.Id, Version)
 	panicOnError(err)
 
-	communication := p2p.NewCommunication(host, "p2p/sprinter")
+	communication := p2p.NewCommunication(host, "p2p/sprinter", sygmaMetrics)
 	electorFactory := elector.NewCoordinatorElectorFactory(host, configuration.RelayerConfig.BullyConfig)
 	coordinator := tss.NewCoordinator(host, communication, sygmaMetrics, electorFactory)
 

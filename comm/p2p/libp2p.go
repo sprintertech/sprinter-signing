@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -24,20 +25,38 @@ const (
 	defaultBufferSize = 20480
 )
 
+// Metrics records timing for outbound libp2p sends. The concrete implementation
+// lives in the metrics package; NoopMetrics is provided here for callers that
+// do not need telemetry (health check comms, tests).
+type Metrics interface {
+	RecordCommSend(peer string, d time.Duration)
+	RecordCommDnsResolve(d time.Duration)
+}
+
+type NoopMetrics struct{}
+
+func (NoopMetrics) RecordCommSend(peer string, d time.Duration) {}
+func (NoopMetrics) RecordCommDnsResolve(d time.Duration)        {}
+
 type Libp2pCommunication struct {
 	SessionSubscriptionManager
 	h             host.Host
 	logger        zerolog.Logger
 	streamManager *StreamManager
+	metrics       Metrics
 }
 
-func NewCommunication(h host.Host, protocolID protocol.ID) Libp2pCommunication {
+func NewCommunication(h host.Host, protocolID protocol.ID, metrics Metrics) Libp2pCommunication {
+	if metrics == nil {
+		metrics = NoopMetrics{}
+	}
 	logger := log.With().Str("Module", "communication").Str("Peer", h.ID().String()).Logger()
 	c := Libp2pCommunication{
 		SessionSubscriptionManager: NewSessionSubscriptionManager(),
 		h:                          h,
 		logger:                     logger,
 		streamManager:              NewStreamManager(h, protocolID),
+		metrics:                    metrics,
 	}
 
 	// start processing incoming messages
@@ -169,6 +188,11 @@ func (c Libp2pCommunication) sendMessage(
 	msgType comm.MessageType,
 	sessionID string,
 ) error {
+	sendStart := time.Now()
+	defer func() {
+		c.metrics.RecordCommSend(to.String(), time.Since(sendStart))
+	}()
+
 	err := c.resolveDNS(to)
 	if err != nil {
 		return err
@@ -198,6 +222,11 @@ func (c Libp2pCommunication) sendMessage(
 }
 
 func (c Libp2pCommunication) resolveDNS(peerID peer.ID) error {
+	resolveStart := time.Now()
+	defer func() {
+		c.metrics.RecordCommDnsResolve(time.Since(resolveStart))
+	}()
+
 	pi := c.h.Peerstore().PeerInfo(peerID)
 	resolver, err := madns.NewResolver()
 	if err != nil {
