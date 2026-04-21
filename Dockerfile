@@ -4,7 +4,7 @@
 FROM alpine:3.6 as alpine
 RUN apk add -U --no-cache ca-certificates
 
-FROM  golang:1.23 AS builder
+FROM  golang:1.24 AS builder
 ADD . /src
 WORKDIR /src
 RUN cd /src && echo $(ls -1 /src)
