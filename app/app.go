@@ -61,6 +61,10 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/store"
 	"github.com/sygmaprotocol/sygma-core/store/lvldb"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 var Version string
@@ -111,13 +115,25 @@ func Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mp, err := observability.InitMetricProvider(context.Background(), configuration.RelayerConfig.OpenTelemetryCollectorURL)
-	panicOnError(err)
-	defer func() {
-		if err := mp.Shutdown(context.Background()); err != nil {
-			log.Error().Msgf("Error shutting down meter provider: %v", err)
-		}
-	}()
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		log.Error().Err(err).Msg("OpenTelemetry SDK error")
+	}))
+
+	var mp metric.MeterProvider
+	if url := configuration.RelayerConfig.OpenTelemetryCollectorURL; url == "" {
+		log.Warn().Msg("OpenTelemetry disabled: collector URL not configured")
+		mp = noop.NewMeterProvider()
+	} else {
+		log.Info().Str("url", url).Msg("Initializing OpenTelemetry metric provider")
+		sdkMp, err := observability.InitMetricProvider(context.Background(), url)
+		panicOnError(err)
+		defer func() {
+			if err := sdkMp.Shutdown(context.Background()); err != nil {
+				log.Error().Msgf("Error shutting down meter provider: %v", err)
+			}
+		}()
+		mp = sdkMp
+	}
 	sygmaMetrics, err := metrics.NewSprinterMetrics(ctx, mp.Meter("relayer-metric-provider"), configuration.RelayerConfig.Env, configuration.RelayerConfig.Id, Version)
 	panicOnError(err)
 
