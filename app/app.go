@@ -178,7 +178,7 @@ func Run() error {
 			{
 				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
 				if err != nil {
-					log.Error().Err(err).Uint64("chain", *c.GeneralChainConfig.Id).Msgf("Failed registering EVM domain")
+					log.Error().Err(err).Msgf("Failed registering EVM domain")
 					continue
 				}
 
@@ -222,7 +222,7 @@ func Run() error {
 			{
 				c, err := evm.NewEVMConfig(chainConfig, *solverConfig)
 				if err != nil {
-					log.Error().Err(err).Uint64("chain", *c.GeneralChainConfig.Id).Msgf("Failed registering EVM domain")
+					log.Error().Err(err).Msgf("Failed registering EVM domain")
 					continue
 				}
 
