@@ -56,7 +56,10 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 		return nil, err
 	}
 
-	sessionTimeHistogram, err := meter.Float64Histogram("relayer.SessionTime")
+	sessionTimeHistogram, err := meter.Float64Histogram(
+		"relayer.SessionTime",
+		metric.WithUnit("s"),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +67,7 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 	initiateTimeHistogram, err := meter.Float64Histogram(
 		"relayer.InitiateTime",
 		metric.WithDescription("Duration (seconds) of the coordinator initiate handshake: broadcast -> threshold+1 peers ready"),
+		metric.WithUnit("s"),
 	)
 	if err != nil {
 		return nil, err
@@ -72,6 +76,7 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 	commSendTimeHistogram, err := meter.Float64Histogram(
 		"relayer.CommSendTime",
 		metric.WithDescription("Duration (seconds) of a single outbound libp2p message send, labelled by target peer"),
+		metric.WithUnit("s"),
 	)
 	if err != nil {
 		return nil, err
@@ -80,6 +85,7 @@ func NewMpcMetrics(ctx context.Context, meter metric.Meter, opts metric.Measurem
 	commDnsResolveTimeHistogram, err := meter.Float64Histogram(
 		"relayer.CommDnsResolveTime",
 		metric.WithDescription("Duration (seconds) of DNS resolution + libp2p Connect per outbound send"),
+		metric.WithUnit("s"),
 	)
 	if err != nil {
 		return nil, err
