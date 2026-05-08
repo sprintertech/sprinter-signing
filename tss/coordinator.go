@@ -248,7 +248,8 @@ func (c *Coordinator) initiate(
 			{
 				unreadyPeers := make([]peer.ID, 0)
 				for _, p := range c.host.Peerstore().Peers() {
-					if slices.Contains(readyPeers, p) {
+					peerReady := slices.Contains(readyPeers, p) {
+					if peerReady {
 						continue
 					}
 
