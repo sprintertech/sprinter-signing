@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/comm/elector"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
 	"github.com/sprintertech/sprinter-signing/tss/message"
-	"golang.org/x/exp/slices"
 )
 
 var (

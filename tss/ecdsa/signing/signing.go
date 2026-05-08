@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"slices"
 	"sync"
 	"time"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sourcegraph/conc/pool"
-	"golang.org/x/exp/slices"
 
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/keyshare"
