@@ -247,9 +247,8 @@ func (c *Coordinator) initiate(
 		case <-ticker.C:
 			{
 				unreadyPeers := make([]peer.ID, 0)
-				for _, p := range c.host.Peerstore().Peers() {
-					peerReady := slices.Contains(readyPeers, p) {
-					if peerReady {
+				for _, p := range readyPeers {
+					if slices.Contains[peer.IDSlice](readyPeers, p) {
 						continue
 					}
 
