@@ -83,6 +83,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 	solverChains := make(map[string]solverConfig.Chain)
 	solverChains["eip155:1"] = solverConfig.Chain{
 		Tokens:        make(map[string]solverConfig.Token),
+		BlockTime:     2,
 		Confirmations: make([]solverConfig.Confirmations, 0),
 	}
 
@@ -127,7 +128,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 			Endpoint:           "ws://domain.com",
 			Id:                 id,
 			BlockConfirmations: 5,
-			Blocktime:          12,
+			Blocktime:          2,
 		},
 		BlockInterval:          big.NewInt(5),
 		BlockRetryInterval:     time.Duration(5) * time.Second,
@@ -209,6 +210,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		},
 		NativeTokenSymbol: "ETH",
 		Decimals:          18,
+		BlockTime:         2,
 	}
 
 	actualConfig, err := evm.NewEVMConfig(rawConfig, solverConfig.SolverConfig{
@@ -242,7 +244,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 			Endpoint:           "ws://domain.com",
 			Id:                 id,
 			BlockConfirmations: 5,
-			Blocktime:          10,
+			Blocktime:          2,
 		},
 		BlockInterval:        big.NewInt(2),
 		BlockRetryInterval:   time.Duration(10) * time.Second,
