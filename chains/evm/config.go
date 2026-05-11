@@ -102,6 +102,7 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		// nolint:gosec
 		confirmations[uint64(confirmation.MaxAmountUSD)] = uint64(confirmation.Confirmations)
 	}
+	c.Blocktime = uint64(sc.BlockTime)
 
 	liquidators := make(map[common.Address]common.Address)
 	sprinterContracts := solverConfig.ProtocolsMetadata.SprinterCredit[id]
