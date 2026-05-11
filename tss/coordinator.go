@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -18,11 +19,10 @@ import (
 	"github.com/sprintertech/sprinter-signing/comm/elector"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/common"
 	"github.com/sprintertech/sprinter-signing/tss/message"
-	"golang.org/x/exp/slices"
 )
 
 var (
-	initiatePeriod = 1 * time.Second
+	initiatePeriod = 100 * time.Millisecond
 )
 
 type TssProcess interface {
@@ -185,10 +185,10 @@ func (c *Coordinator) start(
 }
 
 // broadcastInitiateMsg sends TssInitiateMsg to all peers
-func (c *Coordinator) broadcastInitiateMsg(sessionID string) {
+func (c *Coordinator) broadcastInitiateMsg(sessionID string, peers peer.IDSlice) {
 	log.Debug().Str("SessionID", sessionID).Msgf("broadcasted initiate message")
 	_ = c.communication.Broadcast(
-		c.host.Peerstore().Peers(), []byte{}, comm.TssInitiateMsg, sessionID,
+		peers, []byte{}, comm.TssInitiateMsg, sessionID,
 	)
 }
 
@@ -212,7 +212,7 @@ func (c *Coordinator) initiate(
 	ticker := time.NewTicker(c.InitiatePeriod)
 	defer ticker.Stop()
 	initiateStart := time.Now()
-	c.broadcastInitiateMsg(tssProcess.SessionID())
+	go c.broadcastInitiateMsg(tssProcess.SessionID(), c.host.Peerstore().Peers())
 	for {
 		select {
 		case err := <-errChn:
@@ -237,14 +237,25 @@ func (c *Coordinator) initiate(
 					return err
 				}
 
-				_ = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
+				go func() {
+					_ = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
+				}()
 				c.metrics.RecordInitiateDuration(time.Since(initiateStart))
 				ticker.Stop()
 				go c.startProcess(ctx, tssProcess, true, startParams, resultChn, errChn)
 			}
 		case <-ticker.C:
 			{
-				c.broadcastInitiateMsg(tssProcess.SessionID())
+				unreadyPeers := make([]peer.ID, 0)
+				for _, p := range readyPeers {
+					if slices.Contains[peer.IDSlice](readyPeers, p) {
+						continue
+					}
+
+					unreadyPeers = append(unreadyPeers, p)
+				}
+
+				go c.broadcastInitiateMsg(tssProcess.SessionID(), unreadyPeers)
 			}
 		case <-ctx.Done():
 			{
@@ -281,9 +292,11 @@ func (c *Coordinator) waitForStart(
 				}
 
 				log.Debug().Str("SessionID", tssProcess.SessionID()).Msgf("sent ready message to %s", wMsg.From)
-				_ = c.communication.Broadcast(
-					peer.IDSlice{wMsg.From}, []byte{}, comm.TssReadyMsg, tssProcess.SessionID(),
-				)
+				go func() {
+					_ = c.communication.Broadcast(
+						peer.IDSlice{wMsg.From}, []byte{}, comm.TssReadyMsg, tssProcess.SessionID(),
+					)
+				}()
 			}
 		case err := <-errChn:
 			return err
