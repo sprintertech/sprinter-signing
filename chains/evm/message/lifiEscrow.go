@@ -121,7 +121,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	borrowToken, destChainID, err := h.borrowToken(order)
+	borrowToken, destChainID, err := h.borrowToken(data, order)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -195,15 +195,29 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	return nil, nil
 }
 
-func (h *LifiEscrowMessageHandler) borrowToken(order *lifi.LifiOrder) (common.Address, uint64, error) {
+func (h *LifiEscrowMessageHandler) borrowToken(data *LifiEscrowData, order *lifi.LifiOrder) (common.Address, uint64, error) {
 	destChainID := order.Order.Outputs[0].ChainID
 	tokenIn := common.BytesToAddress(order.GenericInputs[0].TokenAddress[:])
-	symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
+	tokenInSymbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
 	if err != nil {
 		return common.Address{}, destChainID, err
 	}
 
-	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainID, symbol)
+	tokenOut := common.BytesToAddress(order.GenericOutputs[0].TokenAddress[:])
+	tokenOutSymbol, _, err := h.tokenStore.ConfigByAddress(destChainID, tokenOut)
+	if err != nil {
+		return common.Address{}, destChainID, err
+	}
+
+	if data.BorrowToken != tokenInSymbol && data.BorrowToken != tokenOutSymbol {
+		return common.Address{}, destChainID, fmt.Errorf(
+			"borrow token %s must be either input %s or output token symbol %s",
+			data.BorrowToken,
+			tokenInSymbol,
+			tokenOutSymbol)
+	}
+
+	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainID, data.BorrowToken)
 	if err != nil {
 		return common.Address{}, destChainID, err
 	}
