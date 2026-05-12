@@ -34,6 +34,7 @@ type SigningBody struct {
 	Calldata         string       `json:"calldata"`
 	DepositTxHash    string       `json:"depositTxHash"`
 	BorrowAmount     *BigInt      `json:"borrowAmount"`
+	BorrowToken      string       `json:"borrowToken"`
 	RepaymentChainId uint64       `json:"repaymentChainId"`
 	Deadline         uint64       `json:"deadline"`
 	TokenOut         string       `json:"tokenOut"`
@@ -102,6 +103,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 				Destination:   b.ChainId,
 				Deadline:      b.Deadline,
 				BorrowAmount:  b.BorrowAmount.Int,
+				BorrowToken:   b.BorrowToken,
 			})
 		}
 	case LighterProtocol:

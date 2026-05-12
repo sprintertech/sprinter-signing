@@ -16,7 +16,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
-	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -25,6 +24,7 @@ import (
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
 	"github.com/sprintertech/lifi-solver/pkg/router"
+	"github.com/sprintertech/lifi-solver/pkg/token"
 )
 
 type OrderFetcher interface {
@@ -43,7 +43,7 @@ type LifiEscrowMessageHandler struct {
 	confirmationWatcher ConfirmationWatcher
 
 	lifiAddresses map[uint64]common.Address
-	tokenStore    config.TokenStore
+	tokenResolver token.TokenResolver
 	mpcAddress    common.Address
 
 	orderFetcher OrderFetcher
@@ -64,7 +64,7 @@ func NewLifiEscrowMessageHandler(
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 	confirmationWatcher ConfirmationWatcher,
-	tokenStore config.TokenStore,
+	tokenResolver token.TokenResolver,
 	orderFetcher OrderFetcher,
 	orderPricer pricing.OrderPricer,
 	router router.OrderRouter,
@@ -80,7 +80,7 @@ func NewLifiEscrowMessageHandler(
 		comm:                comm,
 		fetcher:             fetcher,
 		confirmationWatcher: confirmationWatcher,
-		tokenStore:          tokenStore,
+		tokenResolver:       tokenResolver,
 		orderFetcher:        orderFetcher,
 		orderPricer:         orderPricer,
 		validator:           validator,
@@ -109,7 +109,7 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	err = h.verifyOrder(order, data.BorrowAmount)
+	err = h.verifyOrder(order)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -121,7 +121,11 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
-	borrowToken, destChainID, err := h.borrowToken(order)
+	borrowToken, destChainID, err := h.borrowToken(
+		data,
+		order,
+		orderValue,
+	)
 	if err != nil {
 		data.ErrChn <- err
 		return nil, err
@@ -195,20 +199,65 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 	return nil, nil
 }
 
-func (h *LifiEscrowMessageHandler) borrowToken(order *lifi.LifiOrder) (common.Address, uint64, error) {
+func (h *LifiEscrowMessageHandler) borrowToken(
+	data *LifiEscrowData,
+	order *lifi.LifiOrder,
+	amountInValue float64,
+) (common.Address, uint64, error) {
 	destChainID := order.Order.Outputs[0].ChainID
-	tokenIn := common.BytesToAddress(order.GenericInputs[0].TokenAddress[:])
-	symbol, _, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
+
+	tokenIn, err := h.tokenResolver.Token(
+		order.GenericInputs[0].ChainID,
+		*order.GenericInputs[0].TokenAddress)
 	if err != nil {
 		return common.Address{}, destChainID, err
 	}
 
-	destinationBorrowToken, err := h.tokenStore.ConfigBySymbol(destChainID, symbol)
+	tokenOut, err := h.tokenResolver.Token(
+		order.GenericOutputs[0].ChainID,
+		*order.GenericOutputs[0].TokenAddress)
 	if err != nil {
 		return common.Address{}, destChainID, err
 	}
 
-	return destinationBorrowToken.Address, destChainID, err
+	if data.BorrowToken != tokenIn.Symbol && data.BorrowToken != tokenOut.Symbol {
+		return common.Address{}, destChainID, fmt.Errorf(
+			"borrow token %s must be either input %s or output token symbol %s",
+			data.BorrowToken,
+			tokenIn.Symbol,
+			tokenOut.Symbol)
+	}
+
+	if data.BorrowToken == tokenIn.Symbol {
+		dstToken, err := h.tokenResolver.TokenFromSymbol(
+			order.GenericOutputs[0].ChainID,
+			tokenIn.Symbol)
+		if err != nil {
+			return common.Address{}, destChainID, err
+		}
+
+		scaledInputAmount := chains.ScaleTokenAmount(
+			order.GenericInputs[0].Amount,
+			tokenIn.Decimals,
+			dstToken.Decimals)
+		if scaledInputAmount.Cmp(data.BorrowAmount) == -1 {
+			return common.Address{}, destChainID, fmt.Errorf(
+				"order input is less than requested borrow amount")
+		}
+
+		return common.BytesToAddress(dstToken.Address[:]), destChainID, nil
+	} else {
+		amountOutValue := tokenOut.AmountToUSD(data.BorrowAmount)
+		if amountInValue < amountOutValue {
+			return common.Address{}, destChainID, fmt.Errorf(
+				"order with destination borrow token has lower input amount value %f:%f",
+				amountInValue,
+				amountOutValue,
+			)
+		}
+
+		return common.BytesToAddress(tokenOut.Address[:]), destChainID, nil
+	}
 }
 
 func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, error) {
@@ -254,27 +303,13 @@ func (h *LifiEscrowMessageHandler) calldata(order *lifi.LifiOrder) ([]byte, erro
 }
 
 // verifyOrder verifies order based on these instructions https://docs.catalyst.exchange/solver/orderflow/#order-validation
-func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder, borrowAmount *big.Int) error {
+func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder) error {
 	if len(order.Order.Inputs) > 1 || len(order.Order.Inputs) == 0 {
 		return fmt.Errorf("orders with multiple inputs not supported")
 	}
 
 	if len(order.Order.Outputs) > 1 {
 		return fmt.Errorf("orders with multiple outputs not supported")
-	}
-
-	tokenIn := common.BytesToAddress(order.GenericInputs[0].TokenAddress[:])
-	symbol, srcToken, err := h.tokenStore.ConfigByAddress(h.chainID, tokenIn)
-	if err != nil {
-		return err
-	}
-	dstToken, err := h.tokenStore.ConfigBySymbol(order.Order.Outputs[0].ChainID, symbol)
-	if err != nil {
-		return err
-	}
-	scaledInputAmount := chains.ScaleTokenAmount(order.GenericInputs[0].Amount, int64(srcToken.Decimals), int64(dstToken.Decimals))
-	if scaledInputAmount.Cmp(borrowAmount) == -1 {
-		return fmt.Errorf("order input is less than requested borrow amount")
 	}
 
 	augmentedOrder, err := order.AugmentedOrder(h.orderPricer, h.router)
