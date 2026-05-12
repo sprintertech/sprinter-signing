@@ -291,9 +291,13 @@ func Run() error {
 
 						roycoVault := common.HexToAddress(solverConfig.ProtocolsMetadata.Royco.Vault)
 						roycoVaultContract := erc4626.NewErc4626Contract(w3Client, &roycoVault)
-						vaultPricer := vault.NewPricer(usdPricer, []vault.Vault{
-							vault.NewErc4626(roycoVaultContract, "srRoyUSDC", "USDC", 6),
-						})
+						vaultPricer := vault.NewPricer(
+							usdPricer,
+							[]vault.Vault{
+								vault.NewErc4626(roycoVaultContract, "srRoyUSDC", "USDC", 6),
+							},
+							time.Second*30,
+						)
 						multiPricer.Add(vaultPricer, "srRoyUSDC")
 					}
 					resolver := token.NewTokenResolver(solverConfig, multiPricer)
