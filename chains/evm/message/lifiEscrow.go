@@ -12,6 +12,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/sprinter-signing/chains"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
 	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -228,11 +229,23 @@ func (h *LifiEscrowMessageHandler) borrowToken(
 	}
 
 	if data.BorrowToken == tokenIn.Symbol {
-		if order.GenericInputs[0].Amount.Cmp(data.BorrowAmount) == -1 {
+		dstToken, err := h.tokenResolver.TokenFromSymbol(
+			order.GenericOutputs[0].ChainID,
+			tokenIn.Symbol)
+		if err != nil {
+			return common.Address{}, destChainID, err
+		}
+
+		scaledInputAmount := chains.ScaleTokenAmount(
+			order.GenericInputs[0].Amount,
+			tokenIn.Decimals,
+			dstToken.Decimals)
+		if scaledInputAmount.Cmp(data.BorrowAmount) == -1 {
 			return common.Address{}, destChainID, fmt.Errorf(
 				"order input is less than requested borrow amount")
 		}
-		return common.BytesToAddress(tokenIn.Address[:]), destChainID, nil
+
+		return common.BytesToAddress(dstToken.Address[:]), destChainID, nil
 	} else {
 		amountOutValue := tokenOut.AmountToUSD(data.BorrowAmount)
 		if amountInValue < amountOutValue {
