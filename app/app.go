@@ -26,7 +26,7 @@ import (
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
 	"github.com/sprintertech/lifi-solver/pkg/router"
 	"github.com/sprintertech/lifi-solver/pkg/token"
-	"github.com/sprintertech/lifi-solver/pkg/tokenpricing"
+	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/aggregator"
 	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/pyth"
 	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/vault"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
@@ -175,6 +175,11 @@ func Run() error {
 		mpcAddress = common.HexToAddress(solverConfig.ProtocolsMetadata.Sprinter.MpcAddress)
 	}
 
+	usdPricer := pyth.NewClient(ctx)
+	err = usdPricer.Start(ctx)
+	panicOnError(err)
+	multiPricer := aggregator.New(usdPricer)
+
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	lifiOutputSettlers := make(map[uint64]common.Address)
@@ -279,33 +284,23 @@ func Run() error {
 				}
 
 				if c.LifiOutputSettler != "" {
-					usdPricer := pyth.NewClient(ctx)
-					err = usdPricer.Start(ctx)
-					panicOnError(err)
 
-					multiPricer := tokenpricing.NewMultiPricer(usdPricer)
 					if *c.GeneralChainConfig.Id == ETHEREUM {
 						w3Client, err := w3.Dial(c.GeneralChainConfig.Endpoint)
 						panicOnError(err)
 
 						roycoVault := common.HexToAddress(solverConfig.ProtocolsMetadata.Royco.Vault)
 						roycoVaultContract := erc4626.NewErc4626Contract(w3Client, &roycoVault)
-						vaultPricer := vault.NewPricer(ctx, usdPricer, []vault.Token{
-							{
-								Symbol:             "srRoyUSDC",
-								UnderlyingSymbol:   "USDC",
-								Decimals:           6,
-								UnderlyingDecimals: 6,
-								Vault:              roycoVaultContract,
-							},
+						vaultPricer := vault.NewPricer(usdPricer, []vault.Vault{
+							vault.NewErc4626(roycoVaultContract, "srRoyUSDC", "USDC", 6)
 						})
 						multiPricer.Add(vaultPricer, "srRoyUSDC")
 					}
+					resolver := token.NewTokenResolver(solverConfig, multiPricer)
 
 					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
 					panicOnError(err)
 
-					resolver := token.NewTokenResolver(solverConfig, multiPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiEventFetcher(
 						client,
