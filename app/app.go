@@ -17,14 +17,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethereumCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/lmittmann/w3"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/sprintertech/lifi-solver/pkg/pricing"
 	"github.com/sprintertech/lifi-solver/pkg/protocols"
+	"github.com/sprintertech/lifi-solver/pkg/protocols/erc4626"
 	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
 	"github.com/sprintertech/lifi-solver/pkg/router"
 	"github.com/sprintertech/lifi-solver/pkg/token"
+	"github.com/sprintertech/lifi-solver/pkg/tokenpricing"
 	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/pyth"
+	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/vault"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
 	"github.com/sprintertech/sprinter-signing/api"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
@@ -64,6 +68,10 @@ import (
 )
 
 var Version string
+
+const (
+	ETHEREUM uint64 = 1
+)
 
 //nolint:gocognit
 func Run() error {
@@ -275,10 +283,29 @@ func Run() error {
 					err = usdPricer.Start(ctx)
 					panicOnError(err)
 
+					multiPricer := tokenpricing.NewMultiPricer(usdPricer)
+					if *c.GeneralChainConfig.Id == ETHEREUM {
+						w3Client, err := w3.Dial(c.GeneralChainConfig.Endpoint)
+						panicOnError(err)
+
+						roycoVault := common.HexToAddress(solverConfig.ProtocolsMetadata.Royco.Vault)
+						roycoVaultContract := erc4626.NewErc4626Contract(w3Client, &roycoVault)
+						vaultPricer := vault.NewPricer(ctx, usdPricer, []vault.Token{
+							{
+								Symbol:             "srRoyUSDC",
+								UnderlyingSymbol:   "USDC",
+								Decimals:           6,
+								UnderlyingDecimals: 6,
+								Vault:              roycoVaultContract,
+							},
+						})
+						multiPricer.Add(vaultPricer, "srRoyUSDC")
+					}
+
 					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
 					panicOnError(err)
 
-					resolver := token.NewTokenResolver(solverConfig, usdPricer)
+					resolver := token.NewTokenResolver(solverConfig, multiPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiEventFetcher(
 						client,
@@ -295,7 +322,7 @@ func Run() error {
 						communication,
 						keyshareStore,
 						watcher,
-						tokenStore,
+						resolver,
 						lifiApi,
 						orderPricer,
 						router.NewRouter(resolver, nil, nil, lifiConfig.Routes),
