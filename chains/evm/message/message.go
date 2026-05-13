@@ -50,6 +50,7 @@ type LifiEscrowData struct {
 	Caller        common.Address
 	DepositTxHash string
 	BorrowAmount  *big.Int
+	BorrowToken   string
 	Deadline      uint64
 	Nonce         *big.Int
 	Source        uint64
