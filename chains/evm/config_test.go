@@ -143,6 +143,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 		Liquidators: map[common.Address]common.Address{
 			common.HexToAddress("0x12"): common.HexToAddress(liquidator),
 		},
+		Processors: make(map[string]common.Address),
 	})
 }
 
@@ -231,10 +232,19 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 			},
 			Lifi: &solverConfig.LifiMetadata{
 				OutputSettler: "settler",
+				RepaymentProcessors: map[string]map[string]solverConfig.RepaymentProcessor{
+					"eip155:1": map[string]solverConfig.RepaymentProcessor{
+						"uSdC": solverConfig.RepaymentProcessor{
+							Address: "0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb28",
+						},
+					},
+				},
 			},
 		},
 	})
 
+	processors := make(map[string]common.Address)
+	processors["usdc"] = common.HexToAddress("0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb28")
 	id := new(uint64)
 	*id = 1
 	s.Nil(err)
@@ -255,6 +265,7 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 		Repayer:              "repayer",
 		ConfirmationsByValue: expectedBlockConfirmations,
 		Tokens:               expectedTokens,
+		Processors:           processors,
 		Liquidators:          make(map[common.Address]common.Address),
 	})
 }

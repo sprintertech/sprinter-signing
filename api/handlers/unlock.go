@@ -18,15 +18,17 @@ import (
 const SIGNATURE_TIMEOUT = time.Second * 15
 
 type UnlockResponse struct {
-	Signature string `json:"signature"`
-	ID        string `json:"id"`
+	Signature        string `json:"signature"`
+	RepaymentAddress string `json:"repaymentAddress"`
+	ID               string `json:"id"`
 }
 
 type UnlockBody struct {
-	ChainId  uint64
-	Protocol ProtocolType `json:"protocol"`
-	OrderID  string       `json:"orderId"`
-	Settler  string       `json:"settler"`
+	ChainId     uint64
+	Protocol    ProtocolType `json:"protocol"`
+	OrderID     string       `json:"orderId"`
+	Settler     string       `json:"settler"`
+	BorrowToken string       `json:"borrowToken"`
 }
 
 type UnlockHandler struct {
@@ -60,16 +62,19 @@ func (h *UnlockHandler) HandleUnlock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sigChn := make(chan interface{}, 1)
+	repaymentAddressChn := make(chan common.Hash, 1)
 	var m *message.Message
 	switch b.Protocol {
 	case LifiEscrowProtocol:
 		{
 			m = evmMessage.NewLifiUnlockMessage(0, b.ChainId, &evmMessage.LifiUnlockData{
-				Source:      0,
-				Destination: b.ChainId,
-				SigChn:      sigChn,
-				OrderID:     b.OrderID,
-				Settler:     common.HexToAddress(b.Settler),
+				Source:              0,
+				Destination:         b.ChainId,
+				SigChn:              sigChn,
+				OrderID:             b.OrderID,
+				Settler:             common.HexToAddress(b.Settler),
+				RepaymentAddressChn: repaymentAddressChn,
+				BorrowToken:         b.BorrowToken,
 			})
 		}
 	default:
@@ -85,6 +90,7 @@ func (h *UnlockHandler) HandleUnlock(w http.ResponseWriter, r *http.Request) {
 			return
 		case sig := <-sigChn:
 			{
+				repaymentAddress := <-repaymentAddressChn
 				sig, ok := sig.(signing.EcdsaSignature)
 				if !ok {
 					JSONError(w, fmt.Errorf("invalid signature"), http.StatusInternalServerError)
@@ -92,8 +98,9 @@ func (h *UnlockHandler) HandleUnlock(w http.ResponseWriter, r *http.Request) {
 				}
 
 				data, _ := json.Marshal(UnlockResponse{
-					Signature: hex.EncodeToString(sig.Signature),
-					ID:        sig.ID,
+					Signature:        hex.EncodeToString(sig.Signature),
+					ID:               sig.ID,
+					RepaymentAddress: repaymentAddress.Hex(),
 				})
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)

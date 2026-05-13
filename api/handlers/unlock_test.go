@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
@@ -117,6 +118,7 @@ func (s *UnlockHandlerTestSuite) Test_HandleUnlock_ValidRequest() {
 			Signature: sigBytes,
 			ID:        "id",
 		}
+		ad.RepaymentAddressChn <- common.HexToHash("0x1")
 	}()
 
 	handler.HandleUnlock(recorder, req)
@@ -125,5 +127,10 @@ func (s *UnlockHandlerTestSuite) Test_HandleUnlock_ValidRequest() {
 	data, err := io.ReadAll(recorder.Body)
 	s.Nil(err)
 
-	s.Equal(string(data), "{\"signature\":\"abcd\",\"id\":\"id\"}")
+	s.Equal(
+		string(data),
+		"{\"signature\":\"abcd\","+
+			"\"repaymentAddress\":\"0x0000000000000000000000000000000000000000000000000000000000000001\","+
+			"\"id\":\"id\"}",
+	)
 }

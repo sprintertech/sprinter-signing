@@ -7,6 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
+	"github.com/sprintertech/lifi-solver/pkg/order"
+	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	"github.com/sprintertech/lifi-solver/pkg/token"
 	"github.com/sprintertech/sprinter-signing/chains/evm/message"
 	mock_message "github.com/sprintertech/sprinter-signing/chains/evm/message/mock"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -25,7 +28,9 @@ type LifiUnlockHandlerTestSuite struct {
 	mockCommunication *mock_communication.MockCommunication
 	mockCoordinator   *mock_message.MockCoordinator
 	mockHost          *mock_host.MockHost
+	mockApi           *mock_message.MockLifiAPI
 	mockFetcher       *mock_tss.MockSaveDataFetcher
+	mockTokenResolver *mock_message.MockTokenResolver
 
 	handler *message.LifiUnlockHandler
 }
@@ -37,8 +42,10 @@ func TestRunLifiUnlockHandlerTestSuite(t *testing.T) {
 func (s *LifiUnlockHandlerTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 
-	repayers := make(map[uint64]common.Address)
-	repayers[10] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C6")
+	repayer := common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C6")
+
+	processors := make(map[string]common.Address)
+	processors["usdc"] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C7")
 
 	s.mockCommunication = mock_communication.NewMockCommunication(ctrl)
 	s.mockCoordinator = mock_message.NewMockCoordinator(ctrl)
@@ -56,10 +63,15 @@ func (s *LifiUnlockHandlerTestSuite) SetupTest() {
 		comm.LifiUnlockMsg,
 		fmt.Sprintf("%d-%s", 10, comm.LifiUnlockSessionID),
 	).Return(nil)
+	s.mockApi = mock_message.NewMockLifiAPI(ctrl)
+	s.mockTokenResolver = mock_message.NewMockTokenResolver(ctrl)
 
 	s.handler = message.NewLifiUnlockHandler(
 		10,
-		repayers,
+		repayer,
+		processors,
+		s.mockApi,
+		s.mockTokenResolver,
 		s.mockCoordinator,
 		s.mockHost,
 		s.mockCommunication,
@@ -67,14 +79,37 @@ func (s *LifiUnlockHandlerTestSuite) SetupTest() {
 	)
 }
 
-func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_ValidMessage() {
+func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenEqualsInputToken() {
 	sigChn := make(chan interface{}, 1)
+	repaymentChan := make(chan common.Hash, 1)
 	ad := &message.LifiUnlockData{
-		SigChn:  sigChn,
-		OrderID: "id",
-		Settler: common.HexToAddress("abcd"),
+		SigChn:              sigChn,
+		RepaymentAddressChn: repaymentChan,
+		OrderID:             "id",
+		Settler:             common.HexToAddress("abcd"),
+		BorrowToken:         "UsDc",
 	}
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	inputTokenAddr := common.HexToHash("0x1")
+	s.mockApi.EXPECT().GetOrder(gomock.Any()).Return(&lifi.LifiOrder{
+		GenericInputs: []order.Input{
+			{
+				ChainID:      order.ChainID("eip155:10"),
+				TokenAddress: &inputTokenAddr,
+			},
+		},
+		GenericOutputs: []order.Output{
+			{
+				ChainID: order.ChainID("eip155:8453"),
+			},
+		},
+	}, nil)
+	s.mockTokenResolver.EXPECT().Token(order.ChainID("eip155:10"), inputTokenAddr).Return(
+		token.Token{
+			Symbol: "usdc",
+		},
+		nil,
+	)
 
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -83,7 +118,55 @@ func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_ValidMessage() {
 	}
 
 	prop, err := s.handler.HandleMessage(m)
-
 	s.Nil(prop)
 	s.Nil(err)
+
+	repaymentAddress := <-repaymentChan
+	s.Equal(repaymentAddress, common.HexToHash("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C6"))
+}
+
+func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenIsDifferent() {
+	sigChn := make(chan interface{}, 1)
+	repaymentChan := make(chan common.Hash, 1)
+	ad := &message.LifiUnlockData{
+		SigChn:              sigChn,
+		RepaymentAddressChn: repaymentChan,
+		OrderID:             "id",
+		Settler:             common.HexToAddress("abcd"),
+		BorrowToken:         "UsDc",
+	}
+	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	inputTokenAddr := common.HexToHash("0x1")
+	s.mockApi.EXPECT().GetOrder(gomock.Any()).Return(&lifi.LifiOrder{
+		GenericInputs: []order.Input{
+			{
+				ChainID:      order.ChainID("eip155:10"),
+				TokenAddress: &inputTokenAddr,
+			},
+		},
+		GenericOutputs: []order.Output{
+			{
+				ChainID: order.ChainID("eip155:8453"),
+			},
+		},
+	}, nil)
+	s.mockTokenResolver.EXPECT().Token(order.ChainID("eip155:10"), inputTokenAddr).Return(
+		token.Token{
+			Symbol: "usdt",
+		},
+		nil,
+	)
+
+	m := &coreMessage.Message{
+		Data:        ad,
+		Source:      0,
+		Destination: 10,
+	}
+
+	prop, err := s.handler.HandleMessage(m)
+	s.Nil(prop)
+	s.Nil(err)
+
+	repaymentAddress := <-repaymentChan
+	s.Equal(repaymentAddress, common.HexToHash("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C7"))
 }

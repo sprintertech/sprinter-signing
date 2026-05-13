@@ -167,6 +167,15 @@ func Run() error {
 		mpcAddress = common.HexToAddress(solverConfig.ProtocolsMetadata.Sprinter.MpcAddress)
 	}
 
+	usdPricer := pyth.NewClient(ctx)
+	err = usdPricer.Start(ctx)
+	panicOnError(err)
+
+	lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
+	panicOnError(err)
+
+	resolver := token.NewTokenResolver(solverConfig, usdPricer)
+
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	lifiOutputSettlers := make(map[uint64]common.Address)
@@ -271,14 +280,6 @@ func Run() error {
 				}
 
 				if c.LifiOutputSettler != "" {
-					usdPricer := pyth.NewClient(ctx)
-					err = usdPricer.Start(ctx)
-					panicOnError(err)
-
-					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
-					panicOnError(err)
-
-					resolver := token.NewTokenResolver(solverConfig, usdPricer)
 					orderPricer := pricing.NewStandardPricer(resolver)
 					lifiApi := lifi.NewLifiEventFetcher(
 						client,
@@ -325,16 +326,23 @@ func Run() error {
 					)
 				}
 
-				lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
-					*c.GeneralChainConfig.Id,
-					repayerAddresses,
-					coordinator,
-					host,
-					communication,
-					keyshareStore,
-				)
-				go lifiUnlockMh.Listen(ctx)
-				mh.RegisterMessageHandler(message.MessageType(comm.LifiUnlockMsg.String()), lifiUnlockMh)
+				repayer, ok := repayerAddresses[*c.GeneralChainConfig.Id]
+				if ok {
+					lifiAPI := lifi.NewLifiAPI()
+					lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
+						*c.GeneralChainConfig.Id,
+						repayer,
+						c.Processors,
+						lifiAPI,
+						resolver,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+					)
+					go lifiUnlockMh.Listen(ctx)
+					mh.RegisterMessageHandler(message.MessageType(comm.LifiUnlockMsg.String()), lifiUnlockMh)
+				}
 
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener
