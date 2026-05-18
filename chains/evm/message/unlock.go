@@ -157,7 +157,7 @@ func (h *LifiUnlockHandler) Listen(ctx context.Context) {
 					d := &LifiUnlockData{}
 					err := json.Unmarshal(wMsg.Payload, d)
 					if err != nil {
-						log.Warn().Msgf("Failed unmarshaling across message: %s", err)
+						log.Warn().Msgf("Failed unmarshaling lifi message: %s", err)
 						return
 					}
 					d.SigChn = make(chan interface{}, 1)
@@ -166,7 +166,7 @@ func (h *LifiUnlockHandler) Listen(ctx context.Context) {
 					msg := NewLifiUnlockMessage(d.Source, d.Destination, d)
 					_, err = h.HandleMessage(msg)
 					if err != nil {
-						log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
+						log.Err(err).Msgf("Failed handling lifi message %+v because of: %s", msg, err)
 					}
 				}(wMsg)
 			}
