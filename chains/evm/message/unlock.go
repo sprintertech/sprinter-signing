@@ -163,6 +163,7 @@ func (h *LifiUnlockHandler) Listen(ctx context.Context) {
 						return
 					}
 					d.SigChn = make(chan interface{}, 1)
+					d.RepaymentAddressChn = make(chan common.Hash, 1)
 
 					msg := NewLifiUnlockMessage(d.Source, d.Destination, d)
 					_, err = h.HandleMessage(msg)
