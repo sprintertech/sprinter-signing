@@ -13,6 +13,7 @@ require (
 	github.com/imdario/mergo v0.3.12
 	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/libp2p/go-libp2p v0.46.0
+	github.com/lmittmann/w3 v0.20.2
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/multiformats/go-multiaddr v0.16.0
 	github.com/multiformats/go-multiaddr-dns v0.4.1
@@ -20,7 +21,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.9.0
 	github.com/sprintertech/lifi-solver v1.12.7-0.20260512144109-aff2bb29e55a
-	github.com/sprintertech/solver-config/go v0.0.0-20260420164134-699e2fffda37
+	github.com/sprintertech/solver-config/go v0.0.0-20260511094556-3a4df18de523
 	github.com/stretchr/testify v1.11.1
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	go.opentelemetry.io/otel v1.16.0
@@ -72,7 +73,6 @@ require (
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/libp2p/go-yamux/v5 v5.0.1 // indirect
-	github.com/lmittmann/w3 v0.20.2 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect

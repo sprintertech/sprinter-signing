@@ -6,6 +6,7 @@ package evm
 import (
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/creasty/defaults"
@@ -28,6 +29,7 @@ type EVMConfig struct {
 	LifiOutputSettler      string
 	LifiInputSettlerEscrow string
 	Repayer                string
+	Processors             map[string]common.Address
 	// Liquidator contract per token address
 	Liquidators map[common.Address]common.Address
 
@@ -97,6 +99,11 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		}
 	}
 
+	processors := make(map[string]common.Address)
+	for symbol, processor := range solverConfig.ProtocolsMetadata.Lifi.RepaymentProcessors[id] {
+		processors[strings.ToLower(symbol)] = common.HexToAddress(processor.Address)
+	}
+
 	confirmations := make(map[uint64]uint64)
 	for _, confirmation := range sc.Confirmations {
 		// nolint:gosec
@@ -115,6 +122,7 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		GeneralChainConfig:     c.GeneralChainConfig,
 		Admin:                  c.Admin,
 		Repayer:                solverConfig.ProtocolsMetadata.Sprinter.Repayer[id],
+		Processors:             processors,
 		AcrossPool:             solverConfig.ProtocolsMetadata.Across.SpokePools[id],
 		AcrossHubPool:          solverConfig.ProtocolsMetadata.Across.HubPools[id],
 		LifiOutputSettler:      solverConfig.ProtocolsMetadata.Lifi.OutputSettler,

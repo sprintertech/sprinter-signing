@@ -13,6 +13,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
+	"github.com/sprintertech/lifi-solver/pkg/order"
+	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	"github.com/sprintertech/lifi-solver/pkg/token"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
@@ -25,10 +28,21 @@ const (
 	VERSION     = "1"
 )
 
+type LifiAPI interface {
+	GetOrder(orderID string) (*lifi.LifiOrder, error)
+}
+
+type TokenResolver interface {
+	Token(caipID order.ChainID, address [32]byte) (token.Token, error)
+}
+
 type LifiUnlockHandler struct {
 	chainID uint64
 
-	repayers map[uint64]common.Address
+	repayer       common.Address
+	processors    map[string]common.Address
+	api           LifiAPI
+	tokenResolver TokenResolver
 
 	coordinator Coordinator
 	host        host.Host
@@ -38,19 +52,25 @@ type LifiUnlockHandler struct {
 
 func NewLifiUnlockHandler(
 	chainID uint64,
-	repayers map[uint64]common.Address,
+	repayer common.Address,
+	processors map[string]common.Address,
+	api LifiAPI,
+	tokenResolver TokenResolver,
 	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
 	fetcher signing.SaveDataFetcher,
 ) *LifiUnlockHandler {
 	return &LifiUnlockHandler{
-		chainID:     chainID,
-		repayers:    repayers,
-		coordinator: coordinator,
-		host:        host,
-		comm:        comm,
-		fetcher:     fetcher,
+		chainID:       chainID,
+		repayer:       repayer,
+		processors:    processors,
+		coordinator:   coordinator,
+		host:          host,
+		comm:          comm,
+		fetcher:       fetcher,
+		api:           api,
+		tokenResolver: tokenResolver,
 	}
 }
 
@@ -62,7 +82,20 @@ func (h *LifiUnlockHandler) HandleMessage(m *message.Message) (*proposal.Proposa
 		log.Warn().Msgf("Failed to notify relayers because of %s", err)
 	}
 
-	unlockHash, err := h.lifiUnlockHash(data)
+	order, err := h.api.GetOrder(data.OrderID)
+	if err != nil {
+		return nil, err
+	}
+
+	repaymentAddress, err := h.repaymentAddress(
+		data,
+		order,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	unlockHash, err := h.lifiUnlockHash(data, repaymentAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +112,37 @@ func (h *LifiUnlockHandler) HandleMessage(m *message.Message) (*proposal.Proposa
 		return nil, err
 	}
 
+	data.RepaymentAddressChn <- common.BytesToHash(repaymentAddress.Bytes())
 	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, data.SigChn, data.Coordinator)
 	if err != nil {
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (h *LifiUnlockHandler) repaymentAddress(
+	data *LifiUnlockData,
+	order *lifi.LifiOrder,
+) (common.Address, error) {
+	if common.HexToHash(data.BorrowToken) == *order.GenericInputs[0].TokenAddress {
+		return h.repayer, nil
+	}
+
+	borrowToken, err := h.tokenResolver.Token(
+		order.GenericInputs[0].ChainID,
+		common.HexToHash(data.BorrowToken))
+	if err != nil {
+		return common.Address{}, err
+	}
+	processor, ok := h.processors[borrowToken.Symbol]
+	if !ok {
+		return common.Address{}, fmt.Errorf(
+			"no processor specified for token %s",
+			data.BorrowToken,
+		)
+	}
+
+	return processor, nil
 }
 
 func (h *LifiUnlockHandler) Listen(ctx context.Context) {
@@ -98,15 +157,16 @@ func (h *LifiUnlockHandler) Listen(ctx context.Context) {
 					d := &LifiUnlockData{}
 					err := json.Unmarshal(wMsg.Payload, d)
 					if err != nil {
-						log.Warn().Msgf("Failed unmarshaling across message: %s", err)
+						log.Warn().Msgf("Failed unmarshaling lifi message: %s", err)
 						return
 					}
 					d.SigChn = make(chan interface{}, 1)
+					d.RepaymentAddressChn = make(chan common.Hash, 1)
 
 					msg := NewLifiUnlockMessage(d.Source, d.Destination, d)
 					_, err = h.HandleMessage(msg)
 					if err != nil {
-						log.Err(err).Msgf("Failed handling across message %+v because of: %s", msg, err)
+						log.Err(err).Msgf("Failed handling lifi message %+v because of: %s", msg, err)
 					}
 				}(wMsg)
 			}
@@ -136,12 +196,10 @@ func (h *LifiUnlockHandler) notify(data *LifiUnlockData) error {
 		fmt.Sprintf("%d-%s", h.chainID, comm.LifiUnlockSessionID))
 }
 
-func (h *LifiUnlockHandler) lifiUnlockHash(data *LifiUnlockData) ([]byte, error) {
-	repaymentAddress, ok := h.repayers[h.chainID]
-	if !ok {
-		return nil, fmt.Errorf("invalid repayment chain %d", h.chainID)
-	}
-
+func (h *LifiUnlockHandler) lifiUnlockHash(
+	data *LifiUnlockData,
+	repaymentAddress common.Address,
+) ([]byte, error) {
 	msg := apitypes.TypedDataMessage{
 		"orderId":     common.HexToHash(data.OrderID),
 		"destination": common.HexToHash(repaymentAddress.Hex()),

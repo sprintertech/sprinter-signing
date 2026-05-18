@@ -179,6 +179,7 @@ func Run() error {
 	err = usdPricer.Start(ctx)
 	panicOnError(err)
 	multiPricer := aggregator.New(usdPricer)
+	resolver := token.NewTokenResolver(solverConfig, multiPricer)
 
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
@@ -284,7 +285,6 @@ func Run() error {
 				}
 
 				if c.LifiOutputSettler != "" {
-
 					if *c.GeneralChainConfig.Id == ETHEREUM {
 						w3Client, err := w3.Dial(c.GeneralChainConfig.Endpoint)
 						panicOnError(err)
@@ -300,7 +300,7 @@ func Run() error {
 						)
 						multiPricer.Add(vaultPricer, "srRoyUSDC")
 					}
-					resolver := token.NewTokenResolver(solverConfig, multiPricer)
+					resolver = token.NewTokenResolver(solverConfig, multiPricer)
 
 					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
 					panicOnError(err)
@@ -351,16 +351,23 @@ func Run() error {
 					)
 				}
 
-				lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
-					*c.GeneralChainConfig.Id,
-					repayerAddresses,
-					coordinator,
-					host,
-					communication,
-					keyshareStore,
-				)
-				go lifiUnlockMh.Listen(ctx)
-				mh.RegisterMessageHandler(message.MessageType(comm.LifiUnlockMsg.String()), lifiUnlockMh)
+				repayer, ok := repayerAddresses[*c.GeneralChainConfig.Id]
+				if ok {
+					lifiAPI := lifi.NewLifiAPI()
+					lifiUnlockMh := evmMessage.NewLifiUnlockHandler(
+						*c.GeneralChainConfig.Id,
+						repayer,
+						c.Processors,
+						lifiAPI,
+						resolver,
+						coordinator,
+						host,
+						communication,
+						keyshareStore,
+					)
+					go lifiUnlockMh.Listen(ctx)
+					mh.RegisterMessageHandler(message.MessageType(comm.LifiUnlockMsg.String()), lifiUnlockMh)
+				}
 
 				var startBlock *big.Int
 				var listener *coreListener.EVMListener

@@ -97,10 +97,12 @@ func NewSprinterCreditMessage(
 }
 
 type LifiUnlockData struct {
-	SigChn chan interface{} `json:"-"`
+	SigChn              chan interface{} `json:"-"`
+	RepaymentAddressChn chan common.Hash `json:"-"`
 
-	OrderID string
-	Settler common.Address
+	OrderID     string
+	Settler     common.Address
+	BorrowToken string
 
 	Coordinator peer.ID
 	Source      uint64
