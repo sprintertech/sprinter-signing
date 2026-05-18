@@ -220,7 +220,14 @@ func (h *LifiEscrowMessageHandler) borrowToken(
 		return common.Address{}, destChainID, err
 	}
 
-	if data.BorrowToken != tokenIn.Symbol && data.BorrowToken != tokenOut.Symbol {
+	borrowToken, err := h.tokenResolver.Token(
+		order.GenericOutputs[0].ChainID,
+		common.HexToHash(data.BorrowToken))
+	if err != nil {
+		return common.Address{}, destChainID, err
+	}
+
+	if borrowToken.Symbol != tokenIn.Symbol && borrowToken.Symbol != tokenOut.Symbol {
 		return common.Address{}, destChainID, fmt.Errorf(
 			"borrow token %s must be either input %s or output token symbol %s",
 			data.BorrowToken,
@@ -228,24 +235,17 @@ func (h *LifiEscrowMessageHandler) borrowToken(
 			tokenOut.Symbol)
 	}
 
-	if data.BorrowToken == tokenIn.Symbol {
-		dstToken, err := h.tokenResolver.TokenFromSymbol(
-			order.GenericOutputs[0].ChainID,
-			tokenIn.Symbol)
-		if err != nil {
-			return common.Address{}, destChainID, err
-		}
-
+	if borrowToken.Symbol == tokenIn.Symbol {
 		scaledInputAmount := chains.ScaleTokenAmount(
 			order.GenericInputs[0].Amount,
 			tokenIn.Decimals,
-			dstToken.Decimals)
+			borrowToken.Decimals)
 		if scaledInputAmount.Cmp(data.BorrowAmount) == -1 {
 			return common.Address{}, destChainID, fmt.Errorf(
 				"order input is less than requested borrow amount")
 		}
 
-		return common.BytesToAddress(dstToken.Address[:]), destChainID, nil
+		return common.BytesToAddress(borrowToken.Address[:]), destChainID, nil
 	} else {
 		amountOutValue := tokenOut.AmountToUSD(data.BorrowAmount)
 		if amountInValue < amountOutValue {

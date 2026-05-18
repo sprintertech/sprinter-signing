@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -125,18 +124,17 @@ func (h *LifiUnlockHandler) repaymentAddress(
 	data *LifiUnlockData,
 	order *lifi.LifiOrder,
 ) (common.Address, error) {
-	tokenIn, err := h.tokenResolver.Token(
-		order.GenericInputs[0].ChainID,
-		*order.GenericInputs[0].TokenAddress)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	if strings.EqualFold(data.BorrowToken, tokenIn.Symbol) {
+	if common.HexToHash(data.BorrowToken) == *order.GenericInputs[0].TokenAddress {
 		return h.repayer, nil
 	}
 
-	processor, ok := h.processors[strings.ToLower(data.BorrowToken)]
+	borrowToken, err := h.tokenResolver.Token(
+		order.GenericInputs[0].ChainID,
+		common.HexToHash(data.BorrowToken))
+	if err != nil {
+		return common.Address{}, err
+	}
+	processor, ok := h.processors[borrowToken.Symbol]
 	if !ok {
 		return common.Address{}, fmt.Errorf(
 			"no processor specified for token %s",

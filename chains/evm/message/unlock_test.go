@@ -82,15 +82,15 @@ func (s *LifiUnlockHandlerTestSuite) SetupTest() {
 func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenEqualsInputToken() {
 	sigChn := make(chan interface{}, 1)
 	repaymentChan := make(chan common.Hash, 1)
+	inputTokenAddr := common.HexToHash("0x1")
 	ad := &message.LifiUnlockData{
 		SigChn:              sigChn,
 		RepaymentAddressChn: repaymentChan,
 		OrderID:             "id",
 		Settler:             common.HexToAddress("abcd"),
-		BorrowToken:         "UsDc",
+		BorrowToken:         inputTokenAddr.Hex(),
 	}
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	inputTokenAddr := common.HexToHash("0x1")
 	s.mockApi.EXPECT().GetOrder(gomock.Any()).Return(&lifi.LifiOrder{
 		GenericInputs: []order.Input{
 			{
@@ -104,12 +104,6 @@ func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenEqualsInputTo
 			},
 		},
 	}, nil)
-	s.mockTokenResolver.EXPECT().Token(order.ChainID("eip155:10"), inputTokenAddr).Return(
-		token.Token{
-			Symbol: "usdc",
-		},
-		nil,
-	)
 
 	m := &coreMessage.Message{
 		Data:        ad,
@@ -128,12 +122,13 @@ func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenEqualsInputTo
 func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenIsDifferent() {
 	sigChn := make(chan interface{}, 1)
 	repaymentChan := make(chan common.Hash, 1)
+	borrowToken := common.HexToHash("0x2")
 	ad := &message.LifiUnlockData{
 		SigChn:              sigChn,
 		RepaymentAddressChn: repaymentChan,
 		OrderID:             "id",
 		Settler:             common.HexToAddress("abcd"),
-		BorrowToken:         "UsDc",
+		BorrowToken:         borrowToken.Hex(),
 	}
 	s.mockCoordinator.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	inputTokenAddr := common.HexToHash("0x1")
@@ -150,9 +145,9 @@ func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenIsDifferent()
 			},
 		},
 	}, nil)
-	s.mockTokenResolver.EXPECT().Token(order.ChainID("eip155:10"), inputTokenAddr).Return(
+	s.mockTokenResolver.EXPECT().Token(order.ChainID("eip155:10"), borrowToken).Return(
 		token.Token{
-			Symbol: "usdt",
+			Symbol: "usdc",
 		},
 		nil,
 	)
