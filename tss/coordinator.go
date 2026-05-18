@@ -305,7 +305,8 @@ func (c *Coordinator) waitForStart(
 						peer.IDSlice{wMsg.From}, []byte{}, comm.TssReadyMsg, tssProcess.SessionID(),
 					)
 					if err != nil {
-						log.Err(err).Msgf("Failed sending ready message to peer %s. %w", wMsg.From.String(), err)
+						log.Err(err).Str("SessionID", tssProcess.SessionID()).Msgf(
+							"Failed sending ready message")
 					}
 				}()
 			}
