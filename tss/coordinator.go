@@ -187,9 +187,13 @@ func (c *Coordinator) start(
 // broadcastInitiateMsg sends TssInitiateMsg to all peers
 func (c *Coordinator) broadcastInitiateMsg(sessionID string, peers peer.IDSlice) {
 	log.Debug().Str("SessionID", sessionID).Msgf("broadcasted initiate message")
-	_ = c.communication.Broadcast(
+	err := c.communication.Broadcast(
 		peers, []byte{}, comm.TssInitiateMsg, sessionID,
 	)
+	if err != nil {
+		log.Err(err).Str("SessionID", sessionID).Msgf(
+			"Failed broadcasting initiate message")
+	}
 }
 
 // initiate sends initiate message to all peers and waits
@@ -238,7 +242,11 @@ func (c *Coordinator) initiate(
 				}
 
 				go func() {
-					_ = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
+					err = c.communication.Broadcast(c.host.Peerstore().Peers(), startMsgBytes, comm.TssStartMsg, tssProcess.SessionID())
+					if err != nil {
+						log.Err(err).Str("SessionID", tssProcess.SessionID()).Msgf(
+							"Failed broadcasting start message")
+					}
 				}()
 				c.metrics.RecordInitiateDuration(time.Since(initiateStart))
 				ticker.Stop()
@@ -293,9 +301,12 @@ func (c *Coordinator) waitForStart(
 
 				log.Debug().Str("SessionID", tssProcess.SessionID()).Msgf("sent ready message to %s", wMsg.From)
 				go func() {
-					_ = c.communication.Broadcast(
+					err := c.communication.Broadcast(
 						peer.IDSlice{wMsg.From}, []byte{}, comm.TssReadyMsg, tssProcess.SessionID(),
 					)
+					if err != nil {
+						log.Err(err).Msgf("Failed sending ready message to peer %s. %w", wMsg.From.String(), err)
+					}
 				}()
 			}
 		case err := <-errChn:
