@@ -255,12 +255,15 @@ func (c *Coordinator) initiate(
 		case <-ticker.C:
 			{
 				unreadyPeers := make([]peer.ID, 0)
-				for _, p := range readyPeers {
+				for _, p := range c.host.Peerstore().Peers() {
 					if slices.Contains[peer.IDSlice](readyPeers, p) {
 						continue
 					}
 
 					unreadyPeers = append(unreadyPeers, p)
+				}
+				if len(unreadyPeers) == 0 {
+					continue
 				}
 
 				go c.broadcastInitiateMsg(tssProcess.SessionID(), unreadyPeers)
