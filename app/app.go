@@ -298,6 +298,8 @@ func Run() error {
 							},
 							time.Second*30,
 						)
+						err = vaultPricer.Start(ctx)
+						panicOnError(err)
 						multiPricer.Add(vaultPricer, "srRoyUSDC")
 					}
 					resolver = token.NewTokenResolver(solverConfig, multiPricer)
