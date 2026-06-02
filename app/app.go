@@ -261,6 +261,7 @@ func Run() error {
 				if c.AcrossPool != "" {
 					acrossDepositFetcher := across.NewAcrossDepositFetcher(
 						*c.GeneralChainConfig.Id,
+						common.HexToAddress(c.AcrossPool),
 						tokenStore,
 						client,
 						hubPoolContract,
