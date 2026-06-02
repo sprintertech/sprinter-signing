@@ -101,6 +101,7 @@ require (
 	github.com/quic-go/quic-go v0.57.1 // indirect
 	github.com/quic-go/webtransport-go v0.9.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sprintertech/solver-sdk v1.1.1-0.20260601115250-a36231b8d2c9 // indirect
 	github.com/supranational/blst v0.3.14 // indirect
 	github.com/tmaxmax/go-sse v0.11.0 // indirect
 	github.com/vedhavyas/go-subkey/v2 v2.0.0 // indirect
