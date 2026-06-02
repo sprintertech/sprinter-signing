@@ -43,6 +43,7 @@ genmocks:
 	mockgen -package mock_message -destination=./chains/evm/message/mock/pricing.go github.com/sprintertech/solver-sdk/pkg/pricing OrderPricer
 	mockgen -source=./chains/lighter/message/lighter.go -destination=./chains/lighter/message/mock/lighter.go
 	mockgen -source=./protocol/lifi/event.go -destination=./protocol/lifi/mock/event.go
+	mockgen -source=./protocol/across/deposit.go -destination=./protocol/across/mock/deposit.go
 
 
 

@@ -31,6 +31,7 @@ type TokenMatcher interface {
 
 type AcrossDepositFetcher struct {
 	chainID      uint64
+	spokePool    common.Address
 	tokenStore   config.TokenStore
 	client       EventFilterer
 	tokenMatcher TokenMatcher
@@ -38,6 +39,7 @@ type AcrossDepositFetcher struct {
 
 func NewAcrossDepositFetcher(
 	chainID uint64,
+	spokePool common.Address,
 	tokenStore config.TokenStore,
 	client EventFilterer,
 	tokenMatcher TokenMatcher,
@@ -46,6 +48,7 @@ func NewAcrossDepositFetcher(
 		chainID:      chainID,
 		tokenStore:   tokenStore,
 		client:       client,
+		spokePool:    spokePool,
 		tokenMatcher: tokenMatcher,
 	}
 }
@@ -65,6 +68,10 @@ func (h *AcrossDepositFetcher) fetchDepositByHash(ctx context.Context, hash comm
 
 	for _, l := range receipt.Logs {
 		if l.Removed {
+			continue
+		}
+
+		if l.Address != h.spokePool {
 			continue
 		}
 
