@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
-	contracts "github.com/sprintertech/lifi-solver/pkg/protocols/lifi/contracts"
+	"github.com/sprintertech/solver-sdk/pkg/protocols/lifi"
+	contracts "github.com/sprintertech/solver-sdk/pkg/protocols/lifi/contracts"
 )
 
 const (

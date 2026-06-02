@@ -12,9 +12,9 @@ package mock_message
 import (
 	reflect "reflect"
 
-	order "github.com/sprintertech/lifi-solver/pkg/order"
-	lifi "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
-	token "github.com/sprintertech/lifi-solver/pkg/token"
+	order "github.com/sprintertech/solver-sdk/pkg/order"
+	lifi "github.com/sprintertech/solver-sdk/pkg/protocols/lifi"
+	token "github.com/sprintertech/solver-sdk/pkg/token"
 	gomock "go.uber.org/mock/gomock"
 )
 

@@ -20,16 +20,16 @@ import (
 	"github.com/lmittmann/w3"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"github.com/sprintertech/lifi-solver/pkg/pricing"
-	"github.com/sprintertech/lifi-solver/pkg/protocols"
-	"github.com/sprintertech/lifi-solver/pkg/protocols/erc4626"
-	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi/validation"
-	"github.com/sprintertech/lifi-solver/pkg/router"
-	"github.com/sprintertech/lifi-solver/pkg/token"
-	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/aggregator"
-	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/pyth"
-	"github.com/sprintertech/lifi-solver/pkg/tokenpricing/vault"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
+	"github.com/sprintertech/solver-sdk/pkg/pricing"
+	"github.com/sprintertech/solver-sdk/pkg/protocols"
+	"github.com/sprintertech/solver-sdk/pkg/protocols/erc4626"
+	"github.com/sprintertech/solver-sdk/pkg/protocols/lifi/validation"
+	"github.com/sprintertech/solver-sdk/pkg/router"
+	"github.com/sprintertech/solver-sdk/pkg/token"
+	"github.com/sprintertech/solver-sdk/pkg/tokenpricing/aggregator"
+	"github.com/sprintertech/solver-sdk/pkg/tokenpricing/pyth"
+	"github.com/sprintertech/solver-sdk/pkg/tokenpricing/vault"
 	"github.com/sprintertech/sprinter-signing/api"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	"github.com/sprintertech/sprinter-signing/cache"
@@ -40,7 +40,7 @@ import (
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sprintertech/sprinter-signing/metrics"
 
-	lifiConfig "github.com/sprintertech/lifi-solver/pkg/config"
+	lifiConfig "github.com/sprintertech/solver-sdk/pkg/config"
 	"github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -296,7 +296,6 @@ func Run() error {
 							[]vault.Vault{
 								vault.NewErc4626(roycoVaultContract, "srRoyUSDC", "USDC", 6),
 							},
-							time.Second*30,
 						)
 						err = vaultPricer.Start(ctx)
 						panicOnError(err)
