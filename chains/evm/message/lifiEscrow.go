@@ -21,10 +21,10 @@ import (
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
 
-	"github.com/sprintertech/lifi-solver/pkg/pricing"
-	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
-	"github.com/sprintertech/lifi-solver/pkg/router"
-	"github.com/sprintertech/lifi-solver/pkg/token"
+	"github.com/sprintertech/solver-sdk/pkg/pricing"
+	"github.com/sprintertech/solver-sdk/pkg/protocols/lifi"
+	"github.com/sprintertech/solver-sdk/pkg/router"
+	"github.com/sprintertech/solver-sdk/pkg/token"
 )
 
 type OrderFetcher interface {

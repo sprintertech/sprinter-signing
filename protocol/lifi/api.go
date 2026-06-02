@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	"github.com/sprintertech/solver-sdk/pkg/protocols/lifi"
 )
 
 const (

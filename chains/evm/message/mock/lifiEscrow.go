@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	common "github.com/ethereum/go-ethereum/common"
-	lifi "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	lifi "github.com/sprintertech/solver-sdk/pkg/protocols/lifi"
 	gomock "go.uber.org/mock/gomock"
 )
 

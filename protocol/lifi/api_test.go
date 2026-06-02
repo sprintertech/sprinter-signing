@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	lifiProtocol "github.com/sprintertech/lifi-solver/pkg/protocols/lifi"
+	lifiProtocol "github.com/sprintertech/solver-sdk/pkg/protocols/lifi"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	mock_lifi "github.com/sprintertech/sprinter-signing/protocol/lifi/mock"
 )
