@@ -100,7 +100,7 @@ func (h *LifiUnlockHandler) HandleMessage(m *message.Message) (*proposal.Proposa
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("%d-%s", h.chainID, data.OrderID)
+	sessionID := fmt.Sprintf("unlock-%d-%s", h.chainID, data.OrderID)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,
