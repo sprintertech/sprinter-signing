@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
@@ -234,7 +236,7 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	sigChn := make(chan []byte, 1)
-	h.cache.Subscribe(ctx, fmt.Sprintf("%d-%s", chainId, depositId), sigChn)
+	h.cache.Subscribe(ctx, subscribeKey(r, chainId.Uint64(), depositId), sigChn)
 	for {
 		select {
 		case <-r.Context().Done():
@@ -247,6 +249,21 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// subscribeKey uses the composite key when the caller supplies the digest fields, else the legacy key.
+func subscribeKey(r *http.Request, chainID uint64, depositID string) string {
+	q := r.URL.Query()
+	deadline, errD := strconv.ParseUint(q.Get("deadline"), 10, 64)
+	caller := q.Get("caller")
+	borrowAmount, okB := new(big.Int).SetString(q.Get("borrowAmount"), 10)
+	liquidityPool := q.Get("liquidityPool")
+	repaymentChainID, errR := strconv.ParseUint(q.Get("repaymentChainId"), 10, 64)
+	if errD != nil || caller == "" || !okB || liquidityPool == "" || errR != nil {
+		return fmt.Sprintf("%d-%s", chainID, depositID)
+	}
+	return signature.BorrowSessionID(chainID, depositID, deadline, common.HexToAddress(caller),
+		borrowAmount, common.HexToAddress(liquidityPool), repaymentChainID)
 }
 
 func (h *StatusHandler) setheaders(w http.ResponseWriter) {

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	mock_handlers "github.com/sprintertech/sprinter-signing/api/handlers/mock"
@@ -472,6 +473,40 @@ func (s *StatusHandlerTestSuite) Test_HandleRequest_ChainNotSupported() {
 }
 
 func (s *StatusHandlerTestSuite) Test_HandleRequest_ValidSignature() {
+	caller := "0x1111111111111111111111111111111111111111"
+	pool := "0x3333333333333333333333333333333333333333"
+	query := "?deadline=1000&caller=" + caller + "&borrowAmount=500&liquidityPool=" + pool + "&repaymentChainId=10"
+	req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures/id"+query, nil)
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId":   "1",
+		"depositId": "id",
+	})
+
+	recorder := httptest.NewRecorder()
+
+	expectedKey := "1-id-1000-" + common.HexToAddress(caller).Hex() + "-500-" + common.HexToAddress(pool).Hex() + "-10"
+	expectedSignature := []byte{0x01, 0x02, 0x03}
+	s.mockSignatureCacher.EXPECT().
+		Subscribe(gomock.Any(), expectedKey, gomock.Any()).
+		Do(func(ctx context.Context, id string, sigChannel chan []byte) {
+			go func() {
+				sigChannel <- expectedSignature
+			}()
+		})
+
+	go s.handler.HandleRequest(recorder, req)
+
+	time.Sleep(50 * time.Millisecond)
+
+	s.Equal(http.StatusOK, recorder.Code)
+	s.Equal("text/event-stream", recorder.Header().Get("Content-Type"))
+	s.Equal("no-cache", recorder.Header().Get("Cache-Control"))
+	s.Equal("keep-alive", recorder.Header().Get("Connection"))
+	s.Equal("*", recorder.Header().Get("Access-Control-Allow-Origin"))
+	s.Equal("data: "+hex.EncodeToString(expectedSignature)+"\n\n", recorder.Body.String())
+}
+
+func (s *StatusHandlerTestSuite) Test_HandleRequest_LegacyKeyWithoutParams() {
 	req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures/id", nil)
 	req = mux.SetURLVars(req, map[string]string{
 		"chainId":   "1",
@@ -494,9 +529,5 @@ func (s *StatusHandlerTestSuite) Test_HandleRequest_ValidSignature() {
 	time.Sleep(100 * time.Millisecond) // Give some time for the goroutine to execute
 
 	s.Equal(http.StatusOK, recorder.Code)
-	s.Equal("text/event-stream", recorder.Header().Get("Content-Type"))
-	s.Equal("no-cache", recorder.Header().Get("Cache-Control"))
-	s.Equal("keep-alive", recorder.Header().Get("Connection"))
-	s.Equal("*", recorder.Header().Get("Access-Control-Allow-Origin"))
 	s.Equal("data: "+hex.EncodeToString(expectedSignature)+"\n\n", recorder.Body.String())
 }
