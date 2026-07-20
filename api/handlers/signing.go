@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
-	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
+	lighterChain "github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
@@ -43,14 +42,16 @@ type SigningBody struct {
 }
 
 type SigningHandler struct {
-	msgChan chan []*message.Message
-	chains  map[uint64]struct{}
+	msgChan  chan []*message.Message
+	chains   map[uint64]struct{}
+	sigCache SignatureRemover
 }
 
-func NewSigningHandler(msgChan chan []*message.Message, chains map[uint64]struct{}) *SigningHandler {
+func NewSigningHandler(msgChan chan []*message.Message, chains map[uint64]struct{}, sigCache SignatureRemover) *SigningHandler {
 	return &SigningHandler{
-		msgChan: msgChan,
-		chains:  chains,
+		msgChan:  msgChan,
+		chains:   chains,
+		sigCache: sigCache,
 	}
 }
 
@@ -144,6 +145,8 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
 		return
 	}
+	// a new signing request supersedes any cached signature for this deposit
+	h.sigCache.Remove(sessionKey(b.Protocol, b.ChainId, b.DepositId))
 	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
@@ -194,8 +197,21 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	return nil
 }
 
+// sessionKey mirrors the signing session id each protocol handler builds for the cache.
+func sessionKey(protocol ProtocolType, chainID uint64, depositID string) string {
+	// lighter signs under its fixed domain id, not the request chain id
+	if protocol == LighterProtocol {
+		return fmt.Sprintf("%d-%s", lighterChain.LIGHTER_DOMAIN_ID, depositID)
+	}
+	return fmt.Sprintf("%d-%s", chainID, depositID)
+}
+
 type SignatureCacher interface {
 	Subscribe(ctx context.Context, id string, sigChannel chan []byte)
+}
+
+type SignatureRemover interface {
+	Remove(id string)
 }
 
 type StatusHandler struct {
@@ -230,19 +246,13 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := subscribeKey(r, chainId.Uint64(), depositId)
-	if err != nil {
-		JSONError(w, err, http.StatusBadRequest)
-		return
-	}
-
 	h.setheaders(w)
 	w.WriteHeader(http.StatusOK)
 	w.(http.Flusher).Flush()
 
 	ctx := r.Context()
 	sigChn := make(chan []byte, 1)
-	h.cache.Subscribe(ctx, key, sigChn)
+	h.cache.Subscribe(ctx, fmt.Sprintf("%d-%s", chainId, depositId), sigChn)
 	for {
 		select {
 		case <-r.Context().Done():
@@ -255,33 +265,6 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-}
-
-// subscribeKey builds the cache key the status stream subscribes to.
-func subscribeKey(r *http.Request, chainID uint64, depositID string) (string, error) {
-	q := r.URL.Query()
-	// No digest fields supplied: key used by protocols other than Across.
-	if !q.Has("deadline") && !q.Has("caller") && !q.Has("borrowAmount") &&
-		!q.Has("liquidityPool") && !q.Has("repaymentChainId") {
-		return fmt.Sprintf("%d-%s", chainID, depositID), nil
-	}
-
-	deadline, errD := strconv.ParseUint(q.Get("deadline"), 10, 64)
-	caller := q.Get("caller")
-	borrowAmount, okB := new(big.Int).SetString(q.Get("borrowAmount"), 10)
-	liquidityPool := q.Get("liquidityPool")
-	repaymentChainID, errR := strconv.ParseUint(q.Get("repaymentChainId"), 10, 64)
-	if errD != nil || caller == "" || !okB || liquidityPool == "" || errR != nil {
-		return "", fmt.Errorf("incomplete borrow parameters for composite signature key")
-	}
-
-	// Normalize like the publish side (big.Int) so a non-canonical decimal cannot desync the keys.
-	if id, ok := new(big.Int).SetString(depositID, 10); ok {
-		depositID = id.String()
-	}
-
-	return signature.BorrowSessionID(chainID, depositID, deadline, common.HexToAddress(caller),
-		borrowAmount, common.HexToAddress(liquidityPool), repaymentChainID), nil
 }
 
 func (h *StatusHandler) setheaders(w http.ResponseWriter) {

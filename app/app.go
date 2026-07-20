@@ -435,7 +435,7 @@ func Run() error {
 		log.Info().Msg("Relayer not part of MPC. Waiting for refresh event...")
 	}
 
-	signingHandler := handlers.NewSigningHandler(msgChan, supportedChains)
+	signingHandler := handlers.NewSigningHandler(msgChan, supportedChains, signatureCache)
 	statusHandler := handlers.NewStatusHandler(signatureCache, supportedChains)
 	confirmationsHandler := handlers.NewConfirmationsHandler(confirmationsPerChain)
 	unlockHandler := handlers.NewUnlockHandler(msgChan, supportedChains)
