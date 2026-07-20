@@ -257,10 +257,10 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// subscribeKey builds the cache key the status stream subscribes to, which must match the publish-side key.
+// subscribeKey builds the cache key the status stream subscribes to.
 func subscribeKey(r *http.Request, chainID uint64, depositID string) (string, error) {
 	q := r.URL.Query()
-	// No digest fields supplied: legacy key used by protocols other than Across.
+	// No digest fields supplied: key used by protocols other than Across.
 	if !q.Has("deadline") && !q.Has("caller") && !q.Has("borrowAmount") &&
 		!q.Has("liquidityPool") && !q.Has("repaymentChainId") {
 		return fmt.Sprintf("%d-%s", chainID, depositID), nil
@@ -279,7 +279,7 @@ func subscribeKey(r *http.Request, chainID uint64, depositID string) (string, er
 	if id, ok := new(big.Int).SetString(depositID, 10); ok {
 		depositID = id.String()
 	}
-	// Composite Across key with all fields required, so a partial set errors above rather than silently mismatching.
+
 	return signature.BorrowSessionID(chainID, depositID, deadline, common.HexToAddress(caller),
 		borrowAmount, common.HexToAddress(liquidityPool), repaymentChainID), nil
 }
