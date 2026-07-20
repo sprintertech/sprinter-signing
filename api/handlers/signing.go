@@ -145,7 +145,6 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
 		return
 	}
-	// a new signing request supersedes any cached signature for this deposit
 	h.sigCache.Remove(sessionKey(b.Protocol, b.ChainId, b.DepositId))
 	h.msgChan <- []*message.Message{m}
 
@@ -197,9 +196,7 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	return nil
 }
 
-// sessionKey mirrors the signing session id each protocol handler builds for the cache.
 func sessionKey(protocol ProtocolType, chainID uint64, depositID string) string {
-	// lighter signs under its fixed domain id, not the request chain id
 	if protocol == LighterProtocol {
 		return fmt.Sprintf("%d-%s", lighterChain.LIGHTER_DOMAIN_ID, depositID)
 	}

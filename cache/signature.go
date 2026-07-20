@@ -68,7 +68,6 @@ func (s *SignatureCache) Subscribe(ctx context.Context, id string, sigChannel ch
 	}
 }
 
-// Remove drops the cached signature so a new signing round must produce a fresh one.
 func (s *SignatureCache) Remove(id string) {
 	s.sigCache.Delete(id)
 }
