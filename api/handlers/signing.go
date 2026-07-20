@@ -230,13 +230,19 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key, err := subscribeKey(r, chainId.Uint64(), depositId)
+	if err != nil {
+		JSONError(w, err, http.StatusBadRequest)
+		return
+	}
+
 	h.setheaders(w)
 	w.WriteHeader(http.StatusOK)
 	w.(http.Flusher).Flush()
 
 	ctx := r.Context()
 	sigChn := make(chan []byte, 1)
-	h.cache.Subscribe(ctx, subscribeKey(r, chainId.Uint64(), depositId), sigChn)
+	h.cache.Subscribe(ctx, key, sigChn)
 	for {
 		select {
 		case <-r.Context().Done():
@@ -251,19 +257,31 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// subscribeKey uses the composite key when the caller supplies the digest fields, else the legacy key.
-func subscribeKey(r *http.Request, chainID uint64, depositID string) string {
+// subscribeKey builds the cache key the status stream subscribes to, which must match the publish-side key.
+func subscribeKey(r *http.Request, chainID uint64, depositID string) (string, error) {
 	q := r.URL.Query()
+	// No digest fields supplied: legacy key used by protocols other than Across.
+	if !q.Has("deadline") && !q.Has("caller") && !q.Has("borrowAmount") &&
+		!q.Has("liquidityPool") && !q.Has("repaymentChainId") {
+		return fmt.Sprintf("%d-%s", chainID, depositID), nil
+	}
+
 	deadline, errD := strconv.ParseUint(q.Get("deadline"), 10, 64)
 	caller := q.Get("caller")
 	borrowAmount, okB := new(big.Int).SetString(q.Get("borrowAmount"), 10)
 	liquidityPool := q.Get("liquidityPool")
 	repaymentChainID, errR := strconv.ParseUint(q.Get("repaymentChainId"), 10, 64)
 	if errD != nil || caller == "" || !okB || liquidityPool == "" || errR != nil {
-		return fmt.Sprintf("%d-%s", chainID, depositID)
+		return "", fmt.Errorf("incomplete borrow parameters for composite signature key")
 	}
+
+	// Normalize like the publish side (big.Int) so a non-canonical decimal cannot desync the keys.
+	if id, ok := new(big.Int).SetString(depositID, 10); ok {
+		depositID = id.String()
+	}
+	// Composite Across key with all fields required, so a partial set errors above rather than silently mismatching.
 	return signature.BorrowSessionID(chainID, depositID, deadline, common.HexToAddress(caller),
-		borrowAmount, common.HexToAddress(liquidityPool), repaymentChainID)
+		borrowAmount, common.HexToAddress(liquidityPool), repaymentChainID), nil
 }
 
 func (h *StatusHandler) setheaders(w http.ResponseWriter) {

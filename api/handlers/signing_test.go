@@ -17,6 +17,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	mock_handlers "github.com/sprintertech/sprinter-signing/api/handlers/mock"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	lighter "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/stretchr/testify/suite"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -430,104 +431,105 @@ func (s *StatusHandlerTestSuite) SetupTest() {
 	s.handler = handlers.NewStatusHandler(s.mockSignatureCacher, chains)
 }
 
-func (s *StatusHandlerTestSuite) Test_HandleRequest_MissingDepositID() {
-	req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures", nil)
-	req.Header.Set("Content-Type", "application/json")
-	req = mux.SetURLVars(req, map[string]string{
-		"chainId": "1",
-	})
+func (s *StatusHandlerTestSuite) Test_HandleRequest_Errors() {
+	tests := []struct {
+		name     string
+		vars     map[string]string
+		query    string
+		wantCode int
+	}{
+		{
+			name:     "missing deposit id",
+			vars:     map[string]string{"chainId": "1"},
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "invalid chain id",
+			vars:     map[string]string{"chainId": "invalid", "depositId": "id"},
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "chain not supported",
+			vars:     map[string]string{"chainId": "3", "depositId": "id"},
+			wantCode: http.StatusNotFound,
+		},
+		{
+			// A partial composite param set must fail fast, not fall back to the legacy key and hang.
+			name:     "partial composite params",
+			vars:     map[string]string{"chainId": "1", "depositId": "id"},
+			query:    "?deadline=1000&caller=0x1111111111111111111111111111111111111111",
+			wantCode: http.StatusBadRequest,
+		},
+	}
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures/id"+tt.query, nil)
+			req = mux.SetURLVars(req, tt.vars)
+			recorder := httptest.NewRecorder()
 
-	recorder := httptest.NewRecorder()
+			s.handler.HandleRequest(recorder, req)
 
-	s.handler.HandleRequest(recorder, req)
-
-	s.Equal(http.StatusBadRequest, recorder.Code)
-}
-
-func (s *StatusHandlerTestSuite) Test_HandleRequest_InvalidChainID() {
-	req := httptest.NewRequest(http.MethodGet, "/v1/chains/invalid/signatures", nil)
-	req = mux.SetURLVars(req, map[string]string{
-		"chainId":   "invalid",
-		"depositId": "id",
-	})
-
-	recorder := httptest.NewRecorder()
-
-	s.handler.HandleRequest(recorder, req)
-
-	s.Equal(http.StatusBadRequest, recorder.Code)
-}
-
-func (s *StatusHandlerTestSuite) Test_HandleRequest_ChainNotSupported() {
-	req := httptest.NewRequest(http.MethodGet, "/v1/chains/3/signatures", nil)
-	req = mux.SetURLVars(req, map[string]string{
-		"chainId":   "3",
-		"depositId": "id",
-	})
-
-	recorder := httptest.NewRecorder()
-
-	s.handler.HandleRequest(recorder, req)
-
-	s.Equal(http.StatusNotFound, recorder.Code)
-}
-
-func (s *StatusHandlerTestSuite) Test_HandleRequest_ValidSignature() {
-	caller := "0x1111111111111111111111111111111111111111"
-	pool := "0x3333333333333333333333333333333333333333"
-	query := "?deadline=1000&caller=" + caller + "&borrowAmount=500&liquidityPool=" + pool + "&repaymentChainId=10"
-	req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures/id"+query, nil)
-	req = mux.SetURLVars(req, map[string]string{
-		"chainId":   "1",
-		"depositId": "id",
-	})
-
-	recorder := httptest.NewRecorder()
-
-	expectedKey := "1-id-1000-" + common.HexToAddress(caller).Hex() + "-500-" + common.HexToAddress(pool).Hex() + "-10"
-	expectedSignature := []byte{0x01, 0x02, 0x03}
-	s.mockSignatureCacher.EXPECT().
-		Subscribe(gomock.Any(), expectedKey, gomock.Any()).
-		Do(func(ctx context.Context, id string, sigChannel chan []byte) {
-			go func() {
-				sigChannel <- expectedSignature
-			}()
+			s.Equal(tt.wantCode, recorder.Code)
 		})
-
-	go s.handler.HandleRequest(recorder, req)
-
-	time.Sleep(50 * time.Millisecond)
-
-	s.Equal(http.StatusOK, recorder.Code)
-	s.Equal("text/event-stream", recorder.Header().Get("Content-Type"))
-	s.Equal("no-cache", recorder.Header().Get("Cache-Control"))
-	s.Equal("keep-alive", recorder.Header().Get("Connection"))
-	s.Equal("*", recorder.Header().Get("Access-Control-Allow-Origin"))
-	s.Equal("data: "+hex.EncodeToString(expectedSignature)+"\n\n", recorder.Body.String())
+	}
 }
 
-func (s *StatusHandlerTestSuite) Test_HandleRequest_LegacyKeyWithoutParams() {
-	req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures/id", nil)
-	req = mux.SetURLVars(req, map[string]string{
-		"chainId":   "1",
-		"depositId": "id",
-	})
+func (s *StatusHandlerTestSuite) Test_HandleRequest_SubscribeKey() {
+	caller := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	pool := common.HexToAddress("0x3333333333333333333333333333333333333333")
+	lowerCaller := common.HexToAddress("0xabcdef0123456789abcdef0123456789abcdef01")
+	lowerPool := common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678")
 
-	recorder := httptest.NewRecorder()
+	tests := []struct {
+		name      string
+		depositId string
+		query     string
+		wantKey   string
+	}{
+		{
+			name:      "legacy key without params",
+			depositId: "id",
+			wantKey:   "1-id",
+		},
+		{
+			name:      "composite key from params",
+			depositId: "id",
+			query:     "?deadline=1000&caller=" + caller.Hex() + "&borrowAmount=500&liquidityPool=" + pool.Hex() + "&repaymentChainId=10",
+			wantKey:   signature.BorrowSessionID(1, "id", 1000, caller, big.NewInt(500), pool, 10),
+		},
+		{
+			// Lowercase addresses and a leading-zero deposit id must still map to the canonical publish key.
+			name:      "composite key normalizes address casing and deposit id",
+			depositId: "0042",
+			query:     "?deadline=1000&caller=0xabcdef0123456789abcdef0123456789abcdef01&borrowAmount=500&liquidityPool=0x1234567890abcdef1234567890abcdef12345678&repaymentChainId=10",
+			wantKey:   signature.BorrowSessionID(1, "42", 1000, lowerCaller, big.NewInt(500), lowerPool, 10),
+		},
+	}
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			req := httptest.NewRequest(http.MethodGet, "/v1/chains/1/signatures/"+tt.depositId+tt.query, nil)
+			req = mux.SetURLVars(req, map[string]string{"chainId": "1", "depositId": tt.depositId})
+			recorder := httptest.NewRecorder()
 
-	expectedSignature := []byte{0x01, 0x02, 0x03}
-	s.mockSignatureCacher.EXPECT().
-		Subscribe(gomock.Any(), "1-id", gomock.Any()).
-		Do(func(ctx context.Context, id string, sigChannel chan []byte) {
-			go func() {
-				sigChannel <- expectedSignature
-			}()
+			expectedSignature := []byte{0x01, 0x02, 0x03}
+			s.mockSignatureCacher.EXPECT().
+				Subscribe(gomock.Any(), tt.wantKey, gomock.Any()).
+				Do(func(ctx context.Context, id string, sigChannel chan []byte) {
+					go func() {
+						sigChannel <- expectedSignature
+					}()
+				})
+
+			go s.handler.HandleRequest(recorder, req)
+
+			time.Sleep(50 * time.Millisecond)
+
+			s.Equal(http.StatusOK, recorder.Code)
+			s.Equal("text/event-stream", recorder.Header().Get("Content-Type"))
+			s.Equal("no-cache", recorder.Header().Get("Cache-Control"))
+			s.Equal("keep-alive", recorder.Header().Get("Connection"))
+			s.Equal("*", recorder.Header().Get("Access-Control-Allow-Origin"))
+			s.Equal("data: "+hex.EncodeToString(expectedSignature)+"\n\n", recorder.Body.String())
 		})
-
-	go s.handler.HandleRequest(recorder, req)
-
-	time.Sleep(100 * time.Millisecond) // Give some time for the goroutine to execute
-
-	s.Equal(http.StatusOK, recorder.Code)
-	s.Equal("data: "+hex.EncodeToString(expectedSignature)+"\n\n", recorder.Body.String())
+	}
 }
