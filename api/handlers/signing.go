@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
-	lighterChain "github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -146,7 +145,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
 		return
 	}
-	h.sigCache.Remove(sessionKey(b.Protocol, b.ChainId, b.DepositId))
+	h.sigCache.Remove(signing.SessionID(b.ChainId, b.DepositId))
 	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
@@ -195,13 +194,6 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 	}
 
 	return nil
-}
-
-func sessionKey(protocol ProtocolType, chainID uint64, depositID string) string {
-	if protocol == LighterProtocol {
-		return signing.SessionID(lighterChain.LIGHTER_DOMAIN_ID, depositID)
-	}
-	return signing.SessionID(chainID, depositID)
 }
 
 type SignatureCacher interface {

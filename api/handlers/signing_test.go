@@ -38,6 +38,7 @@ func (s *SigningHandlerTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	chains := make(map[uint64]struct{})
 	chains[1] = struct{}{}
+	chains[lighterChain.LIGHTER_DOMAIN_ID] = struct{}{}
 	s.chains = chains
 	s.mockRemover = mock_handlers.NewMockSignatureRemover(ctrl)
 }
@@ -364,7 +365,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
 	req = mux.SetURLVars(req, map[string]string{
-		"chainId": "1",
+		"chainId": fmt.Sprintf("%d", lighterChain.LIGHTER_DOMAIN_ID),
 	})
 	req.Header.Set("Content-Type", "application/json")
 
