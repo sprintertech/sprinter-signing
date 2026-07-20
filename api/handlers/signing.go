@@ -13,6 +13,7 @@ import (
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	lighterChain "github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
@@ -198,9 +199,9 @@ func (h *SigningHandler) validate(b *SigningBody, vars map[string]string) error 
 
 func sessionKey(protocol ProtocolType, chainID uint64, depositID string) string {
 	if protocol == LighterProtocol {
-		return fmt.Sprintf("%d-%s", lighterChain.LIGHTER_DOMAIN_ID, depositID)
+		return signing.SessionID(lighterChain.LIGHTER_DOMAIN_ID, depositID)
 	}
-	return fmt.Sprintf("%d-%s", chainID, depositID)
+	return signing.SessionID(chainID, depositID)
 }
 
 type SignatureCacher interface {
@@ -249,7 +250,7 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	sigChn := make(chan []byte, 1)
-	h.cache.Subscribe(ctx, fmt.Sprintf("%d-%s", chainId, depositId), sigChn)
+	h.cache.Subscribe(ctx, signing.SessionID(chainId.Uint64(), depositId), sigChn)
 	for {
 		select {
 		case <-r.Context().Done():

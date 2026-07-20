@@ -231,141 +231,194 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	s.Equal(http.StatusBadRequest, recorder.Code)
 }
 
-func (s *SigningHandlerTestSuite) Test_HandleSigning_DispatchesAndInvalidates() {
-	tests := []struct {
-		name     string
-		body     handlers.SigningBody
-		wantKey  string
-		respond  func(msg []*message.Message)
-		wantCode int
-	}{
-		{
-			name: "across signing error",
-			body: handlers.SigningBody{
-				DepositId:     "1000",
-				Protocol:      "across",
-				LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Nonce:         &handlers.BigInt{big.NewInt(1001)},
-				BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
-				//nolint:gosec
-				Deadline: uint64(time.Now().Unix()),
-			},
-			wantKey: "1-1000",
-			respond: func(msg []*message.Message) {
-				ad := msg[0].Data.(*across.AcrossData)
-				ad.ErrChn <- fmt.Errorf("error handling message")
-			},
-			wantCode: http.StatusInternalServerError,
-		},
-		{
-			name: "across success",
-			body: handlers.SigningBody{
-				DepositId:        "1000",
-				Protocol:         "across",
-				LiquidityPool:    "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Caller:           "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				BorrowAmount:     &handlers.BigInt{big.NewInt(1000)},
-				Nonce:            &handlers.BigInt{big.NewInt(1001)},
-				RepaymentChainId: 5,
-				//nolint:gosec
-				Deadline: uint64(time.Now().Unix()),
-			},
-			wantKey: "1-1000",
-			respond: func(msg []*message.Message) {
-				ad := msg[0].Data.(*across.AcrossData)
-				s.Equal(ad.RepaymentChainID, uint64(5))
-				ad.ErrChn <- nil
-			},
-			wantCode: http.StatusAccepted,
-		},
-		{
-			name: "lifi-escrow success",
-			body: handlers.SigningBody{
-				DepositId:     "depositID",
-				Protocol:      "lifi-escrow",
-				LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Calldata:      "0xbe5",
-				Nonce:         &handlers.BigInt{big.NewInt(1001)},
-				BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
-				//nolint:gosec
-				Deadline: uint64(time.Now().Unix()),
-			},
-			wantKey: "1-depositID",
-			respond: func(msg []*message.Message) {
-				ad := msg[0].Data.(*across.LifiEscrowData)
-				ad.ErrChn <- nil
-			},
-			wantCode: http.StatusAccepted,
-		},
-		{
-			name: "lighter success",
-			body: handlers.SigningBody{
-				DepositId:     "depositID",
-				Protocol:      "lighter",
-				LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Calldata:      "0xbe5",
-				Nonce:         &handlers.BigInt{big.NewInt(1001)},
-				BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
-				//nolint:gosec
-				Deadline: uint64(time.Now().Unix()),
-			},
-			wantKey: fmt.Sprintf("%d-depositID", lighterChain.LIGHTER_DOMAIN_ID),
-			respond: func(msg []*message.Message) {
-				ad := msg[0].Data.(*lighter.LighterData)
-				ad.ErrChn <- nil
-			},
-			wantCode: http.StatusAccepted,
-		},
-		{
-			name: "sprinter-credit success",
-			body: handlers.SigningBody{
-				DepositId:     "depositID",
-				Protocol:      "sprinter-credit",
-				LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
-				Calldata:      "0xbe5",
-				Nonce:         &handlers.BigInt{big.NewInt(1001)},
-				BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
-				//nolint:gosec
-				Deadline: uint64(time.Now().Unix()),
-			},
-			wantKey: "1-depositID",
-			respond: func(msg []*message.Message) {
-				ad := msg[0].Data.(*across.SprinterCreditData)
-				ad.ErrChn <- nil
-			},
-			wantCode: http.StatusAccepted,
-		},
+func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+
+	input := handlers.SigningBody{
+		DepositId:     "1000",
+		Protocol:      "across",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		//nolint:gosec
+		Deadline: uint64(time.Now().Unix()),
 	}
+	body, _ := json.Marshal(input)
 
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			msgChn := make(chan []*message.Message)
-			handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
 
-			body, _ := json.Marshal(tt.body)
-			req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
-			req = mux.SetURLVars(req, map[string]string{
-				"chainId": "1",
-			})
-			req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
 
-			recorder := httptest.NewRecorder()
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.AcrossData)
+		ad.ErrChn <- fmt.Errorf("error handling message")
+	}()
 
-			go func() {
-				tt.respond(<-msgChn)
-			}()
+	s.mockRemover.EXPECT().Remove("1-1000")
 
-			s.mockRemover.EXPECT().Remove(tt.wantKey)
+	handler.HandleSigning(recorder, req)
 
-			handler.HandleSigning(recorder, req)
+	s.Equal(http.StatusInternalServerError, recorder.Code)
+}
 
-			s.Equal(tt.wantCode, recorder.Code)
-		})
+func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+
+	input := handlers.SigningBody{
+		DepositId:        "1000",
+		Protocol:         "across",
+		LiquidityPool:    "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:           "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		BorrowAmount:     &handlers.BigInt{big.NewInt(1000)},
+		Nonce:            &handlers.BigInt{big.NewInt(1001)},
+		RepaymentChainId: 5,
+		//nolint:gosec
+		Deadline: uint64(time.Now().Unix()),
 	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.AcrossData)
+		s.Equal(ad.RepaymentChainID, uint64(5))
+		ad.ErrChn <- nil
+	}()
+
+	s.mockRemover.EXPECT().Remove("1-1000")
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
+}
+
+func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+
+	input := handlers.SigningBody{
+		DepositId:     "depositID",
+		Protocol:      "lifi-escrow",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Calldata:      "0xbe5",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		//nolint:gosec
+		Deadline: uint64(time.Now().Unix()),
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.LifiEscrowData)
+		ad.ErrChn <- nil
+	}()
+
+	s.mockRemover.EXPECT().Remove("1-depositID")
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
+}
+
+func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+
+	input := handlers.SigningBody{
+		DepositId:     "depositID",
+		Protocol:      "lighter",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Calldata:      "0xbe5",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		//nolint:gosec
+		Deadline: uint64(time.Now().Unix()),
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*lighter.LighterData)
+		ad.ErrChn <- nil
+	}()
+
+	s.mockRemover.EXPECT().Remove(fmt.Sprintf("%d-depositID", lighterChain.LIGHTER_DOMAIN_ID))
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
+}
+
+func (s *SigningHandlerTestSuite) Test_HandleSigning_SprinterSuccess() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+
+	input := handlers.SigningBody{
+		DepositId:     "depositID",
+		Protocol:      "sprinter-credit",
+		LiquidityPool: "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Caller:        "0xbe526bA5d1ad94cC59D7A79d99A59F607d31A657",
+		Calldata:      "0xbe5",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		//nolint:gosec
+		Deadline: uint64(time.Now().Unix()),
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.SprinterCreditData)
+		ad.ErrChn <- nil
+	}()
+
+	s.mockRemover.EXPECT().Remove("1-depositID")
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
 }
 
 type StatusHandlerTestSuite struct {

@@ -50,6 +50,10 @@ type Signing struct {
 	subscriptionID comm.SubscriptionID
 }
 
+func SessionID(chainID uint64, depositID string) string {
+	return fmt.Sprintf("%d-%s", chainID, depositID)
+}
+
 func NewSigning(
 	msg *big.Int,
 	messageID string,
