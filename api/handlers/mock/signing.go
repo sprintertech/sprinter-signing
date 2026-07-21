@@ -51,3 +51,39 @@ func (mr *MockSignatureCacherMockRecorder) Subscribe(ctx, id, sigChannel any) *g
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockSignatureCacher)(nil).Subscribe), ctx, id, sigChannel)
 }
+
+// MockSignatureRemover is a mock of SignatureRemover interface.
+type MockSignatureRemover struct {
+	ctrl     *gomock.Controller
+	recorder *MockSignatureRemoverMockRecorder
+	isgomock struct{}
+}
+
+// MockSignatureRemoverMockRecorder is the mock recorder for MockSignatureRemover.
+type MockSignatureRemoverMockRecorder struct {
+	mock *MockSignatureRemover
+}
+
+// NewMockSignatureRemover creates a new mock instance.
+func NewMockSignatureRemover(ctrl *gomock.Controller) *MockSignatureRemover {
+	mock := &MockSignatureRemover{ctrl: ctrl}
+	mock.recorder = &MockSignatureRemoverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSignatureRemover) EXPECT() *MockSignatureRemoverMockRecorder {
+	return m.recorder
+}
+
+// Remove mocks base method.
+func (m *MockSignatureRemover) Remove(id string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Remove", id)
+}
+
+// Remove indicates an expected call of Remove.
+func (mr *MockSignatureRemoverMockRecorder) Remove(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockSignatureRemover)(nil).Remove), id)
+}

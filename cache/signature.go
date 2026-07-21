@@ -68,6 +68,10 @@ func (s *SignatureCache) Subscribe(ctx context.Context, id string, sigChannel ch
 	}
 }
 
+func (s *SignatureCache) Remove(id string) {
+	s.sigCache.Delete(id)
+}
+
 func (s *SignatureCache) Signature(id string) ([]byte, error) {
 	sig := s.sigCache.Get(id)
 	if sig == nil {

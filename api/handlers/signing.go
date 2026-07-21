@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
+	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 )
 
@@ -41,14 +42,16 @@ type SigningBody struct {
 }
 
 type SigningHandler struct {
-	msgChan chan []*message.Message
-	chains  map[uint64]struct{}
+	msgChan  chan []*message.Message
+	chains   map[uint64]struct{}
+	sigCache SignatureRemover
 }
 
-func NewSigningHandler(msgChan chan []*message.Message, chains map[uint64]struct{}) *SigningHandler {
+func NewSigningHandler(msgChan chan []*message.Message, chains map[uint64]struct{}, sigCache SignatureRemover) *SigningHandler {
 	return &SigningHandler{
-		msgChan: msgChan,
-		chains:  chains,
+		msgChan:  msgChan,
+		chains:   chains,
+		sigCache: sigCache,
 	}
 }
 
@@ -142,6 +145,7 @@ func (h *SigningHandler) HandleSigning(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, fmt.Errorf("invalid protocol %s", b.Protocol), http.StatusBadRequest)
 		return
 	}
+	h.sigCache.Remove(signing.SessionID(b.ChainId, b.DepositId))
 	h.msgChan <- []*message.Message{m}
 
 	err = <-errChn
@@ -196,6 +200,10 @@ type SignatureCacher interface {
 	Subscribe(ctx context.Context, id string, sigChannel chan []byte)
 }
 
+type SignatureRemover interface {
+	Remove(id string)
+}
+
 type StatusHandler struct {
 	cache  SignatureCacher
 	chains map[uint64]struct{}
@@ -234,7 +242,7 @@ func (h *StatusHandler) HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	sigChn := make(chan []byte, 1)
-	h.cache.Subscribe(ctx, fmt.Sprintf("%d-%s", chainId, depositId), sigChn)
+	h.cache.Subscribe(ctx, signing.SessionID(chainId.Uint64(), depositId), sigChn)
 	for {
 		select {
 		case <-r.Context().Done():

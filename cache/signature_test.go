@@ -123,6 +123,24 @@ func (s *SignatureCacheTestSuite) Test_Subscribe_ValidMessage_EarlyExit() {
 	s.Equal(sig, expectedSig.Signature)
 }
 
+func (s *SignatureCacheTestSuite) Test_Remove_DeletesCachedSignature() {
+	expectedSig := signing.EcdsaSignature{
+		Signature: []byte("signature"),
+		ID:        "signatureID",
+	}
+	s.mockMetrics.EXPECT().EndProcess(expectedSig.ID)
+	s.sigChn <- expectedSig
+	time.Sleep(time.Millisecond * 100)
+
+	_, err := s.sc.Signature(expectedSig.ID)
+	s.Nil(err)
+
+	s.sc.Remove(expectedSig.ID)
+
+	_, err = s.sc.Signature(expectedSig.ID)
+	s.NotNil(err)
+}
+
 func (s *SignatureCacheTestSuite) Test_Subscribe_ValidMessage() {
 	expectedSig := signing.EcdsaSignature{
 		Signature: []byte("signature"),

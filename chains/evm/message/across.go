@@ -197,7 +197,7 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("%d-%s", sourceChainID, data.DepositId)
+	sessionID := signing.SessionID(sourceChainID, data.DepositId.String())
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,

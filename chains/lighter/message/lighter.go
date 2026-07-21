@@ -124,7 +124,7 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		return nil, err
 	}
 
-	sessionID := fmt.Sprintf("%d-%s", lighterChain.LIGHTER_DOMAIN_ID, data.OrderHash)
+	sessionID := signing.SessionID(lighterChain.LIGHTER_DOMAIN_ID, data.OrderHash)
 	signing, err := signing.NewSigning(
 		new(big.Int).SetBytes(unlockHash),
 		sessionID,

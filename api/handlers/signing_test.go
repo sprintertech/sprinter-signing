@@ -16,6 +16,7 @@ import (
 	"github.com/sprintertech/sprinter-signing/api/handlers"
 	mock_handlers "github.com/sprintertech/sprinter-signing/api/handlers/mock"
 	across "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	lighterChain "github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighter "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/stretchr/testify/suite"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
@@ -25,7 +26,8 @@ import (
 type SigningHandlerTestSuite struct {
 	suite.Suite
 
-	chains map[uint64]struct{}
+	chains      map[uint64]struct{}
+	mockRemover *mock_handlers.MockSignatureRemover
 }
 
 func TestRunSigningHandlerTestSuite(t *testing.T) {
@@ -33,14 +35,17 @@ func TestRunSigningHandlerTestSuite(t *testing.T) {
 }
 
 func (s *SigningHandlerTestSuite) SetupTest() {
+	ctrl := gomock.NewController(s.T())
 	chains := make(map[uint64]struct{})
 	chains[1] = struct{}{}
+	chains[lighterChain.LIGHTER_DOMAIN_ID] = struct{}{}
 	s.chains = chains
+	s.mockRemover = mock_handlers.NewMockSignatureRemover(ctrl)
 }
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		Protocol:      "across",
@@ -71,7 +76,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingDepositID() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingCaller() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		Protocol:      "across",
@@ -102,7 +107,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingCaller() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingLiquidityPool() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		Protocol:  "across",
@@ -133,7 +138,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_MissingLiquidityPool() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "1000",
@@ -165,7 +170,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidChainID() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "1000",
@@ -197,7 +202,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ChainNotSupported() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "1000",
@@ -229,7 +234,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_InvalidProtocol() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "1000",
@@ -257,6 +262,8 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 		ad.ErrChn <- fmt.Errorf("error handling message")
 	}()
 
+	s.mockRemover.EXPECT().Remove("1-1000")
+
 	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusInternalServerError, recorder.Code)
@@ -264,7 +271,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_ErrorHandlingMessage() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:        "1000",
@@ -294,6 +301,8 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 		ad.ErrChn <- nil
 	}()
 
+	s.mockRemover.EXPECT().Remove("1-1000")
+
 	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusAccepted, recorder.Code)
@@ -301,7 +310,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_AcrossSuccess() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "depositID",
@@ -330,6 +339,8 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 		ad.ErrChn <- nil
 	}()
 
+	s.mockRemover.EXPECT().Remove("1-depositID")
+
 	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusAccepted, recorder.Code)
@@ -337,7 +348,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "depositID",
@@ -354,7 +365,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
 	req = mux.SetURLVars(req, map[string]string{
-		"chainId": "1",
+		"chainId": fmt.Sprintf("%d", lighterChain.LIGHTER_DOMAIN_ID),
 	})
 	req.Header.Set("Content-Type", "application/json")
 
@@ -366,6 +377,8 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 		ad.ErrChn <- nil
 	}()
 
+	s.mockRemover.EXPECT().Remove(fmt.Sprintf("%d-depositID", lighterChain.LIGHTER_DOMAIN_ID))
+
 	handler.HandleSigning(recorder, req)
 
 	s.Equal(http.StatusAccepted, recorder.Code)
@@ -373,7 +386,7 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 
 func (s *SigningHandlerTestSuite) Test_HandleSigning_SprinterSuccess() {
 	msgChn := make(chan []*message.Message)
-	handler := handlers.NewSigningHandler(msgChn, s.chains)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
 
 	input := handlers.SigningBody{
 		DepositId:     "depositID",
@@ -401,6 +414,8 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_SprinterSuccess() {
 		ad := msg[0].Data.(*across.SprinterCreditData)
 		ad.ErrChn <- nil
 	}()
+
+	s.mockRemover.EXPECT().Remove("1-depositID")
 
 	handler.HandleSigning(recorder, req)
 
