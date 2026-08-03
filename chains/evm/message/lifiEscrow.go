@@ -207,21 +207,21 @@ func (h *LifiEscrowMessageHandler) borrowToken(
 	destChainID := order.Order.Outputs[0].ChainID
 
 	tokenIn, err := h.tokenResolver.Token(
-		order.GenericInputs[0].ChainID,
+		order.GenericInputs[0].ChainCAIP,
 		*order.GenericInputs[0].TokenAddress)
 	if err != nil {
 		return common.Address{}, destChainID, err
 	}
 
 	tokenOut, err := h.tokenResolver.Token(
-		order.GenericOutputs[0].ChainID,
+		order.GenericOutputs[0].ChainCAIP,
 		*order.GenericOutputs[0].TokenAddress)
 	if err != nil {
 		return common.Address{}, destChainID, err
 	}
 
 	borrowToken, err := h.tokenResolver.Token(
-		order.GenericOutputs[0].ChainID,
+		order.GenericOutputs[0].ChainCAIP,
 		common.HexToHash(data.BorrowToken))
 	if err != nil {
 		return common.Address{}, destChainID, err
@@ -312,7 +312,7 @@ func (h *LifiEscrowMessageHandler) verifyOrder(order *lifi.LifiOrder) error {
 		return fmt.Errorf("orders with multiple outputs not supported")
 	}
 
-	augmentedOrder, err := order.AugmentedOrder(h.orderPricer, h.router)
+	augmentedOrder, err := order.Augment(h.orderPricer, h.router)
 	if err != nil {
 		return err
 	}

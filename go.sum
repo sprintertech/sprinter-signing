@@ -866,6 +866,8 @@ github.com/sprintertech/solver-sdk v1.1.1-0.20260601115250-a36231b8d2c9 h1:kp9i0
 github.com/sprintertech/solver-sdk v1.1.1-0.20260601115250-a36231b8d2c9/go.mod h1:q51ocPUe2iAkFn2r/fNM2BC2jxT6I3Y6St0FLlLhhcE=
 github.com/sprintertech/solver-sdk v1.1.1-0.20260603124303-1ed548ec1276 h1:2U300r1DLSvgAGNPmPcDWwlsvZP3C1RPgCvWTRjeIJU=
 github.com/sprintertech/solver-sdk v1.1.1-0.20260603124303-1ed548ec1276/go.mod h1:q51ocPUe2iAkFn2r/fNM2BC2jxT6I3Y6St0FLlLhhcE=
+github.com/sprintertech/solver-sdk v1.1.1-0.20260803104321-13b29d9de200 h1:gM/Atr95Masa5BnAB5ed+21v7xxQgvZRjzsAtLtI4XE=
+github.com/sprintertech/solver-sdk v1.1.1-0.20260803104321-13b29d9de200/go.mod h1:fKLyAJ231pSQTt5itZlzU2vpStp3az60VYv67EIu3Kg=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

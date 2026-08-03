@@ -141,9 +141,8 @@ func Run() error {
 	msgChan := make(chan []*message.Message)
 	sigChn := make(chan interface{})
 
-	priceAPI := price.NewCoinmarketcapAPI(
-		configuration.RelayerConfig.CoinmarketcapConfig.Url,
-		configuration.RelayerConfig.CoinmarketcapConfig.ApiKey)
+	priceAPI, err := price.NewPythPricer(ctx)
+	panicOnError(err)
 
 	signatureCache := cache.NewSignatureCache(communication, sygmaMetrics)
 	go signatureCache.Watch(ctx, sigChn)

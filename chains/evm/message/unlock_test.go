@@ -94,13 +94,13 @@ func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenEqualsInputTo
 	s.mockApi.EXPECT().GetOrder(gomock.Any()).Return(&lifi.LifiOrder{
 		GenericInputs: []order.Input{
 			{
-				ChainID:      order.ChainID("eip155:10"),
+				ChainCAIP:    order.ChainCAIP("eip155:10"),
 				TokenAddress: &inputTokenAddr,
 			},
 		},
 		GenericOutputs: []order.Output{
 			{
-				ChainID: order.ChainID("eip155:8453"),
+				ChainCAIP: order.ChainCAIP("eip155:8453"),
 			},
 		},
 	}, nil)
@@ -135,17 +135,17 @@ func (s *LifiUnlockHandlerTestSuite) Test_HandleMessage_BorrowTokenIsDifferent()
 	s.mockApi.EXPECT().GetOrder(gomock.Any()).Return(&lifi.LifiOrder{
 		GenericInputs: []order.Input{
 			{
-				ChainID:      order.ChainID("eip155:10"),
+				ChainCAIP:    order.ChainCAIP("eip155:10"),
 				TokenAddress: &inputTokenAddr,
 			},
 		},
 		GenericOutputs: []order.Output{
 			{
-				ChainID: order.ChainID("eip155:8453"),
+				ChainCAIP: order.ChainCAIP("eip155:8453"),
 			},
 		},
 	}, nil)
-	s.mockTokenResolver.EXPECT().Token(order.ChainID("eip155:10"), borrowToken).Return(
+	s.mockTokenResolver.EXPECT().Token(order.ChainCAIP("eip155:10"), borrowToken).Return(
 		token.Token{
 			Symbol: "usdc",
 		},

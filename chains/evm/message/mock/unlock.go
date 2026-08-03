@@ -82,7 +82,7 @@ func (m *MockTokenResolver) EXPECT() *MockTokenResolverMockRecorder {
 }
 
 // Token mocks base method.
-func (m *MockTokenResolver) Token(caipID order.ChainID, address [32]byte) (token.Token, error) {
+func (m *MockTokenResolver) Token(caipID order.ChainCAIP, address [32]byte) (token.Token, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Token", caipID, address)
 	ret0, _ := ret[0].(token.Token)
