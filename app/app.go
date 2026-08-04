@@ -173,10 +173,9 @@ func Run() error {
 
 	usdPricer := pyth.NewClient(ctx)
 	err = usdPricer.Start(ctx)
-
-	priceAPI := price.NewPythPricer(usdPricer)
 	multiPricer := aggregator.New(usdPricer)
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
+	priceAPI := price.NewPricerProxy(multiPricer)
 
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
