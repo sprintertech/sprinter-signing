@@ -114,9 +114,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV() {
 				ElectionWaitTime: 2 * time.Second,
 				BullyWaitTime:    3 * time.Minute,
 			},
-			CoinmarketcapConfig: relayer.CoinmarketcapConfig{
-				Url: "https://pro-api.coinmarketcap.com",
-			},
 			SolverConfig: relayer.SolverConfig{
 				AccessKey: "solverAccessKey",
 				SecretKey: "solverSecretKey",
@@ -235,10 +232,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromENV_RandomOrder() {
 				PingInterval:     1 * time.Second,
 				ElectionWaitTime: 2 * time.Second,
 				BullyWaitTime:    3 * time.Minute,
-			},
-			CoinmarketcapConfig: relayer.CoinmarketcapConfig{
-				Url:    "https://pro-api.coinmarketcap.com",
-				ApiKey: "cmckey",
 			},
 		},
 		ChainConfigs: []map[string]interface{}{
@@ -483,9 +476,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						ElectionWaitTime: 2 * time.Second,
 						BullyWaitTime:    3 * time.Minute,
 					},
-					CoinmarketcapConfig: relayer.CoinmarketcapConfig{
-						Url: "https://pro-api.coinmarketcap.com",
-					},
 				},
 				ChainConfigs: []map[string]interface{}{{
 					"id":   float64(1),
@@ -553,9 +543,6 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 						PingInterval:     time.Second,
 						ElectionWaitTime: time.Second,
 						BullyWaitTime:    time.Second,
-					},
-					CoinmarketcapConfig: relayer.CoinmarketcapConfig{
-						Url: "https://pro-api.coinmarketcap.com",
 					},
 				},
 				ChainConfigs: []map[string]interface{}{{

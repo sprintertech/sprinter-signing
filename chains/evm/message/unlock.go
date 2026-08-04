@@ -33,7 +33,7 @@ type LifiAPI interface {
 }
 
 type TokenResolver interface {
-	Token(caipID order.ChainID, address [32]byte) (token.Token, error)
+	Token(caipID order.ChainCAIP, address [32]byte) (token.Token, error)
 }
 
 type LifiUnlockHandler struct {
@@ -129,7 +129,7 @@ func (h *LifiUnlockHandler) repaymentAddress(
 	}
 
 	borrowToken, err := h.tokenResolver.Token(
-		order.GenericInputs[0].ChainID,
+		order.GenericInputs[0].ChainCAIP,
 		common.HexToHash(data.BorrowToken))
 	if err != nil {
 		return common.Address{}, err

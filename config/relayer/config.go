@@ -22,14 +22,8 @@ type RelayerConfig struct {
 	Id                        string
 	MpcConfig                 MpcRelayerConfig
 	BullyConfig               BullyConfig
-	CoinmarketcapConfig       CoinmarketcapConfig
 	SolverConfig              SolverConfig
 	ApiAddr                   string
-}
-
-type CoinmarketcapConfig struct {
-	Url    string `default:"https://pro-api.coinmarketcap.com"`
-	ApiKey string
 }
 
 type SolverConfig struct {
@@ -69,7 +63,6 @@ type RawRelayerConfig struct {
 	Id                        string              `mapstructure:"Id" json:"id"`
 	MpcConfig                 RawMpcRelayerConfig `mapstructure:"MpcConfig" json:"mpcConfig"`
 	BullyConfig               RawBullyConfig      `mapstructure:"BullyConfig" json:"bullyConfig"`
-	CoinmarketcapConfig       CoinmarketcapConfig `mapstructure:"CoinmarketcapConfig" json:"coinmarketcapConfig"`
 	SolverConfig              SolverConfig        `mapstructure:"SolverConfig" json:"solverConfig"`
 	ApiAddr                   string              `mapstructure:"apiAddr" default:"0.0.0.0:3000"`
 }
@@ -141,7 +134,6 @@ func NewRelayerConfig(rawConfig RawRelayerConfig) (RelayerConfig, error) {
 		return RelayerConfig{}, err
 	}
 
-	config.CoinmarketcapConfig = rawConfig.CoinmarketcapConfig
 	config.BullyConfig = bullyConfig
 	config.Env = rawConfig.Env
 	config.Id = rawConfig.Id
