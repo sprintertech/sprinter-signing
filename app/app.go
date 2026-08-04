@@ -39,6 +39,7 @@ import (
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	"github.com/sprintertech/sprinter-signing/metrics"
+	"github.com/sprintertech/sprinter-signing/price"
 
 	lifiConfig "github.com/sprintertech/solver-sdk/pkg/config"
 	"github.com/sprintertech/sprinter-signing/chains/lighter"
@@ -49,7 +50,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/jobs"
 	"github.com/sprintertech/sprinter-signing/keyshare"
-	"github.com/sprintertech/sprinter-signing/price"
 	"github.com/sprintertech/sprinter-signing/protocol/across"
 	"github.com/sprintertech/sprinter-signing/protocol/lifi"
 	lighterAPI "github.com/sprintertech/sprinter-signing/protocol/lighter"
@@ -141,9 +141,6 @@ func Run() error {
 	msgChan := make(chan []*message.Message)
 	sigChn := make(chan interface{})
 
-	priceAPI, err := price.NewPythPricer(ctx)
-	panicOnError(err)
-
 	signatureCache := cache.NewSignatureCache(communication, sygmaMetrics)
 	go signatureCache.Watch(ctx, sigChn)
 
@@ -176,9 +173,9 @@ func Run() error {
 
 	usdPricer := pyth.NewClient(ctx)
 	err = usdPricer.Start(ctx)
-	panicOnError(err)
 	multiPricer := aggregator.New(usdPricer)
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
+	priceAPI := price.NewPricerProxy(multiPricer)
 
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
