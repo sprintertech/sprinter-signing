@@ -1,7 +1,6 @@
 package price
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -12,16 +11,10 @@ type PythPricer struct {
 	client *pyth.PythClient
 }
 
-func NewPythPricer(ctx context.Context, opts ...pyth.PythClientOption) (*PythPricer, error) {
-	client := pyth.NewClient(ctx, opts...)
-	err := client.Start(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func NewPythPricer(client *pyth.PythClient) *PythPricer {
 	return &PythPricer{
-		client: pyth.NewClient(ctx, opts...),
-	}, nil
+		client: client,
+	}
 }
 
 func (p *PythPricer) TokenPrice(symbol string) (float64, error) {
