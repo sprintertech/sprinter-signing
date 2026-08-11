@@ -1,5 +1,6 @@
 
-.PHONY: help run build install license example e2e-test
+.PHONY: help run build install license example e2e-test \
+        build-ffi build-ffi-debug clean-ffi
 all: help
 
 export GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
@@ -63,3 +64,32 @@ $(PLATFORMS):
 	GOOS=$(os) GOARCH=$(arch) go build -ldflags "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=ignore" -o 'build/${os}-${arch}/relayer'; \
 
 build-all: $(PLATFORMS)
+
+# ── Rust FFI (cggmp21) ────────────────────────────────────────────────────────
+# Builds the cggmp21-ffi Rust crate as a static library for CGo consumption.
+# Targets linux/amd64 only (we build inside the Docker image).
+# Outputs:  rust/lib/libcggmp21_ffi.a  and  rust/include/cggmp21.h
+FFI_MANIFEST    := rust/Cargo.toml
+FFI_CRATE       := cggmp21-ffi
+FFI_OUT_LIB     := rust/lib
+FFI_OUT_INCLUDE := rust/include
+FFI_HEADER_SRC  := rust/cggmp21-ffi/include/cggmp21.h
+
+## build-ffi: Build cggmp21-ffi as a release static library and stage it for CGo.
+build-ffi:
+	cargo build --release --manifest-path $(FFI_MANIFEST) -p $(FFI_CRATE)
+	mkdir -p $(FFI_OUT_LIB) $(FFI_OUT_INCLUDE)
+	cp rust/target/release/libcggmp21_ffi.a $(FFI_OUT_LIB)/
+	cp $(FFI_HEADER_SRC) $(FFI_OUT_INCLUDE)/
+
+## build-ffi-debug: Same as build-ffi but unoptimised (faster to build).
+build-ffi-debug:
+	cargo build --manifest-path $(FFI_MANIFEST) -p $(FFI_CRATE)
+	mkdir -p $(FFI_OUT_LIB) $(FFI_OUT_INCLUDE)
+	cp rust/target/debug/libcggmp21_ffi.a $(FFI_OUT_LIB)/
+	cp $(FFI_HEADER_SRC) $(FFI_OUT_INCLUDE)/
+
+## clean-ffi: Remove staged FFI artifacts and the Rust target directory.
+clean-ffi:
+	cargo clean --manifest-path $(FFI_MANIFEST) -p $(FFI_CRATE)
+	rm -rf $(FFI_OUT_LIB) $(FFI_OUT_INCLUDE)
