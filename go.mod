@@ -223,24 +223,14 @@ require (
 replace (
 	github.com/agl/ed25519 => github.com/binance-chain/edwards25519 v0.0.0-20200305024217-f36fc4b53d43
 	github.com/binance-chain/tss-lib => github.com/ChainSafe/threshlib v0.0.0-20230420112309-603112eb4684
+	github.com/ethereum/go-ethereum => github.com/ethereum/go-ethereum v1.16.2
+	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.16.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric => go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.39.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp => go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.39.0
+	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v1.16.0
+	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v1.16.0
+	go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v0.39.0
+	go.opentelemetry.io/otel/trace => go.opentelemetry.io/otel/trace v1.16.0
+	go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.19.0
+	google.golang.org/grpc => google.golang.org/grpc v1.55.0
 )
-
-replace github.com/ethereum/go-ethereum => github.com/ethereum/go-ethereum v1.16.2
-
-replace google.golang.org/grpc => google.golang.org/grpc v1.55.0
-
-replace go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.16.0
-
-replace go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v1.16.0
-
-replace go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v1.16.0
-
-replace go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v0.39.0
-
-replace go.opentelemetry.io/otel/trace => go.opentelemetry.io/otel/trace v1.16.0
-
-replace go.opentelemetry.io/otel/exporters/otlp/otlpmetric => go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.39.0
-
-replace go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp => go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.39.0
-
-replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.19.0
