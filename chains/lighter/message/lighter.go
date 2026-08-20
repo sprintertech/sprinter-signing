@@ -16,11 +16,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
-	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
+	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
 	lighterChain "github.com/sprintertech/sprinter-signing/chains/lighter"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/protocol/lighter"
-	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
@@ -32,20 +31,15 @@ var (
 	USDC_DECIMALS      float64 = 6
 )
 
-type Coordinator interface {
-	Execute(ctx context.Context, tssProcesses []tss.TssProcess, resultChn chan interface{}, coordinator peer.ID) error
-}
-
 type TxFetcher interface {
 	GetTx(hash string) (*lighter.LighterTx, error)
 }
 
 type LighterMessageHandler struct {
-	coordinator Coordinator
-	host        host.Host
-	comm        comm.Communication
-	fetcher     signing.SaveDataFetcher
-	sigChn      chan any
+	host    host.Host
+	comm    comm.Communication
+	sigChn  chan any
+	msgChan chan []*message.Message
 
 	lighterAddress   common.Address
 	usdcAddress      common.Address
@@ -60,22 +54,20 @@ func NewLighterMessageHandler(
 	repaymentAccount string,
 	confirmations map[uint64]uint64,
 	txFetcher TxFetcher,
-	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
-	fetcher signing.SaveDataFetcher,
 	sigChn chan any,
+	msgChan chan []*message.Message,
 ) *LighterMessageHandler {
 	return &LighterMessageHandler{
 		txFetcher:        txFetcher,
 		usdcAddress:      usdcAddress,
 		repaymentAccount: repaymentAccount,
 		lighterAddress:   lighterAddress,
-		coordinator:      coordinator,
 		host:             host,
 		comm:             comm,
-		fetcher:          fetcher,
 		sigChn:           sigChn,
+		msgChan:          msgChan,
 		confirmations:    confirmations,
 	}
 }
@@ -109,37 +101,20 @@ func (h *LighterMessageHandler) HandleMessage(m *message.Message) (*proposal.Pro
 		return nil, err
 	}
 
-	unlockHash, err := signature.BorrowUnlockHash(
-		calldata,
-		new(big.Int).SetUint64(tx.Transfer.Amount),
-		h.usdcAddress,
-		ARBITRUM_CHAIN_ID,
-		h.lighterAddress,
-		data.Deadline,
-		h.lighterAddress,
-		data.LiquidityPool,
-		data.Nonce)
-	if err != nil {
-		data.ErrChn <- err
-		return nil, err
-	}
-
 	sessionID := signing.SessionID(lighterChain.LIGHTER_DOMAIN_ID, data.OrderHash)
-	signing, err := signing.NewSigning(
-		new(big.Int).SetBytes(unlockHash),
-		sessionID,
-		sessionID,
-		h.host,
-		h.comm,
-		h.fetcher)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-	if err != nil {
-		return nil, err
-	}
+	h.msgChan <- []*message.Message{evmMessage.NewSignMessage(0, ARBITRUM_CHAIN_ID.Uint64(), &evmMessage.SignRequest{
+		Calldata:      calldata,
+		BorrowAmount:  new(big.Int).SetUint64(tx.Transfer.Amount),
+		BorrowToken:   h.usdcAddress.Hex(),
+		Target:        h.lighterAddress.Hex(),
+		Deadline:      data.Deadline,
+		Caller:        h.lighterAddress.Hex(),
+		LiquidityPool: data.LiquidityPool,
+		Nonce:         data.Nonce,
+		SessionID:     sessionID,
+		Coordinator:   data.Coordinator,
+		ResultChn:     h.sigChn,
+	})}
 	return nil, nil
 }
 

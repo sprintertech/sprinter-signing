@@ -5,15 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog/log"
-	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
-	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
@@ -24,30 +21,27 @@ type SprinterCreditMessageHandler struct {
 
 	liquidators map[common.Address]common.Address
 
-	coordinator Coordinator
-	host        host.Host
-	comm        comm.Communication
-	fetcher     signing.SaveDataFetcher
-	sigChn      chan any
+	host    host.Host
+	comm    comm.Communication
+	sigChn  chan any
+	msgChan chan []*message.Message
 }
 
 func NewSprinterCreditMessageHandler(
 	chainID uint64,
 	liquidators map[common.Address]common.Address,
-	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
-	fetcher signing.SaveDataFetcher,
 	sigChn chan any,
+	msgChan chan []*message.Message,
 ) *SprinterCreditMessageHandler {
 	return &SprinterCreditMessageHandler{
 		chainID:     chainID,
-		coordinator: coordinator,
 		liquidators: liquidators,
 		host:        host,
 		comm:        comm,
-		fetcher:     fetcher,
 		sigChn:      sigChn,
+		msgChan:     msgChan,
 	}
 }
 
@@ -77,39 +71,22 @@ func (h *SprinterCreditMessageHandler) HandleMessage(m *message.Message) (*propo
 		return nil, err
 	}
 
-	unlockHash, err := signature.BorrowUnlockHash(
-		calldata,
-		data.BorrowAmount,
-		token,
-		new(big.Int).SetUint64(h.chainID),
-		liquidator,
-		data.Deadline,
-		data.Caller,
-		data.LiquidityPool,
-		data.Nonce,
-	)
-	if err != nil {
-		data.ErrChn <- err
-		return nil, err
-	}
 	data.ErrChn <- nil
 
 	sessionID := signing.SessionID(h.chainID, data.DepositID)
-	signing, err := signing.NewSigning(
-		new(big.Int).SetBytes(unlockHash),
-		sessionID,
-		sessionID,
-		h.host,
-		h.comm,
-		h.fetcher)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-	if err != nil {
-		return nil, err
-	}
+	h.msgChan <- []*message.Message{NewSignMessage(0, h.chainID, &SignRequest{
+		Calldata:      calldata,
+		BorrowAmount:  data.BorrowAmount,
+		BorrowToken:   token.Hex(),
+		Target:        liquidator.Hex(),
+		Deadline:      data.Deadline,
+		Caller:        data.Caller,
+		LiquidityPool: data.LiquidityPool,
+		Nonce:         data.Nonce,
+		SessionID:     sessionID,
+		Coordinator:   data.Coordinator,
+		ResultChn:     h.sigChn,
+	})}
 	return nil, nil
 }
 

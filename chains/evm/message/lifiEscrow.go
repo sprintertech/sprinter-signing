@@ -14,9 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/consts"
-	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
-	"github.com/sprintertech/sprinter-signing/tss"
 	"github.com/sprintertech/sprinter-signing/tss/ecdsa/signing"
 	"github.com/sygmaprotocol/sygma-core/relayer/message"
 	"github.com/sygmaprotocol/sygma-core/relayer/proposal"
@@ -42,49 +40,46 @@ type LifiEscrowMessageHandler struct {
 	router              router.OrderRouter
 	confirmationWatcher ConfirmationWatcher
 
-	lifiAddresses map[uint64]common.Address
+	lifiAddresses map[uint64]string
 	tokenResolver token.TokenResolver
 	mpcAddress    common.Address
 
 	orderFetcher OrderFetcher
 
-	coordinator Coordinator
-	host        host.Host
-	comm        comm.Communication
-	fetcher     signing.SaveDataFetcher
-	sigChn      chan any
+	host    host.Host
+	comm    comm.Communication
+	sigChn  chan any
+	msgChan chan []*message.Message
 }
 
 func NewLifiEscrowMessageHandler(
 	chainID uint64,
 	mpcAddress common.Address,
-	lifiAddresses map[uint64]common.Address,
-	coordinator Coordinator,
+	lifiAddresses map[uint64]string,
 	host host.Host,
 	comm comm.Communication,
-	fetcher signing.SaveDataFetcher,
+	sigChn chan any,
+	msgChan chan []*message.Message,
 	confirmationWatcher ConfirmationWatcher,
 	tokenResolver token.TokenResolver,
 	orderFetcher OrderFetcher,
 	orderPricer pricing.OrderPricer,
 	router router.OrderRouter,
 	validator OrderValidator,
-	sigChn chan any,
 ) *LifiEscrowMessageHandler {
 	return &LifiEscrowMessageHandler{
 		chainID:             chainID,
 		lifiAddresses:       lifiAddresses,
-		coordinator:         coordinator,
 		host:                host,
 		mpcAddress:          mpcAddress,
 		comm:                comm,
-		fetcher:             fetcher,
+		sigChn:              sigChn,
+		msgChan:             msgChan,
 		confirmationWatcher: confirmationWatcher,
 		tokenResolver:       tokenResolver,
 		orderFetcher:        orderFetcher,
 		orderPricer:         orderPricer,
 		validator:           validator,
-		sigChn:              sigChn,
 		router:              router,
 	}
 }
@@ -148,8 +143,13 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		return nil, err
 	}
 
+	target, ok := h.lifiAddresses[destChainID]
+	if !ok {
+		return nil, fmt.Errorf("no lifi output settler configured for chain %d", destChainID)
+	}
+
 	log.Debug().Msgf(`
-		Singing lifi unlock hash.
+		Dispatching lifi borrow authorization.
 		Calldata: %s
 		Amount: %s
 		Borrow token: %s,
@@ -160,42 +160,25 @@ func (h *LifiEscrowMessageHandler) HandleMessage(m *message.Message) (*proposal.
 		hex.EncodeToString(calldata),
 		data.BorrowAmount,
 		borrowToken.Hex(),
-		h.lifiAddresses[destChainID].Hex(),
+		target,
 		data.Nonce,
 		data.Deadline,
 	)
-
-	unlockHash, err := signature.BorrowUnlockHash(
-		calldata,
-		data.BorrowAmount,
-		borrowToken,
-		new(big.Int).SetUint64(destChainID),
-		h.lifiAddresses[destChainID],
-		data.Deadline,
-		data.Caller,
-		data.LiquidityPool,
-		data.Nonce,
-	)
-	if err != nil {
-		return nil, err
-	}
 
 	sessionID := signing.SessionID(h.chainID, data.OrderID)
-	signing, err := signing.NewSigning(
-		new(big.Int).SetBytes(unlockHash),
-		sessionID,
-		sessionID,
-		h.host,
-		h.comm,
-		h.fetcher)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-	if err != nil {
-		return nil, err
-	}
+	h.msgChan <- []*message.Message{NewSignMessage(0, destChainID, &SignRequest{
+		Calldata:      calldata,
+		BorrowAmount:  data.BorrowAmount,
+		BorrowToken:   borrowToken.Hex(),
+		Target:        target,
+		Deadline:      data.Deadline,
+		Caller:        data.Caller,
+		LiquidityPool: data.LiquidityPool,
+		Nonce:         data.Nonce,
+		SessionID:     sessionID,
+		Coordinator:   data.Coordinator,
+		ResultChn:     h.sigChn,
+	})}
 	return nil, nil
 }
 

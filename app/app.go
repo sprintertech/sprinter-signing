@@ -38,6 +38,9 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
+	"github.com/sprintertech/sprinter-signing/chains/tron"
+	tronMessage "github.com/sprintertech/sprinter-signing/chains/tron/message"
+
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
 
@@ -177,9 +180,11 @@ func Run() error {
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
 	priceAPI := price.NewPricerProxy(multiPricer)
 
+	evmSignHandler := evmMessage.NewSignHandler(coordinator, host, communication, keyshareStore)
+
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
-	lifiOutputSettlers := make(map[uint64]common.Address)
+	lifiOutputSettlers := make(map[uint64]string)
 	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
 	for _, chainConfig := range configuration.ChainConfigs {
@@ -202,8 +207,7 @@ func Run() error {
 				}
 
 				if c.LifiOutputSettler != "" {
-					settlerAddress := common.HexToAddress(c.LifiOutputSettler)
-					lifiOutputSettlers[*c.GeneralChainConfig.Id] = settlerAddress
+					lifiOutputSettlers[*c.GeneralChainConfig.Id] = c.LifiOutputSettler
 				}
 
 				if c.AcrossHubPool != "" {
@@ -254,6 +258,8 @@ func Run() error {
 				)
 
 				mh := message.NewMessageHandler()
+				mh.RegisterMessageHandler(evmMessage.SignMessageType, evmSignHandler)
+
 				if c.AcrossPool != "" {
 					acrossDepositFetcher := across.NewAcrossDepositFetcher(
 						*c.GeneralChainConfig.Id,
@@ -267,13 +273,12 @@ func Run() error {
 						tokenStore,
 						acrossPools,
 						repayerAddresses,
-						coordinator,
 						host,
 						communication,
-						keyshareStore,
 						acrossDepositFetcher,
 						watcher,
-						sigChn)
+						sigChn,
+						msgChan)
 					go acrossMh.Listen(ctx)
 
 					mh.RegisterMessageHandler(message.MessageType(comm.AcrossMsg.String()), acrossMh)
@@ -314,17 +319,16 @@ func Run() error {
 						*c.GeneralChainConfig.Id,
 						mpcAddress,
 						lifiOutputSettlers,
-						coordinator,
 						host,
 						communication,
-						keyshareStore,
+						sigChn,
+						msgChan,
 						watcher,
 						resolver,
 						lifiApi,
 						orderPricer,
 						router.NewRouter(resolver, nil, nil, lifiConfig.Routes),
 						lifiValidator,
-						sigChn,
 					)
 					go lifiMh.Listen(ctx)
 					mh.RegisterMessageHandler(message.MessageType(comm.LifiEscrowMsg.String()), lifiMh)
@@ -336,11 +340,10 @@ func Run() error {
 					srcMh := evmMessage.NewSprinterCreditMessageHandler(
 						*c.GeneralChainConfig.Id,
 						c.Liquidators,
-						coordinator,
 						host,
 						communication,
-						keyshareStore,
 						sigChn,
+						msgChan,
 					)
 					go srcMh.Listen(ctx)
 					mh.RegisterMessageHandler(
@@ -400,16 +403,20 @@ func Run() error {
 		lighterConfig.RepaymentAddress,
 		lighterConfig.ConfirmationsByValue,
 		lighterAPI,
-		coordinator,
 		host,
 		communication,
-		keyshareStore,
 		sigChn,
+		msgChan,
 	)
 	go lighterMessageHandler.Listen(ctx)
 	lighterChain := lighter.NewLighterChain(lighterMessageHandler)
 	domains[lighter.LIGHTER_DOMAIN_ID] = lighterChain
 	supportedChains[lighter.LIGHTER_DOMAIN_ID] = struct{}{}
+
+	tronMh := message.NewMessageHandler()
+	tronSignHandler := tronMessage.NewSignHandler(coordinator, host, communication, keyshareStore)
+	tronMh.RegisterMessageHandler(evmMessage.SignMessageType, tronSignHandler)
+	domains[tron.ChainID] = tron.NewTronChain(tronMh)
 
 	go jobs.StartCommunicationHealthCheckJob(host, configuration.RelayerConfig.MpcConfig.CommHealthCheckInterval, sygmaMetrics)
 
