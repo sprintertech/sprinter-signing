@@ -179,7 +179,6 @@ func Run() error {
 	multiPricer := aggregator.New(usdPricer)
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
 	priceAPI := price.NewPricerProxy(multiPricer)
-
 	evmSignHandler := evmMessage.NewSignHandler(coordinator, host, communication, keyshareStore)
 
 	var hubPoolContract across.TokenMatcher
