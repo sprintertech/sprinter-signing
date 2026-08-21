@@ -346,6 +346,49 @@ func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess() {
 	s.Equal(http.StatusAccepted, recorder.Code)
 }
 
+func (s *SigningHandlerTestSuite) Test_HandleSigning_LifiSuccess_TronDestination() {
+	msgChn := make(chan []*message.Message)
+	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)
+
+	const tronAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+	input := handlers.SigningBody{
+		DepositId:     "depositID",
+		Protocol:      "lifi-escrow",
+		LiquidityPool: tronAddress,
+		Caller:        tronAddress,
+		BorrowToken:   tronAddress,
+		Calldata:      "0xbe5",
+		Nonce:         &handlers.BigInt{big.NewInt(1001)},
+		BorrowAmount:  &handlers.BigInt{big.NewInt(1000)},
+		//nolint:gosec
+		Deadline: uint64(time.Now().Unix()),
+	}
+	body, _ := json.Marshal(input)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/chains/1/signatures", bytes.NewReader(body))
+	req = mux.SetURLVars(req, map[string]string{
+		"chainId": "1",
+	})
+	req.Header.Set("Content-Type", "application/json")
+
+	recorder := httptest.NewRecorder()
+
+	go func() {
+		msg := <-msgChn
+		ad := msg[0].Data.(*across.LifiEscrowData)
+		s.Equal(tronAddress, ad.LiquidityPool)
+		s.Equal(tronAddress, ad.Caller)
+		s.Equal(tronAddress, ad.BorrowToken)
+		ad.ErrChn <- nil
+	}()
+
+	s.mockRemover.EXPECT().Remove("1-depositID")
+
+	handler.HandleSigning(recorder, req)
+
+	s.Equal(http.StatusAccepted, recorder.Code)
+}
+
 func (s *SigningHandlerTestSuite) Test_HandleSigning_LighterSuccess() {
 	msgChn := make(chan []*message.Message)
 	handler := handlers.NewSigningHandler(msgChn, s.chains, s.mockRemover)

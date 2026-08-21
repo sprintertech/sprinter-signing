@@ -15,7 +15,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sprintertech/sprinter-signing/chains"
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
-	"github.com/sprintertech/sprinter-signing/chains/evm/signature"
 	"github.com/sprintertech/sprinter-signing/comm"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/tss"
@@ -65,12 +64,11 @@ type AcrossMessageHandler struct {
 	confirmationWatcher ConfirmationWatcher
 	depositFetcher      DepositFetcher
 
-	coordinator Coordinator
-	host        host.Host
-	comm        comm.Communication
-	fetcher     signing.SaveDataFetcher
+	host host.Host
+	comm comm.Communication
 
-	sigChn chan any
+	sigChn  chan any
+	msgChan chan []*message.Message
 }
 
 func NewAcrossMessageHandler(
@@ -78,24 +76,22 @@ func NewAcrossMessageHandler(
 	tokenStore config.TokenStore,
 	pools map[uint64]common.Address,
 	repayers map[uint64]common.Address,
-	coordinator Coordinator,
 	host host.Host,
 	comm comm.Communication,
-	fetcher signing.SaveDataFetcher,
 	depositFetcher DepositFetcher,
 	confirmationWatcher ConfirmationWatcher,
 	sigChn chan any,
+	msgChan chan []*message.Message,
 ) *AcrossMessageHandler {
 	return &AcrossMessageHandler{
 		chainID:             chainID,
 		tokenStore:          tokenStore,
 		pools:               pools,
 		repayers:            repayers,
-		coordinator:         coordinator,
 		host:                host,
 		comm:                comm,
-		fetcher:             fetcher,
 		sigChn:              sigChn,
+		msgChan:             msgChan,
 		confirmationWatcher: confirmationWatcher,
 		depositFetcher:      depositFetcher,
 	}
@@ -163,6 +159,13 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
+	destChainID := d.DestinationChainId.Uint64()
+	target, ok := h.pools[destChainID]
+	if !ok {
+		data.ErrChn <- err
+		return nil, fmt.Errorf("no across pool configured for chain %d", destChainID)
+	}
+
 	err = h.confirmationWatcher.WaitForTokenConfirmations(
 		context.Background(),
 		h.chainID,
@@ -182,37 +185,20 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	unlockHash, err := signature.BorrowUnlockHash(
-		calldata,
-		data.BorrowAmount,
-		common.BytesToAddress(d.OutputToken[:]),
-		d.DestinationChainId,
-		h.pools[d.DestinationChainId.Uint64()],
-		data.Deadline,
-		data.Caller,
-		data.LiquidityPool,
-		data.Nonce,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	sessionID := signing.SessionID(sourceChainID, data.DepositId.String())
-	signing, err := signing.NewSigning(
-		new(big.Int).SetBytes(unlockHash),
-		sessionID,
-		sessionID,
-		h.host,
-		h.comm,
-		h.fetcher)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.coordinator.Execute(context.Background(), []tss.TssProcess{signing}, h.sigChn, data.Coordinator)
-	if err != nil {
-		return nil, err
-	}
+	h.msgChan <- []*message.Message{NewSignMessage(0, destChainID, &SignRequest{
+		Calldata:      calldata,
+		BorrowAmount:  data.BorrowAmount,
+		BorrowToken:   common.BytesToAddress(d.OutputToken[:]).Hex(),
+		Target:        target.Hex(),
+		Deadline:      data.Deadline,
+		Caller:        data.Caller,
+		LiquidityPool: data.LiquidityPool,
+		Nonce:         data.Nonce,
+		SessionID:     sessionID,
+		Coordinator:   data.Coordinator,
+		ResultChn:     h.sigChn,
+	})}
 	return nil, nil
 }
 

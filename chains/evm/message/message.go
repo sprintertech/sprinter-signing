@@ -22,9 +22,9 @@ type AcrossData struct {
 	DepositId        *big.Int
 	Nonce            *big.Int
 	BorrowAmount     *big.Int
-	LiquidityPool    common.Address
+	LiquidityPool    string
 	RepaymentChainID uint64
-	Caller           common.Address
+	Caller           string
 	Coordinator      peer.ID
 	Deadline         uint64
 	Source           uint64
@@ -46,8 +46,8 @@ type LifiEscrowData struct {
 
 	OrderID       string
 	Coordinator   peer.ID
-	LiquidityPool common.Address
-	Caller        common.Address
+	LiquidityPool string
+	Caller        string
 	DepositTxHash string
 	BorrowAmount  *big.Int
 	BorrowToken   string
@@ -74,8 +74,8 @@ type SprinterCreditData struct {
 	BorrowAmount  *big.Int
 	Calldata      string
 	Deadline      uint64
-	LiquidityPool common.Address
-	Caller        common.Address
+	LiquidityPool string
+	Caller        string
 	Nonce         *big.Int
 	Coordinator   peer.ID
 	Source        uint64
