@@ -62,6 +62,7 @@ func (s *AcrossMessageHandlerTestSuite) SetupTest() {
 
 	pools := make(map[uint64]common.Address)
 	pools[2] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
+	pools[137] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5")
 
 	repayers := make(map[uint64]common.Address)
 	repayers[10] = common.HexToAddress("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C6")
@@ -285,7 +286,7 @@ func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_ValidDeposit() {
 	s.Equal(uint64(137), msgs[0].Destination)
 	req := msgs[0].Data.(*message.SignRequest)
 	s.Equal(big.NewInt(1000000000000000000), req.BorrowAmount)
-	s.Equal(common.Address{}.Hex(), req.Target)
+	s.Equal("0x5c7BCd6E7De5423a257D81B442095A1a6ced35C5", req.Target)
 }
 
 func (s *AcrossMessageHandlerTestSuite) Test_HandleMessage_BorrowAmountExceedsScaledInputAmount() {
