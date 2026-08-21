@@ -159,6 +159,13 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
+	destChainID := d.DestinationChainId.Uint64()
+	target, ok := h.pools[destChainID]
+	if !ok {
+		data.ErrChn <- err
+		return nil, fmt.Errorf("no across pool configured for chain %d", destChainID)
+	}
+
 	err = h.confirmationWatcher.WaitForTokenConfirmations(
 		context.Background(),
 		h.chainID,
@@ -178,13 +185,12 @@ func (h *AcrossMessageHandler) HandleMessage(m *message.Message) (*proposal.Prop
 		return nil, err
 	}
 
-	destChainID := d.DestinationChainId.Uint64()
 	sessionID := signing.SessionID(sourceChainID, data.DepositId.String())
 	h.msgChan <- []*message.Message{NewSignMessage(0, destChainID, &SignRequest{
 		Calldata:      calldata,
 		BorrowAmount:  data.BorrowAmount,
 		BorrowToken:   common.BytesToAddress(d.OutputToken[:]).Hex(),
-		Target:        h.pools[destChainID].Hex(),
+		Target:        target.Hex(),
 		Deadline:      data.Deadline,
 		Caller:        data.Caller,
 		LiquidityPool: data.LiquidityPool,
