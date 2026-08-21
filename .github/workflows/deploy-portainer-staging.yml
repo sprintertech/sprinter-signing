@@ -69,8 +69,13 @@ jobs:
           SYG_RELAYER_MPCCONFIG_KEY_3: ${{ secrets.SYG_RELAYER_MPCCONFIG_KEY_3 }}
           KEYSHARE_3: ${{ secrets.KEYSHARE_3 }}
         run: |
-          envsubst '$SIGNING_IMAGE_VERSION $SPRINTER_SIGNING_DOMAIN $SYG_CHAINS $SYG_RELAYER_SOLVERCONFIG_ACCESSKEY $SYG_RELAYER_SOLVERCONFIG_SECRETKEY $SYG_RELAYER_COINMARKETCAPCONFIG_APIKEY $SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY $SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL $SYG_RELAYER_OPENTELEMETRYCOLLECTORURL $SYG_RELAYER_MPCCONFIG_KEY_1 $KEYSHARE_1 $SYG_RELAYER_MPCCONFIG_KEY_2 $KEYSHARE_2 $SYG_RELAYER_MPCCONFIG_KEY_3 $KEYSHARE_3' < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
-          echo "Rendered docker-compose"
+          envsubst '$SIGNING_IMAGE_VERSION $SPRINTER_SIGNING_DOMAIN $SYG_CHAINS $SYG_RELAYER_SOLVERCONFIG_ACCESSKEY $SYG_RELAYER_SOLVERCONFIG_SECRETKEY $SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_ENCRYPTIONKEY $SYG_RELAYER_MPCCONFIG_TOPOLOGYCONFIGURATION_URL $SYG_RELAYER_OPENTELEMETRYCOLLECTORURL $SYG_RELAYER_MPCCONFIG_KEY_1 $KEYSHARE_1 $SYG_RELAYER_MPCCONFIG_KEY_2 $KEYSHARE_2 $SYG_RELAYER_MPCCONFIG_KEY_3 $KEYSHARE_3' < ${DOCKER_COMPOSE_PATH} > docker-compose.rendered.yml
+
+          if ! docker compose -f docker-compose.rendered.yml config -q > /dev/null 2>&1; then
+            echo "::error::Rendered docker-compose is invalid"
+            exit 1
+          fi
+          echo "Rendered docker-compose is valid"
 
       - name: Deploy stack (create or update)
         env:
@@ -86,11 +91,13 @@ jobs:
             jq -n --rawfile compose docker-compose.rendered.yml \
               '{stackFileContent: $compose, prune: true, pullImage: true, env: []}' > payload.json
 
-            curl -s -X PUT "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$PORTAINER_ENDPOINT_ID" \
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+              -X PUT "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$PORTAINER_ENDPOINT_ID" \
               -H "X-API-Key: $PORTAINER_API_TOKEN" \
               -H "Content-Type: application/json" \
-              -d @payload.json \
-              --fail
+              -d @payload.json)
+            echo "Portainer responded with HTTP $HTTP_CODE"
+            [ "$HTTP_CODE" -lt 400 ]
           else
             echo "Creating new stack: $STACK_NAME"
 
@@ -98,12 +105,15 @@ jobs:
               --arg name "$STACK_NAME" \
               '{name: $name, fromAppTemplate: false, stackFileContent: $compose, env: []}' > payload.json
 
-            curl -v -s -X POST "$PORTAINER_URL/api/stacks/create/standalone/string?endpointId=$PORTAINER_ENDPOINT_ID" \
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+              -X POST "$PORTAINER_URL/api/stacks/create/standalone/string?endpointId=$PORTAINER_ENDPOINT_ID" \
               -H "X-API-Key: $PORTAINER_API_TOKEN" \
               -H "Content-Type: application/json" \
-              -d @payload.json \
-              --fail
+              -d @payload.json)
+            echo "Portainer responded with HTTP $HTTP_CODE"
+            [ "$HTTP_CODE" -lt 400 ]
           fi
 
       - name: Cleanup
+        if: always()
         run: rm -rf docker-compose.rendered.yml payload.json
