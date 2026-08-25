@@ -176,6 +176,7 @@ func Run() error {
 
 	usdPricer := pyth.NewClient(ctx)
 	err = usdPricer.Start(ctx, sdkConfig.SupportedTokens(solverConfig))
+	panicOnError(err)
 	multiPricer := aggregator.New(usdPricer)
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
 	priceAPI := price.NewPricerProxy(multiPricer)
