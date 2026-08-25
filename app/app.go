@@ -21,6 +21,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
+	sdkConfig "github.com/sprintertech/solver-sdk/pkg/config"
 	"github.com/sprintertech/solver-sdk/pkg/pricing"
 	"github.com/sprintertech/solver-sdk/pkg/protocols"
 	"github.com/sprintertech/solver-sdk/pkg/protocols/erc4626"
@@ -44,7 +45,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
 
-	lifiConfig "github.com/sprintertech/solver-sdk/pkg/config"
 	"github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -175,7 +175,8 @@ func Run() error {
 	}
 
 	usdPricer := pyth.NewClient(ctx)
-	err = usdPricer.Start(ctx)
+	err = usdPricer.Start(ctx, sdkConfig.SupportedTokens(solverConfig))
+	panicOnError(err)
 	multiPricer := aggregator.New(usdPricer)
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
 	priceAPI := price.NewPricerProxy(multiPricer)
@@ -304,7 +305,7 @@ func Run() error {
 					}
 					resolver = token.NewTokenResolver(solverConfig, multiPricer)
 
-					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
+					lifiConfig, err := sdkConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, sdkConfig.PulsarSolver)
 					panicOnError(err)
 
 					orderPricer := pricing.NewStandardPricer(resolver)
