@@ -45,7 +45,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
 
-	lifiConfig "github.com/sprintertech/solver-sdk/pkg/config"
 	"github.com/sprintertech/sprinter-signing/chains/lighter"
 	lighterMessage "github.com/sprintertech/sprinter-signing/chains/lighter/message"
 	"github.com/sprintertech/sprinter-signing/comm"
@@ -305,7 +304,7 @@ func Run() error {
 					}
 					resolver = token.NewTokenResolver(solverConfig, multiPricer)
 
-					lifiConfig, err := lifiConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, lifiConfig.PulsarSolver)
+					lifiConfig, err := sdkConfig.GetSolverConfig(solverConfig, protocols.LifiEscrow, sdkConfig.PulsarSolver)
 					panicOnError(err)
 
 					orderPricer := pricing.NewStandardPricer(resolver)
