@@ -21,6 +21,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	solverConfig "github.com/sprintertech/solver-config/go/config"
+	sdkConfig "github.com/sprintertech/solver-sdk/pkg/config"
 	"github.com/sprintertech/solver-sdk/pkg/pricing"
 	"github.com/sprintertech/solver-sdk/pkg/protocols"
 	"github.com/sprintertech/solver-sdk/pkg/protocols/erc4626"
@@ -175,7 +176,7 @@ func Run() error {
 	}
 
 	usdPricer := pyth.NewClient(ctx)
-	err = usdPricer.Start(ctx)
+	err = usdPricer.Start(ctx, sdkConfig.SupportedTokens(solverConfig))
 	multiPricer := aggregator.New(usdPricer)
 	resolver := token.NewTokenResolver(solverConfig, multiPricer)
 	priceAPI := price.NewPricerProxy(multiPricer)
