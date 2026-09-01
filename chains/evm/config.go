@@ -14,6 +14,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	solverConfig "github.com/sprintertech/solver-config/go/config"
+	"github.com/sprintertech/solver-sdk/pkg/chains/caip"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/config/chain"
 )
@@ -76,7 +77,7 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		return nil, err
 	}
 
-	id := fmt.Sprintf("eip155:%d", *c.Id)
+	id := caip.ChainIDToCAIP(*c.Id, caip.NamespaceForChainID(*c.Id))
 	sc, ok := solverConfig.Chains[id]
 	if !ok {
 		return nil, fmt.Errorf("no solver config for id %s", id)
