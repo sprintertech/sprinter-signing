@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	solverConfig "github.com/sprintertech/solver-config/go/config"
 	"github.com/sprintertech/sprinter-signing/config"
 	"github.com/sprintertech/sprinter-signing/config/relayer"
 	"github.com/stretchr/testify/suite"
@@ -578,4 +579,69 @@ func (s *GetConfigTestSuite) Test_GetConfigFromFile() {
 			}
 		})
 	}
+}
+
+type MergeChainConfigsTestSuite struct {
+	suite.Suite
+}
+
+func TestRunMergeChainConfigsTestSuite(t *testing.T) {
+	suite.Run(t, new(MergeChainConfigsTestSuite))
+}
+
+func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_AddsChainFromSolverConfig() {
+	solverChains := map[string]solverConfig.Chain{
+		"eip155:10": {
+			Transport: solverConfig.Transport{
+				HTTP: []string{"https://chain10.example"},
+			},
+		},
+	}
+
+	merged := config.MergeChainConfigs(nil, solverConfig.SolverConfig{Chains: solverChains})
+
+	s.Len(merged, 1)
+	s.Equal(map[string]interface{}{
+		"id":       uint64(10),
+		"type":     "evm",
+		"name":     "chain-10",
+		"endpoint": "https://chain10.example",
+	}, merged[0])
+}
+
+func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_ManuallyConfiguredChainNotOverwritten() {
+	solverChains := map[string]solverConfig.Chain{
+		"eip155:10": {
+			Transport: solverConfig.Transport{
+				HTTP: []string{"https://chain10.example"},
+			},
+		},
+	}
+
+	manual := []map[string]interface{}{
+		{
+			"id":       uint64(10),
+			"endpoint": "https://custom.example",
+			"admin":    "adminAddress",
+		},
+	}
+
+	merged := config.MergeChainConfigs(manual, solverConfig.SolverConfig{Chains: solverChains})
+
+	s.Equal(manual, merged)
+}
+
+func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_KeepsManualOnlyChains() {
+	manual := []map[string]interface{}{
+		{
+			"id":       uint64(99),
+			"type":     "evm",
+			"endpoint": "https://manual-only.example",
+			"name":     "manual99",
+		},
+	}
+
+	merged := config.MergeChainConfigs(manual, solverConfig.SolverConfig{})
+
+	s.Equal(manual, merged)
 }

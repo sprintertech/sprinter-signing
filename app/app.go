@@ -182,12 +182,14 @@ func Run() error {
 	priceAPI := price.NewPricerProxy(multiPricer)
 	evmSignHandler := evmMessage.NewSignHandler(coordinator, host, communication, keyshareStore)
 
+	chainConfigs := config.MergeChainConfigs(configuration.ChainConfigs, *solverConfig)
+
 	var hubPoolContract across.TokenMatcher
 	acrossPools := make(map[uint64]common.Address)
 	lifiOutputSettlers := make(map[uint64]string)
 	repayerAddresses := make(map[uint64]common.Address)
 	tokens := make(map[uint64]map[string]config.TokenConfig)
-	for _, chainConfig := range configuration.ChainConfigs {
+	for _, chainConfig := range chainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
@@ -230,7 +232,7 @@ func Run() error {
 		Tokens: tokens,
 	}
 
-	for _, chainConfig := range configuration.ChainConfigs {
+	for _, chainConfig := range chainConfigs {
 		switch chainConfig["type"] {
 		case "evm":
 			{
