@@ -8,6 +8,8 @@ import (
 
 	"github.com/creasty/defaults"
 	"github.com/imdario/mergo"
+	solverConfig "github.com/sprintertech/solver-config/go/config"
+	"github.com/sprintertech/solver-sdk/pkg/chains/caip"
 	"github.com/sprintertech/sprinter-signing/config/relayer"
 
 	"github.com/spf13/cobra"
@@ -132,6 +134,44 @@ func compareDomainID(a, b interface{}) bool {
 			return a == b
 		}
 	}
+	return false
+}
+
+// MergeChainConfigs fills in chains that are present in the shared solver
+// config but were not manually configured, deriving their endpoint from the
+// solver config's transport so a chain can be supported without a manual
+// chain config entry. Manually configured fields always take precedence.
+func MergeChainConfigs(chainConfigs []map[string]interface{}, solverConfig solverConfig.SolverConfig) []map[string]interface{} {
+	for caipID, c := range solverConfig.Chains {
+		id, err := caip.CAIPToChainID(caipID)
+		if err != nil {
+			continue
+		}
+
+		if chainExists(chainConfigs, id) {
+			continue
+		}
+
+		cc := map[string]interface{}{
+			"id":       id,
+			"type":     "evm",
+			"name":     fmt.Sprintf("chain-%d", id),
+			"endpoint": c.Transport.HTTP[0],
+		}
+		chainConfigs = append(chainConfigs, cc)
+	}
+
+	return chainConfigs
+}
+
+func chainExists(chainConfigs []map[string]interface{}, chainID uint64) bool {
+	for _, cc := range chainConfigs {
+		ccID := cc["id"].(uint64)
+		if ccID == chainID {
+			return true
+		}
+	}
+
 	return false
 }
 
