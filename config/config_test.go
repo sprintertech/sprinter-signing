@@ -602,7 +602,7 @@ func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_AddsChainFromSolverC
 
 	s.Len(merged, 1)
 	s.Equal(map[string]interface{}{
-		"id":       uint64(10),
+		"id":       float64(10),
 		"type":     "evm",
 		"name":     "chain-10",
 		"endpoint": "https://chain10.example",
@@ -620,7 +620,7 @@ func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_ManuallyConfiguredCh
 
 	manual := []map[string]interface{}{
 		{
-			"id":       uint64(10),
+			"id":       float64(10),
 			"endpoint": "https://custom.example",
 			"admin":    "adminAddress",
 		},
@@ -634,7 +634,7 @@ func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_ManuallyConfiguredCh
 func (s *MergeChainConfigsTestSuite) Test_MergeChainConfigs_KeepsManualOnlyChains() {
 	manual := []map[string]interface{}{
 		{
-			"id":       uint64(99),
+			"id":       float64(99),
 			"type":     "evm",
 			"endpoint": "https://manual-only.example",
 			"name":     "manual99",
