@@ -153,7 +153,7 @@ func MergeChainConfigs(chainConfigs []map[string]interface{}, solverConfig solve
 		}
 
 		cc := map[string]interface{}{
-			"id":       id,
+			"id":       float64(id),
 			"type":     "evm",
 			"name":     fmt.Sprintf("chain-%d", id),
 			"endpoint": c.Transport.HTTP[0],
@@ -166,8 +166,8 @@ func MergeChainConfigs(chainConfigs []map[string]interface{}, solverConfig solve
 
 func chainExists(chainConfigs []map[string]interface{}, chainID uint64) bool {
 	for _, cc := range chainConfigs {
-		ccID := cc["id"].(uint64)
-		if ccID == chainID {
+		ccID := cc["id"].(float64)
+		if uint64(ccID) == chainID {
 			return true
 		}
 	}
