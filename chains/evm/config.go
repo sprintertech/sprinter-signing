@@ -126,8 +126,8 @@ func NewEVMConfig(chainConfig map[string]interface{}, solverConfig solverConfig.
 		Processors:             processors,
 		AcrossPool:             solverConfig.ProtocolsMetadata.Across.SpokePools[id],
 		AcrossHubPool:          solverConfig.ProtocolsMetadata.Across.HubPools[id],
-		LifiOutputSettler:      solverConfig.ProtocolsMetadata.Lifi.OutputSettler,
-		LifiInputSettlerEscrow: solverConfig.ProtocolsMetadata.Lifi.InputSettlerEscrow,
+		LifiOutputSettler:      solverConfig.ProtocolsMetadata.Lifi.OutputSettlers[id],
+		LifiInputSettlerEscrow: solverConfig.ProtocolsMetadata.Lifi.InputSettlerEscrows[id],
 		Liquidators:            liquidators,
 
 		// nolint:gosec

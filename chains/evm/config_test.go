@@ -105,8 +105,12 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfig() {
 				},
 			},
 			Lifi: &solverConfig.LifiMetadata{
-				OutputSettler:      "settler",
-				InputSettlerEscrow: "escrowSettler",
+				OutputSettlers: map[string]string{
+					"eip155:1": "settler",
+				},
+				InputSettlerEscrows: map[string]string{
+					"eip155:1": "escrowSettler",
+				},
 			},
 			SprinterCredit: map[string][]solverConfig.SprinterCredit{
 				"eip155:1": {
@@ -231,10 +235,15 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 				},
 			},
 			Lifi: &solverConfig.LifiMetadata{
-				OutputSettler: "settler",
+				OutputSettlers: map[string]string{
+					"eip155:1": "settler",
+				},
+				InputSettlerEscrows: map[string]string{
+					"eip155:1": "escrow",
+				},
 				RepaymentProcessors: map[string]map[string]solverConfig.RepaymentProcessor{
-					"eip155:1": map[string]solverConfig.RepaymentProcessor{
-						"uSdC": solverConfig.RepaymentProcessor{
+					"eip155:1": {
+						"uSdC": {
 							Address: "0xdBBE3D8c2d2b22A2611c5A94A9a12C2fCD49Eb28",
 						},
 					},
@@ -256,16 +265,17 @@ func (s *NewEVMConfigTestSuite) Test_ValidConfigWithCustomTxParams() {
 			BlockConfirmations: 5,
 			Blocktime:          2,
 		},
-		BlockInterval:        big.NewInt(2),
-		BlockRetryInterval:   time.Duration(10) * time.Second,
-		Admin:                "adminAddress",
-		AcrossPool:           "acrossPool",
-		AcrossHubPool:        "acrossHubPool",
-		LifiOutputSettler:    "settler",
-		Repayer:              "repayer",
-		ConfirmationsByValue: expectedBlockConfirmations,
-		Tokens:               expectedTokens,
-		Processors:           processors,
-		Liquidators:          make(map[common.Address]common.Address),
+		BlockInterval:          big.NewInt(2),
+		BlockRetryInterval:     time.Duration(10) * time.Second,
+		Admin:                  "adminAddress",
+		AcrossPool:             "acrossPool",
+		AcrossHubPool:          "acrossHubPool",
+		LifiOutputSettler:      "settler",
+		LifiInputSettlerEscrow: "escrow",
+		Repayer:                "repayer",
+		ConfirmationsByValue:   expectedBlockConfirmations,
+		Tokens:                 expectedTokens,
+		Processors:             processors,
+		Liquidators:            make(map[common.Address]common.Address),
 	})
 }
