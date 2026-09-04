@@ -21,7 +21,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.9.0
 	github.com/sprintertech/solver-config/go v0.0.0-20260901094026-b84bd6a9b33c
-	github.com/sprintertech/solver-sdk v1.1.1-0.20260901143229-178cc52472b7
+	github.com/sprintertech/solver-sdk v1.1.1-0.20260903141519-86c5ecb337c8
 	github.com/stretchr/testify v1.11.1
 	github.com/sygmaprotocol/sygma-core v0.0.0-20250304150334-bd39ac4f7b82
 	go.opentelemetry.io/otel v1.39.0
