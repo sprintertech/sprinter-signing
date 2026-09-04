@@ -39,8 +39,6 @@ import (
 	"github.com/sprintertech/sprinter-signing/chains/evm/calls/events"
 	evmListener "github.com/sprintertech/sprinter-signing/chains/evm/listener"
 	evmMessage "github.com/sprintertech/sprinter-signing/chains/evm/message"
-	"github.com/sprintertech/sprinter-signing/chains/tron"
-	tronMessage "github.com/sprintertech/sprinter-signing/chains/tron/message"
 
 	"github.com/sprintertech/sprinter-signing/metrics"
 	"github.com/sprintertech/sprinter-signing/price"
@@ -414,11 +412,6 @@ func Run() error {
 	lighterChain := lighter.NewLighterChain(lighterMessageHandler)
 	domains[lighter.LIGHTER_DOMAIN_ID] = lighterChain
 	supportedChains[lighter.LIGHTER_DOMAIN_ID] = struct{}{}
-
-	tronMh := message.NewMessageHandler()
-	tronSignHandler := tronMessage.NewSignHandler(coordinator, host, communication, keyshareStore)
-	tronMh.RegisterMessageHandler(evmMessage.SignMessageType, tronSignHandler)
-	domains[tron.ChainID] = tron.NewTronChain(tronMh)
 
 	go jobs.StartCommunicationHealthCheckJob(host, configuration.RelayerConfig.MpcConfig.CommHealthCheckInterval, sygmaMetrics)
 
